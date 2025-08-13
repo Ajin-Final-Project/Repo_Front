@@ -28,20 +28,15 @@ import UsersFormPage from "../Users/form/UsersFormPage";
 import UsersViewPage from "../Users/view/UsersViewPage";
 import ChangePasswordFormPage from "../Users/changePassword/ChangePasswordFormPage";
 
-// 새로운 시스템 페이지들
-import ProductionManagement from "../../pages/production/ProductionManagement";
+// 우리가 만든 페이지들
 import ProductionChart from "../../pages/production/ProductionChart";
 import ProductionGrid from "../../pages/production/ProductionGrid";
-import MoldCleaning from "../../pages/mold/MoldCleaning";
 import MoldCleaningChart from "../../pages/mold/MoldCleaningChart";
 import MoldCleaningData from "../../pages/mold/MoldCleaningData";
-import DefectProcess from "../../pages/defect/DefectProcess";
 import DefectProcessChart from "../../pages/defect/DefectProcessChart";
 import DefectProcessGrid from "../../pages/defect/DefectProcessGrid";
-import DowntimeStatistics from "../../pages/downtime/DowntimeStatistics";
 import DowntimeStatisticsChart from "../../pages/downtime/DowntimeStatisticsChart";
 import DowntimeStatisticsData from "../../pages/downtime/DowntimeStatisticsData";
-import InspectionSystem from "../../pages/inspection/InspectionSystem";
 import InspectionSystemChart from "../../pages/inspection/InspectionSystemChart";
 import InspectionSystemData from "../../pages/inspection/InspectionSystemData";
 
