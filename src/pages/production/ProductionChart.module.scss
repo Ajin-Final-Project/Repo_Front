@@ -1,0 +1,167 @@
+.root {
+  padding: 30px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.container h1 {
+  background: linear-gradient(135deg, #FF9800 0%, #FF5722 100%);
+  color: white;
+  margin: 0;
+  padding: 30px;
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 600;
+}
+
+// 차트 섹션
+.chartSection {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+  padding: 30px;
+}
+
+.chartContainer {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 25px;
+}
+
+.chartContainer h3 {
+  margin: 0 0 25px 0;
+  color: #333;
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+.chartGrid {
+  display: flex;
+  justify-content: space-around;
+  align-items: end;
+  height: 200px;
+  margin-bottom: 20px;
+}
+
+.chartItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.chartBar {
+  width: 40px;
+  height: 150px;
+  background: #FFF3E0;
+  border-radius: 4px;
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.barFill {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  border-radius: 4px;
+  transition: height 0.3s ease;
+}
+
+.chartLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.efficiency {
+  font-weight: 600;
+  color: #333;
+  margin-top: 5px;
+}
+
+.chartLegend {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.legendColor {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+}
+
+// 요약 카드
+.summaryCards {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.summaryCard {
+  background: linear-gradient(135deg, #FF9800 0%, #FF5722 100%);
+  color: white;
+  padding: 25px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+}
+
+.summaryCard h4 {
+  margin: 0 0 15px 0;
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.summaryValue {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.summaryUnit {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+// 반응형 디자인
+@media (max-width: 768px) {
+  .container h1 {
+    font-size: 2rem;
+    padding: 20px;
+  }
+
+  .chartSection {
+    padding: 20px;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .chartGrid {
+    height: 150px;
+  }
+
+  .chartBar {
+    width: 30px;
+    height: 100px;
+  }
+}

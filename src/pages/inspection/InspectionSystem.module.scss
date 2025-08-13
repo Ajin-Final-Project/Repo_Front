@@ -1,0 +1,167 @@
+.root {
+  padding: 20px;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.mainContent {
+  padding: 30px;
+}
+
+.welcomeSection {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.welcomeSection h1 {
+  background: linear-gradient(135deg, #FF9800, #FF5722);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 15px;
+}
+
+.welcomeSection p {
+  color: #666;
+  font-size: 18px;
+  margin: 0;
+}
+
+.menuGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 25px;
+  margin-bottom: 40px;
+}
+
+.menuCard {
+  background: white;
+  border: 2px solid #f0f0f0;
+  border-radius: 12px;
+  padding: 25px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.menuCard:hover {
+  border-color: #FF9800;
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(255, 152, 0, 0.15);
+}
+
+.menuCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(135deg, #FF9800, #FF5722);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.menuCard:hover::before {
+  transform: scaleX(1);
+}
+
+.menuIcon {
+  font-size: 48px;
+  margin-bottom: 15px;
+  display: block;
+}
+
+.menuCard h3 {
+  color: #333;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 10px 0;
+}
+
+.menuCard p {
+  color: #666;
+  font-size: 14px;
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+.menuArrow {
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  font-size: 24px;
+  color: #FF9800;
+  font-weight: bold;
+  transition: transform 0.3s ease;
+}
+
+.menuCard:hover .menuArrow {
+  transform: translateX(5px);
+}
+
+.quickStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.statCard {
+  background: linear-gradient(135deg, #9C27B0, #673AB7);
+  color: white;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3);
+}
+
+.statCard h4 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.statValue {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.statUnit {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .menuGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .quickStats {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .welcomeSection h1 {
+    font-size: 24px;
+  }
+  
+  .welcomeSection p {
+    font-size: 16px;
+  }
+}

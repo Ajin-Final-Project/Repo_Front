@@ -1,0 +1,49 @@
+@import '../../../../styles/app';
+
+.filters {
+  @media screen and (max-width: 1125px) {
+    width: 100%;
+    padding-right: 0;
+  }
+}
+
+.mainFilterButtons {
+  margin: 15px 0;
+}
+
+.button {
+  margin: 0 -30px;
+  width: calc(100% + 60px);
+  padding: 10px 44px !important;
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: $font-weight-normal;
+  border-radius: 0.2rem;
+  color: #868e96;
+  background: transparent;
+  text-transform: initial;
+
+
+  &:hover {
+    background-color: #e5e5e5;
+    color: $gray-700;
+  }
+
+  & :global .badge {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 10px;
+  }
+}
+
+.buttonActive {
+  background-color: rgba(50,50,50,0.1);
+  color: #555;
+  font-weight: 600;
+  border-radius: 0;
+}

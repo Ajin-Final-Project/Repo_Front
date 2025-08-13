@@ -1,0 +1,74 @@
+@import '../../../styles/app';
+
+.root {
+  h4 {
+    font-size: 14px;
+  }
+
+  :global {
+    .fc-grid th {
+      text-transform: uppercase;
+    }
+
+    .fc .fc-today {
+      background-color: rgba($yellow, .1);
+    }
+
+    .fc-day-number {
+      padding: .8rem !important;
+    }
+
+    .fc-day-grid-event {
+      margin: 0;
+      padding: 0;
+    }
+
+    .fc-event {
+      border: none;
+      font-weight: $font-weight-normal;
+      background-color: $gray-200;
+      color: $text-color;
+    }
+
+    a.fc-event {
+      text-decoration: none;
+      cursor: pointer;
+      height: 30px;
+      line-height: 30px;
+      position: relative;
+      min-width: calc(100% - 15px);
+      text-align: center;
+    }
+
+    /* ****  Full Calendar Custom   **** */
+    .full-calendar {
+      margin-top: 10px;
+    }
+
+    .calendar-controls {
+      .btn {
+        font-size: $font-size-mini;
+      }
+    }
+
+    .calendar-external-events {
+      margin-top: 20px;
+
+    }
+
+    .widget-calendar {
+      @include media-breakpoint-up(xl) {
+        margin-top: -100px;
+      }
+    }
+  }
+}
+
+.customExternalEvent {
+  margin: 10px 0;
+  padding: 6px;
+  font-size: .9rem;
+  cursor: pointer;
+  border-radius: $border-radius;
+  box-shadow: 4px 4px 25px rgba(109,105,105,0.15);
+}

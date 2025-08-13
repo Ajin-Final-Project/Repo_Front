@@ -1,0 +1,54 @@
+@import '../../../../styles/app';
+
+.pagination {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #d6dee5 !important;
+}
+
+.paginationText {
+  margin-right: auto;
+  color: #868e96;
+  font-size: $font-size-mini;
+}
+
+.paginationPages {
+  padding-left: 11px;
+  margin-left: 10px;
+  display: flex;
+
+  button {
+    margin-left: 4px;
+  }
+}
+
+.button {
+  transition: 0.3s;
+  padding: 0.45rem 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: $font-weight-normal;
+  border-radius: 0.2rem;
+  color: #888;
+  background: #fff;
+  border: none;
+
+  &:hover {
+    background-color: transparent;
+  }
+}
+
+.buttonActive {
+  font-weight: $font-weight-semi-bold;
+}
+
+.buttonDisabled {
+  &:hover {
+    background-color: #fff;
+  }
+}

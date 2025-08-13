@@ -1,0 +1,75 @@
+@import '../../../styles/app';
+
+.bootstrapTable {
+  border: none;
+
+  :global .table {
+    thead,
+    tbody {
+      th,
+      td {
+        border-right: none;
+        border-left: none;
+      }
+    }
+
+    thead th {
+      background: transparent;
+    }
+  }
+}
+
+.react-bs-table .react-bs-container-footer > table > thead > tr > th, .react-bs-table .react-bs-container-header > table > thead > tr > th {
+  border: none;
+  background: $text-color;
+  color: $gray-100;
+}
+
+.ReactTable .rt-thead.-filters {
+  border: none;
+}
+
+.ReactTable .rt-thead .rt-tr {
+  background: $text-color;
+  color: $gray-100;
+}
+
+.react-bootstrap-table {
+  table thead {
+    th.sortable .order {
+      margin: 10px 0 10px 5px;
+    }
+    .react-bootstrap-table-sort-order {
+      margin: 10px 0 10px 5px;
+    }
+    .react-bootstrap-table-sort-order.dropup {
+      margin: 10px 0 10px 5px;
+    }
+  }
+}
+
+.react-bootstrap-table {
+  table thead {
+    th.sortable .order {
+      .dropup .caret {
+        border-top: 0;
+        border-bottom: 4px dashed;
+      }
+    }
+    .react-bootstrap-table-sort-order.dropup {
+      .caret {
+        //position: relative;
+        border-top: 0;
+        border-bottom: 4px dashed;
+      }
+    }
+  }
+}
+
+.row.react-bootstrap-table-pagination {
+  .react-bs-table-sizePerPage-dropdown.dropdown{
+    .caret{
+      border-top: 0;
+    }
+  }
+}
