@@ -199,3 +199,34 @@ npm start
 ```bash
 npm test
 ```
+
+## Updated by 현수 (25.08.14) - 로그인 페이지 수정 & 홈페이지 아진 로고로 변경
+
+### 디렉토리 구조 변경됨 (25.08.14)
+- images/
+  - 아진 로고 4가지 추가함.
+  - -> 아진 홈페이지에서 가져옴. (https://www.wamc.co.kr/ajin/new2013/pr/ci.asp)
+- videos/ 폴더 생성
+  - 홈페이지 배경에 사용할 영상 추가함.
+```
+src/
+├── components/           # 재사용 가능한 컴포넌트들
+│   ├── App.js          # 메인 애플리케이션 컴포넌트
+│   ├── Layout/         # 레이아웃 관련 컴포넌트
+│   ├── Sidebar/        # 사이드바 네비게이션
+│   ├── Header/         # 헤더 컴포넌트
+│   └── Users/          # 사용자 관리 컴포넌트
+├── pages/              # 페이지별 컴포넌트
+│   ├── production/     # 생산관리 시스템
+│   ├── mold/          # 금형세척 시스템
+│   ├── defect/        # 불량공정 시스템
+│   ├── downtime/      # 비가동 통계 시스템
+│   ├── inspection/    # 초/중/종품 검사 시스템
+│   ├── dashboard/     # 대시보드
+│   └── auth/          # 인증 관련 페이지
+├── actions/            # Redux 액션
+├── reducers/           # Redux 리듀서
+├── styles/             # 전역 스타일
+├── images/             # 이미지 리소스
+└── videos/             # 동영상 리소스
+```
