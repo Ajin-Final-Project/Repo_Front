@@ -14,6 +14,7 @@ import darkDashboardIcon from "../../images/theme-icons/yellow/Dashboard_filled.
 import lightUI from "../../images/ui-elements.svg";
 import darkUI from "../../images/ui-elements-dark.svg";
 import logo from "../../images/logo.svg";
+import AJIN_logo_white_background from "../../images/AJIN_logo_white_background_gray.png"
 import settingsOutlined from "../../images/theme-icons/yellow/Settings_outlined.svg";
 import settingsFilled from "../../images/theme-icons/yellow/Settings_outlined.svg";
 import logoutIcon from "../../images/logout.svg";
@@ -857,7 +858,7 @@ class Sidebar extends React.Component {
   getLogoImage() {
     switch (this.props.themeColor) {
       case "warning":
-        return logo;
+        return AJIN_logo_white_background;
       case "danger":
         return logoDanger;
       case "success":
@@ -889,7 +890,8 @@ class Sidebar extends React.Component {
         >
           <header className={s.logo}>
             <img src={this.getLogoImage()} alt="logo" className={s.logoStyle} />
-            <span>Flatlogic&nbsp;</span> One
+            {/* <span className={s.brand}>AJIN&nbsp;</span>
+            <span className={s.companyType}>INDS., LTD.</span> */}
           </header>
           <section className={s.menuWrapper}>
             <h5 className={s.navTitle}>APP</h5>

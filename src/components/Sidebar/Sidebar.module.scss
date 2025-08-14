@@ -1,5 +1,8 @@
 @import "../../styles/app";
 
+// 안전한 기본값(전역에 이미 있으면 이 값은 무시됨)
+$font-weight-medium: 500 !default;
+
 .root {
   position: fixed;
   width: $sidebar-width-open;
@@ -64,10 +67,40 @@
     text-decoration: none;
     white-space: nowrap;
   }
-  span {
-    font-weight: $font-weight-bold;
+
+  // 전체 폰트 한방에 조절
+  // span {
+  //   font-weight: $font-weight-bold;
+  // }
+
+
+  // 브랜드명-회사유형으로 나눠서 각각 따로 스타일 지정
+  .brand {
+    font-weight: $font-weight-bold; // AJIN만 굵게
+    font-size: 1em;                 // .logo의 font-size 기준 1배
+    letter-spacing: 0.02em;
+  }
+
+  .companyType {
+    font-weight: $font-weight-medium; // 500(중간 굵기)
+    font-size: 0.5em;                // AJIN 대비 약 50%
+    letter-spacing: 0.06em;
+    opacity: 0.9;
+    margin-left: 0.12em;              // 약간의 간격
+    white-space: nowrap;              // 줄바꿈 방지
+  }
+
+  // 반응형(선택)
+  @media (max-width: 1200px) {
+    font-size: 26px;                  // 전체 기준 크기 축소
+  }
+  @media (max-width: 768px) {
+    font-size: 22px;
+    .companyType { font-size: 0.74em; }
   }
 }
+
+
 
 .sidebarClose .logo {
   display: none;
