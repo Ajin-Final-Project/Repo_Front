@@ -230,3 +230,38 @@ src/
 ├── images/             # 이미지 리소스
 └── videos/             # 동영상 리소스
 ```
+
+
+## Updated by 현수 (25.08.16) - 화면 전환 시 로딩 화면 추가 완료
+- Notiflix가 제공하는 로딩 라이브러리 활용
+
+### 디렉토리 구조 변경됨 (25.08.16)
+- src/lib/ 폴더 추가
+  - loadingScreen.js 파일 추가
+  - -> 로딩화면 관련 내용
+- src/index.js 파일 수정
+  - 로딩화면 관련 내용 추가
+```
+src/
+├── components/           # 재사용 가능한 컴포넌트들
+│   ├── App.js          # 메인 애플리케이션 컴포넌트
+│   ├── Layout/         # 레이아웃 관련 컴포넌트
+│   ├── Sidebar/        # 사이드바 네비게이션
+│   ├── Header/         # 헤더 컴포넌트
+│   └── Users/          # 사용자 관리 컴포넌트
+├── pages/              # 페이지별 컴포넌트
+│   ├── production/     # 생산관리 시스템
+│   ├── mold/          # 금형세척 시스템
+│   ├── defect/        # 불량공정 시스템
+│   ├── downtime/      # 비가동 통계 시스템
+│   ├── inspection/    # 초/중/종품 검사 시스템
+│   ├── dashboard/     # 대시보드
+│   └── auth/          # 인증 관련 페이지
+├── actions/            # Redux 액션
+├── reducers/           # Redux 리듀서
+├── styles/             # 전역 스타일
+├── images/             # 이미지 리소스
+├── videos/             # 동영상 리소스
+└── lib/                # 라이브러리 관련 폴더 (생성됨. 25.08.16)
+    ├── loadingScreen.js      # 로딩화면 파일 (생성됨. 25.08.16)
+```

@@ -25,7 +25,7 @@ export function getHistory() {
     return history;
 }
 
-// ⬅ 추가: 로딩 전역 초기화 (앱 시작 시 1회)
+// ⬅ 추가: 로딩 전역 초기화 (앱 시작 시 1회) 
 LoadingScreen.init({
   backgroundColor: 'rgba(0,0,0,0.6)',
   svgColor: '#ffffff',
