@@ -1,3 +1,5 @@
+import config from '../../config';
+
 // React와 Component 클래스를 import하여 클래스형 컴포넌트 구현
 import React, { Component } from 'react';
 
@@ -94,7 +96,7 @@ class ProductionGrid extends Component {
         waitItemCount: null,          // 대기수량
         badItemCount: null,           // 불량수량
         productionItemNumber: null,   // 생산품목수
-        processBadItemNumber: null,   // 공정불량수
+        processBadItemCount: null,    // 공정불량수   ← Count로 통일
         componentDeliveryCount: null, // 부품납품수
         constructor: '',            // 생성자
         createDate: ''              // 생성일시
@@ -131,7 +133,7 @@ class ProductionGrid extends Component {
       }
       console.log(requestBody)
       // fetch API를 사용하여 서버에 POST 요청 전송
-      const response = await fetch('http://localhost:8000/smartFactory/production_grid/list', {
+      const response = await fetch(`${config.baseURLApi}/smartFactory/production_grid/list`, {
         method: 'POST',               // HTTP 메서드: POST
         headers: {
           'Content-Type': 'application/json',  // JSON 형태로 데이터 전송
@@ -359,7 +361,7 @@ class ProductionGrid extends Component {
     },
     { 
       field: 'itemName', 
-      headerName: '자재명명', 
+      headerName: '자재명', 
       width: 120,
       headerClassName: 'super-app-theme--header',
       cellClassName: 'super-app-theme--cell'
@@ -940,14 +942,23 @@ class ProductionGrid extends Component {
                 disableRowSelectionOnClick   // 행 클릭 시 선택 비활성화
                 density="compact"             // 컴팩트한 행 높이
                 
-                // 그리드 툴바 설정
-                components={{
-                  Toolbar: GridToolbar,       // 기본 툴바 사용
+                // // 그리드 툴바 설정
+                // components={{
+                //   Toolbar: GridToolbar,       // 기본 툴바 사용
+                // }}
+                // componentsProps={{
+                //   toolbar: {
+                //     showQuickFilter: true,    // 빠른 검색 기능 활성화
+                //     quickFilterProps: { debounceMs: 500 },  // 검색 지연 시간 500ms
+                //   },
+                // }}
+                slots={{
+                  toolbar: GridToolbar,       // 기본 툴바 사용
                 }}
-                componentsProps={{
+                slotProps={{
                   toolbar: {
-                    showQuickFilter: true,    // 빠른 검색 기능 활성화
-                    quickFilterProps: { debounceMs: 500 },  // 검색 지연 시간 500ms
+                    showQuickFilter: true,            // 빠른 검색 기능
+                    quickFilterProps: { debounceMs: 500 },  // 검색 지연 500ms
                   },
                 }}
                 
