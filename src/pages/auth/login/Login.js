@@ -59,7 +59,8 @@ class Login extends React.Component {
   signUp = () => this.props.history.push("/register");
 
   render() {
-    const { from } = this.props.location.state || { from: { pathname: "/app" } };
+    // const { from } = this.props.location.state || { from: { pathname: "/app" } };
+    const { from } = this.props.location.state || { from: { pathname: "/app/dashboard/analytics" } };
 
     if (Login.isAuthenticated(localStorage.getItem("token"))) {
       return <Redirect to={from} />;

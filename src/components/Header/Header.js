@@ -155,9 +155,24 @@ class Header extends React.Component {
   render() {
     const { focus } = this.state;
     const { navbarType, navbarColor, openUsersList } = this.props;
+    
+    // ✅ 기존
+    // const user = JSON.parse(localStorage.getItem("user") || {});
+    // const firstUserLetter = (user.name || user.email || "카리나")[0].toUpperCase();
 
-    const user = JSON.parse(localStorage.getItem("user") || {});
-    const firstUserLetter = (user.name || user.email || "카리나")[0].toUpperCase();
+    // ✅ 수정
+    const raw = localStorage.getItem("user");
+    let user = null;
+    try {
+      user = raw ? JSON.parse(raw) : null;
+    } catch {
+      user = null;
+    }
+    const displayName = (user?.name || user?.email || "User").trim();
+    const avatarLetter =
+      (user?.name?.charAt(0) || user?.email?.charAt(0) || "U").toUpperCase();
+
+
     console.log(user)
     return (
       <Navbar
@@ -220,23 +235,62 @@ class Header extends React.Component {
         aria-label="Account menu"
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="navbar-text">AJIN INDUSTRIAL CO.LTD</span>
-          <span calssName="navbar-text">{firstUserLetter}님</span>
-          <span className={`${s.avatar} rounded-circle thumb-sm`}>
+
+          {/* ✅ 기존 */}
+          {/* <span className="navbar-text">AJIN INDUSTRIAL CO.LTD</span> */}
+          {/* 오타: calssName */}
+          {/* <span calssName="navbar-text">{firstUserLetter}님</span> */}
+          {/* <span className={`${s.avatar} rounded-circle thumb-sm`}>
             {user?.avatar || user?.email === "admin@flatlogic.com" ? (
               <img src={user?.avatar || userAvatar} alt="User avatar" />
             ) : (
               <span>{(user?.email?.[0] || "?").toUpperCase()}</span>
             )}
+          </span> */}
+
+          {/* ✅ 수정 */}
+          <span className="navbar-text">AJIN INDUSTRIAL CO.LTD</span>
+          <span className="navbar-text">{displayName} 님</span>
+          <span className={`${s.avatar} rounded-circle thumb-sm`}>
+            {user?.avatar ? (
+              <img src={user.avatar} alt="User avatar" />
+            ) : (
+              <span>{avatarLetter}</span>
+            )}
           </span>
         </div>
       </DropdownToggle>
 
-      <DropdownMenu
+      {/* 기존 */}
+      {/* <DropdownMenu
         end
         className={`${s.notificationsWrapper} py-0 animated animated-fast fadeInUp`}
       >
         <Notifications notificationsTabSelected={4} />
+      </DropdownMenu> */}
+
+      {/* 수정: 사용자 정보/로그아웃을 직접 렌더링 */}
+      <DropdownMenu
+        end
+        className={`${s.notificationsWrapper} py-0 animated animated-fast fadeInUp`}
+      >
+        <div className="p-3">
+          <div className="mb-1 font-weight-bold">
+            {user?.name || (user?.email?.split('@')[0]) || 'User'}
+            {user?.role ? (
+              <span className="text-muted" style={{ marginLeft: 8 }}>
+                | {user.role}
+              </span>
+            ) : null}
+          </div>
+          <div className="text-warning">
+            {user?.email || ''}
+          </div>
+        </div>
+
+        {/* ▶ 원래 템플릿의 메뉴(아이콘 포함) */}
+        <Notifications notificationsTabSelected={4} hideHeader />
+        
       </DropdownMenu>
     </Dropdown>
   </Nav>
