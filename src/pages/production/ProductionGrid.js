@@ -129,6 +129,7 @@ class ProductionGrid extends Component {
       const requestBody = {
         ...this.state.filters
       }
+      console.log(requestBody)
       // fetch API를 사용하여 서버에 POST 요청 전송
       const response = await fetch('http://localhost:8000/smartFactory/production_grid/list', {
         method: 'POST',               // HTTP 메서드: POST
@@ -147,7 +148,7 @@ class ProductionGrid extends Component {
       const jsonResoponseData = await response.json();
       
       
-      // API 응답 데이터를 그리드 형식에 맞게 변환
+
       const formattedData = this.formatApiData(jsonResoponseData.data);
       
       // 변환된 데이터를 상태에 저장하고 로딩 상태를 false로 변경
@@ -174,6 +175,8 @@ class ProductionGrid extends Component {
     // API 응답 구조에 따라 적절히 변환
     // 만약 API 응답이 배열이 아니라면 적절히 처리
     if (Array.isArray(apiData)) {
+      console.log("00")
+      console.log(apiData)
       return apiData.map((item, index) => ({
         id: item.id || index + 1,  // 고유 ID가 없으면 인덱스 기반으로 생성
         // API 응답의 한국어 필드명을 그리드 필드명에 매핑
@@ -209,49 +212,6 @@ class ProductionGrid extends Component {
   };
 
   /**
-   * 필터링된 데이터를 계산하는 getter 메서드
-   * 현재 설정된 필터 조건에 맞는 데이터만 반환
-   * @returns {Array} 필터링된 데이터 배열
-   */
-  // ✅ 추천안: 날짜는 범위 비교, 나머지는 기존처럼 부분 일치
-  get filteredData() {
-    const { productionData, filters } = this.state;
-
-    // 날짜 필터 파싱 (없으면 null)
-    const start = filters.start_work_date ? new Date(filters.start_work_date) : null;
-    const end   = filters.end_work_date   ? new Date(filters.end_work_date)   : null;
-
-    return productionData.filter((row) => {
-      // 1) 날짜 범위 필터 (row의 날짜는 formatApiData에서 문자열로 들어옴)
-      const rowStart = row.start_work_date ? new Date(row.start_work_date) : null;
-      // end_work_date가 없으면 start_work_date로 대체(하루 작업 행 같은 케이스)
-      const rowEnd   = row.end_work_date   ? new Date(row.end_work_date)   : rowStart;
-
-      // 시작일 체크
-      if (start && rowStart && rowStart < start) return false;
-      // 종료일 체크(포함)
-      if (end && rowEnd && rowEnd > end) return false;
-
-      // 2) 나머지 필드 부분일치 (날짜 필드는 여기서 제외)
-      return Object.keys(filters).every((key) => {
-        const val = filters[key];
-        if (!val) return true; // 비어있으면 통과
-
-        // 날짜/일시 필드는 위에서 처리했으니 제외
-        if (key === 'start_work_date' || key === 'end_work_date' || key === 'createDate') {
-          return true;
-        }
-
-        const cell = row[key];
-        if (cell === undefined || cell === null) return false;
-
-        return String(cell).toLowerCase().includes(String(val).toLowerCase());
-      });
-    });
-  }
-
-
-  /**
    * 모든 필터 조건을 초기화하는 메서드
    * 필터 초기화 버튼 클릭 시 호출됨
    */
@@ -278,7 +238,9 @@ class ProductionGrid extends Component {
         componentDeliveryCount: '',
         constructor: '',
         createDate: ''
-      }
+      },
+      // 필터 초기화 시에도 테이블 데이터를 초기화
+      productionData: []
     });
   };
 
@@ -292,8 +254,18 @@ class ProductionGrid extends Component {
       filters: {
         ...prevState.filters,  // 기존 필터 상태를 유지
         [field]: value         // 특정 필드만 새로운 값으로 업데이트
-      }
+      },
+      // 필터 값이 변경되면 테이블 데이터를 초기화
+      productionData: []
     }));
+  };
+
+  /**
+   * 검색 버튼 클릭 시 호출되는 메서드
+   * 현재 설정된 필터 조건으로 서버에서 새로운 데이터를 가져옴
+   */
+  handleSearch = () => {
+    this.fetchProductionData();
   };
 
   /**
@@ -904,6 +876,7 @@ class ProductionGrid extends Component {
                     backgroundColor: '#f57c00'
                   }
                 }}
+                onClick={this.handleSearch} // 클릭 시 검색 메서드 호출
               >
                 검색
               </Button>
@@ -954,7 +927,7 @@ class ProductionGrid extends Component {
             {/* 데이터 그리드 - 로딩과 에러가 없을 때 표시 */}
             {!loading && !error && (
               <DataGrid
-                rows={this.filteredData}     // 필터링된 데이터를 행으로 사용
+                rows={this.state.productionData}     // 직접 productionData 사용
                 columns={this.columns}        // 위에서 정의한 컬럼 설정 사용
                 pagination                    // 페이지네이션 기능 활성화
                 paginationMode="client"       // 클라이언트 사이드 페이지네이션
