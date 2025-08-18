@@ -19,7 +19,7 @@ import {
   TrendingUp as TrendingUpIcon
 } from '@mui/icons-material';
 import s from './ProductionChart.module.scss';
-import config from '../dashboard/config';
+import config from '../../config';
 
 const colors = config.app.colors;
 const {inverse, info, primary, danger, warning, success} = colors;
