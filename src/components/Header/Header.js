@@ -28,11 +28,6 @@ import {
 } from "../../actions/navigation";
 
 import userAvatar from "../../images/userAvatar.jpg";
-import search from "../../images/search.svg";
-import notify from "../../images/notify.svg";
-import lightNotify from "../../images/light-notify.svg";
-import messages from "../../images/messages.svg";
-import lightMessages from "../../images/messages-filled.svg";
 import arrowActive from '../../images/Arrow 6.svg'
 import arrowUnactive from '../../images/Arrow 5.svg'
 
@@ -158,7 +153,6 @@ class Header extends React.Component {
 
     const user = JSON.parse(localStorage.getItem("user") || {});
     const firstUserLetter = (user.name || user.email || "카리나")[0].toUpperCase();
-    console.log(user)
     return (
       <Navbar
   className={`${s.root} ${cx({[s.rootLight]: navbarColor === '#FFFFFF'})} d-print-none ${

@@ -1,11 +1,11 @@
 {
-  "short_name": "Sing App 5.0.0 - Isomorphic React Dashboard",
-  "name": "Create React App Sample",
+  "short_name": "아진산업",
+  "name": "아진산업 - 생산 관리 시스템",
   "icons": [
     {
-      "src": "/favicon.png",
+      "src": "/AJIN-logo.gif",
       "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "type": "image/gif"
     }
   ],
   "start_url": ".",
