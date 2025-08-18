@@ -143,6 +143,103 @@
   opacity: 0.8;
 }
 
+// 파이차트 섹션
+.pieChartSection {
+  padding: 30px;
+  background: white;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.pieChartSection h3 {
+  margin: 0 0 25px 0;
+  color: #333;
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+.pieChartRow {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.pieChartItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 200px;
+  text-align: center;
+}
+
+.pieChartLabel {
+  margin-top: 15px;
+}
+
+.pieChartTitle {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.pieChartValue {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+}
+
+// 막대 그래프 섹션
+.barChartSection {
+  padding: 30px;
+  background: white;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.barChartSection h3 {
+  margin: 0 0 25px 0;
+  color: #333;
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+.productSelector {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.productSelector label {
+  font-size: 1rem;
+  color: #333;
+  font-weight: 500;
+}
+
+.productSelect {
+  padding: 8px 15px;
+  border: 2px solid #FF9800;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: white;
+  color: #333;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.productSelect:focus {
+  border-color: #FF5722;
+  box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.1);
+}
+
+.barChartContainer {
+  height: 400px;
+  margin-top: 20px;
+}
+
 // 반응형 디자인
 @media (max-width: 768px) {
   .container h1 {
@@ -163,5 +260,32 @@
   .chartBar {
     width: 30px;
     height: 100px;
+  }
+
+  .pieChartSection {
+    padding: 20px;
+  }
+
+  .pieChartRow {
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  .pieChartItem {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .barChartSection {
+    padding: 20px;
+  }
+
+  .productSelector {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .barChartContainer {
+    height: 300px;
   }
 }
