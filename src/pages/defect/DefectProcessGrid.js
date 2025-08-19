@@ -1,88 +1,3 @@
-// import React from 'react';
-// import s from './DefectProcessGrid.module.scss';
-
-// const DefectProcessGrid = () => {
-//   // 불량공정 그리드용 더미 데이터
-//   const defectGridData = [
-//     { id: 1, product: '제품A', line: '라인1', defectType: '크랙', quantity: 5, status: '처리완료', date: '2024-01-15', worker: '김철수' },
-//     { id: 2, product: '제품B', line: '라인2', defectType: '불량도장', quantity: 3, status: '처리중', date: '2024-01-15', worker: '이영희' },
-//     { id: 3, product: '제품C', line: '라인1', defectType: '치수불량', quantity: 8, status: '대기', date: '2024-01-15', worker: '박민수' },
-//     { id: 4, product: '제품A', line: '라인3', defectType: '표면결함', quantity: 2, status: '처리완료', date: '2024-01-15', worker: '최지영' },
-//     { id: 5, product: '제품B', line: '라인2', defectType: '조립불량', quantity: 6, status: '처리중', date: '2024-01-15', worker: '정현우' }
-//   ];
-
-//   return (
-//     <div className={s.root}>
-//       <div className={s.container}>
-//         <h1>불량공정 그리드</h1>
-//         <div className={s.gridSection}>
-//           <div className={s.gridHeader}>
-//             <h3>불량공정 현황 상세</h3>
-//             <div className={s.gridControls}>
-//               <input
-//                 type="text"
-//                 placeholder="제품명 검색..."
-//                 className={s.searchInput}
-//               />
-//               <select className={s.filterSelect}>
-//                 <option value="">전체 상태</option>
-//                 <option value="처리완료">처리완료</option>
-//                 <option value="처리중">처리중</option>
-//                 <option value="대기">대기</option>
-//               </select>
-//             </div>
-//           </div>
-//           <div className={s.gridTable}>
-//             <table>
-//               <thead>
-//                 <tr>
-//                   <th>ID</th>
-//                   <th>제품명</th>
-//                   <th>라인</th>
-//                   <th>불량유형</th>
-//                   <th>수량</th>
-//                   <th>상태</th>
-//                   <th>날짜</th>
-//                   <th>담당자</th>
-//                   <th>작업</th>
-//                 </tr>
-//               </thead>
-//               <tbody>
-//                 {defectGridData.map((row) => (
-//                   <tr key={row.id}>
-//                     <td>{row.id}</td>
-//                     <td>{row.product}</td>
-//                     <td>{row.line}</td>
-//                     <td>{row.defectType}</td>
-//                     <td>{row.quantity}</td>
-//                     <td>
-//                       <span className={`${s.status} ${s[row.status]}`}>
-//                         {row.status}
-//                       </span>
-//                     </td>
-//                     <td>{row.date}</td>
-//                     <td>{row.worker}</td>
-//                     <td>
-//                       <button className={s.actionBtn}>상세</button>
-//                     </td>
-//                   </tr>
-//                 ))}
-//               </tbody>
-//             </table>
-//           </div>
-//           <div className={s.gridPagination}>
-//             <button className={s.paginationBtn}>이전</button>
-//             <span className={s.paginationInfo}>1-5 / 25</span>
-//             <button className={s.paginationBtn}>다음</button>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default DefectProcessGrid;
-
 import config from '../../config';
 import React, { Component } from 'react';
 import {
@@ -98,6 +13,8 @@ import {
   BugReport as BugIcon
 } from '@mui/icons-material';
 import s from './DefectProcessGrid.module.scss';
+
+const mainColor = '#ff7043';
 
 class DefectProcessGrid extends Component {
   constructor(props) {
@@ -249,18 +166,21 @@ class DefectProcessGrid extends Component {
     const { filters, filterExpanded, rows, loading, error } = this.state;
 
     return (
-      <Box className={s.root} sx={{ height: '100vh', p: 3, display: 'flex', flexDirection: 'column', backgroundColor: '#f5f5f5' }}>
-        {/* 헤더 */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h4" gutterBottom sx={{ color: '#ff7043', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
-            <BugIcon /> 불량공정 데이터 그리드
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            불량 수량과 유형을 상세 조회합니다.
-          </Typography>
+      <Box className={s.root}>
+        {/* Top bar (차트 화면과 톤 통일) */}
+        <Box className={s.topbar}>
+          <Box className={s.titleWrap}>
+            <Typography variant="caption" className={s.breadcrumb}>프레스</Typography>
+            <Typography variant="h5" className={s.pageTitle}>
+              <Box component="span" sx={{ fontWeight: 900 }}>불량공정 데이터 그리드</Box>
+            </Typography>
+            <Typography variant="body2" className={s.pageDesc}>
+              불량 수량과 유형을 상세 조회합니다.
+            </Typography>
+          </Box>
         </Box>
 
-        {/* 필터 */}
+        {/* 필터 섹션 */}
         <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
           <CardHeader
             title={
@@ -273,7 +193,7 @@ class DefectProcessGrid extends Component {
                 {filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
               </IconButton>
             }
-            sx={{ backgroundColor: '#ff7043', color: 'white', borderRadius: 1, mb: 2 }}
+            sx={{ backgroundColor: mainColor, color: 'white', borderRadius: 1, mb: 2 }}
           />
 
           <Grid container spacing={2}>
@@ -359,7 +279,7 @@ class DefectProcessGrid extends Component {
               </Button>
               <Button
                 variant="contained" startIcon={<SearchIcon />} size="large"
-                sx={{ backgroundColor: '#ff7043', '&:hover': { backgroundColor: '#f06292' } }}
+                sx={{ backgroundColor: mainColor, '&:hover': { backgroundColor: '#f06292' } }}
                 onClick={this.fetchData}
               >
                 검색
@@ -368,12 +288,12 @@ class DefectProcessGrid extends Component {
           </Grid>
         </Paper>
 
-        {/* 그리드 */}
+        {/* 데이터 그리드 */}
         <Paper elevation={3} sx={{ flex: 1, display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
           <Box sx={{ height: '100%', width: '100%' }}>
             {loading && (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
-                <CircularProgress size={60} sx={{ color: '#ff7043' }} />
+                <CircularProgress size={60} sx={{ color: mainColor }} />
               </Box>
             )}
 
@@ -381,7 +301,7 @@ class DefectProcessGrid extends Component {
               <Box sx={{ p: 3 }}>
                 <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
                 <Button variant="contained" onClick={this.refreshData}
-                  sx={{ backgroundColor: '#ff7043', '&:hover': { backgroundColor: '#f06292' } }}>
+                  sx={{ backgroundColor: mainColor, '&:hover': { backgroundColor: '#f06292' } }}>
                   다시 시도
                 </Button>
               </Box>
@@ -389,7 +309,7 @@ class DefectProcessGrid extends Component {
 
             {!loading && !error && (
               <DataGrid
-                rows={this.state.rows}
+                rows={rows}
                 columns={this.columns}
                 pagination
                 paginationMode="client"
@@ -400,8 +320,13 @@ class DefectProcessGrid extends Component {
                 slots={{ toolbar: GridToolbar }}
                 slotProps={{ toolbar: { showQuickFilter: true, quickFilterProps: { debounceMs: 500 } } }}
                 sx={{
-                  '& .super-app-theme--header': { backgroundColor: '#ff7043', color: 'white', fontWeight: 'bold' },
+                  '& .super-app-theme--header': {
+                    backgroundColor: mainColor,
+                    color: '#fff',
+                    fontWeight: 800,
+                  },
                   '& .super-app-theme--cell': { borderBottom: '1px solid #e0e0e0' },
+                  '& .MuiDataGrid-row:hover': { backgroundColor: '#fff8f4' },
                   '& .MuiDataGrid-virtualScroller': { backgroundColor: '#fafafa' },
                   '& .MuiDataGrid-footerContainer': { borderTop: '2px solid #e0e0e0', backgroundColor: '#f5f5f5' },
                   '& .MuiDataGrid-toolbarContainer': { backgroundColor: '#f8f9fa', borderBottom: '1px solid #e0e0e0', p: '8px 16px' },

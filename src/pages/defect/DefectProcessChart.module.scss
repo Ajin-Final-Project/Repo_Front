@@ -1,152 +1,153 @@
 .root {
-  padding: 20px;
-  background-color: #f5f5f5;
+  background: #f5f7fb;
   min-height: 100vh;
+  padding: 24px;
 }
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-.container h1 {
-  background: linear-gradient(135deg, #FF9800, #FF5722);
-  color: white;
-  margin: 0;
-  padding: 20px;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.chartSection {
-  padding: 30px;
-}
-
-.chartContainer {
-  margin-bottom: 30px;
-}
-
-.chartContainer h3 {
-  color: #333;
-  margin-bottom: 20px;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.chartGrid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.chartItem {
-  text-align: center;
-}
-
-.chartBar {
-  height: 200px;
-  background-color: #f0f0f0;
-  border-radius: 8px;
-  position: relative;
-  margin-bottom: 10px;
+/* Top Bar */
+.topbar {
   display: flex;
   align-items: flex-end;
-  overflow: hidden;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
 
-.barFill {
-  width: 100%;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  min-height: 20px;
-}
-
-.chartLabel {
+.titleWrap {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  font-size: 12px;
-  color: #666;
+  gap: 6px;
 }
 
-.defectRate {
+.breadcrumb {
+  background: #fff3e0;
+  color: #ff7043;
+  padding: 4px 10px;
+  border-radius: 12px;
+  width: fit-content;
   font-weight: 600;
-  color: #FF9800;
+  letter-spacing: 0.2px;
 }
 
-.chartLegend {
+.pageTitle {
+  color: #2f3640;
+  font-weight: 900;
+}
+
+.pageDesc {
+  color: #6b7076;
+}
+
+.tools {
   display: flex;
-  justify-content: center;
-  gap: 20px;
-  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
 }
 
-.legendItem {
+/* KPI */
+.kpiCard {
+  border: 1px solid #eceff1;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: transform .15s ease;
+  height: 100%;
+  display: flex;
+}
+.kpiCard:hover { transform: translateY(-2px); }
+
+.kpiBody {
+  padding: 16px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  flex: 1;
+}
+
+.kpiTitle { font-size: 12px; font-weight: 800; opacity: 0.9; }
+.kpiValue { font-size: 22px; font-weight: 900; margin-top: 4px; }
+
+.kpiFoot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}
+.kpiSub { font-size: 12px; color: #8694a5; }
+
+.deltaUp, .deltaDown {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.deltaUp   { color: #2e7d32; background: #e8f5e9; }
+.deltaDown { color: #c62828; background: #ffebee; }
+
+/* Sections */
+.section {
+  background: #fff;
+  border: 1px solid #eceff1;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.03);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.sectionTitle {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
-  color: #666;
+  font-weight: 900;
+  letter-spacing: .2px;
 }
 
-.legendColor {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
+/* 차트 영역이 남은 세로 공간을 채우도록 */
+.sectionBody,
+.chartFill {
+  flex: 1;
+  min-height: 280px;
 }
 
-.summaryCards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+/* Donut legend */
+.legendRow {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 8px;
+  color: #677483;
+  font-size: 13px;
 }
 
-.summaryCard {
-  background: linear-gradient(135deg, #FF9800, #FF5722);
-  color: white;
-  padding: 20px;
-  border-radius: 8px;
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.summaryCard h4 {
-  margin: 0 0 10px 0;
-  font-size: 14px;
-  font-weight: 500;
-  opacity: 0.9;
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
 }
 
-.summaryValue {
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 5px;
-}
-
-.summaryUnit {
-  font-size: 12px;
-  opacity: 0.8;
-}
-
-@media (max-width: 768px) {
-  .chartGrid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-  }
-  
-  .summaryCards {
-    grid-template-columns: 1fr;
-    gap: 15px;
-  }
-  
-  .chartLegend {
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
+/* Responsive */
+@media (max-width: 960px) {
+  .tools {
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 }
