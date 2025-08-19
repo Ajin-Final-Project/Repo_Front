@@ -1,7 +1,215 @@
+// .root {
+//   padding: 20px;
+//   background-color: #f5f5f5;
+//   min-height: 100vh;
+// }
+
+// .container {
+//   max-width: 1200px;
+//   margin: 0 auto;
+//   background: white;
+//   border-radius: 8px;
+//   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+//   overflow: hidden;
+// }
+
+// .container h1 {
+//   background: linear-gradient(135deg, #FF9800, #FF5722);
+//   color: white;
+//   margin: 0;
+//   padding: 20px;
+//   font-size: 24px;
+//   font-weight: 600;
+// }
+
+// .gridSection {
+//   padding: 30px;
+// }
+
+// .gridHeader {
+//   display: flex;
+//   justify-content: space-between;
+//   align-items: center;
+//   margin-bottom: 20px;
+//   flex-wrap: wrap;
+//   gap: 15px;
+// }
+
+// .gridHeader h3 {
+//   color: #333;
+//   margin: 0;
+//   font-size: 18px;
+//   font-weight: 600;
+// }
+
+// .gridControls {
+//   display: flex;
+//   gap: 15px;
+//   align-items: center;
+// }
+
+// .searchInput {
+//   padding: 8px 12px;
+//   border: 1px solid #ddd;
+//   border-radius: 4px;
+//   font-size: 14px;
+//   min-width: 200px;
+// }
+
+// .searchInput:focus {
+//   outline: none;
+//   border-color: #F44336;
+//   box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.2);
+// }
+
+// .filterSelect {
+//   padding: 8px 12px;
+//   border: 1px solid #ddd;
+//   border-radius: 4px;
+//   font-size: 14px;
+//   background-color: white;
+//   min-width: 120px;
+// }
+
+// .filterSelect:focus {
+//   outline: none;
+//   border-color: #F44336;
+// }
+
+// .gridTable {
+//   overflow-x: auto;
+//   margin-bottom: 20px;
+// }
+
+// .gridTable table {
+//   width: 100%;
+//   border-collapse: collapse;
+//   background-color: white;
+// }
+
+// .gridTable th {
+//   background-color: #f8f9fa;
+//   padding: 12px 8px;
+//   text-align: left;
+//   font-weight: 600;
+//   color: #333;
+//   border-bottom: 2px solid #dee2e6;
+//   font-size: 14px;
+// }
+
+// .gridTable td {
+//   padding: 12px 8px;
+//   border-bottom: 1px solid #dee2e6;
+//   font-size: 14px;
+//   color: #555;
+// }
+
+// .gridTable tr:hover {
+//   background-color: #f8f9fa;
+// }
+
+// .status {
+//   padding: 4px 8px;
+//   border-radius: 12px;
+//   font-size: 12px;
+//   font-weight: 500;
+//   text-align: center;
+//   display: inline-block;
+//   min-width: 60px;
+// }
+
+// .status.처리완료 {
+//   background-color: #d4edda;
+//   color: #155724;
+// }
+
+// .status.처리중 {
+//   background-color: #fff3cd;
+//   color: #856404;
+// }
+
+// .status.대기 {
+//   background-color: #f8d7da;
+//   color: #721c24;
+// }
+
+// .actionBtn {
+//   background-color: #FF9800;
+//   color: white;
+//   border: none;
+//   padding: 6px 12px;
+//   border-radius: 4px;
+//   cursor: pointer;
+//   font-size: 12px;
+//   transition: background-color 0.2s;
+// }
+
+// .actionBtn:hover {
+//   background-color: #F57C00;
+// }
+
+// .gridPagination {
+//   display: flex;
+//   justify-content: center;
+//   align-items: center;
+//   gap: 15px;
+// }
+
+// .paginationBtn {
+//   background-color: #FF9800;
+//   color: white;
+//   border: none;
+//   padding: 8px 16px;
+//   border-radius: 4px;
+//   cursor: pointer;
+//   font-size: 14px;
+//   transition: background-color 0.2s;
+// }
+
+// .paginationBtn:hover {
+//   background-color: #F57C00;
+// }
+
+// .paginationBtn:disabled {
+//   background-color: #ccc;
+//   cursor: not-allowed;
+// }
+
+// .paginationInfo {
+//   color: #666;
+//   font-size: 14px;
+// }
+
+// @media (max-width: 768px) {
+//   .gridHeader {
+//     flex-direction: column;
+//     align-items: stretch;
+//   }
+  
+//   .gridControls {
+//     flex-direction: column;
+//     gap: 10px;
+//   }
+  
+//   .searchInput,
+//   .filterSelect {
+//     min-width: auto;
+//     width: 100%;
+//   }
+  
+//   .gridTable {
+//     font-size: 12px;
+//   }
+  
+//   .gridTable th,
+//   .gridTable td {
+//     padding: 8px 4px;
+//     font-size: 12px;
+//   }
+// }
+
 .root {
-  padding: 20px;
-  background-color: #f5f5f5;
-  min-height: 100vh;
+  padding: 30px;
 }
 
 .container {
@@ -14,15 +222,18 @@
 }
 
 .container h1 {
-  background: linear-gradient(135deg, #FF9800, #FF5722);
+  background: linear-gradient(135deg, #ff7043 0%, #ff8a65 100%);
   color: white;
   margin: 0;
-  padding: 20px;
-  font-size: 24px;
+  padding: 30px;
+  text-align: center;
+  font-size: 2.5rem;
   font-weight: 600;
 }
 
+/* 그리드 섹션 */
 .gridSection {
+  background: white;
   padding: 30px;
 }
 
@@ -30,180 +241,77 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  gap: 15px;
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e9ecef;
 }
 
 .gridHeader h3 {
-  color: #333;
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
+  color: #333;
+  font-size: 1.3rem;
 }
 
 .gridControls {
   display: flex;
   gap: 15px;
-  align-items: center;
-}
-
-.searchInput {
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  min-width: 200px;
-}
-
-.searchInput:focus {
-  outline: none;
-  border-color: #F44336;
-  box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.2);
-}
-
-.filterSelect {
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  background-color: white;
-  min-width: 120px;
-}
-
-.filterSelect:focus {
-  outline: none;
-  border-color: #F44336;
 }
 
 .gridTable {
   overflow-x: auto;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
   margin-bottom: 20px;
 }
 
 .gridTable table {
   width: 100%;
   border-collapse: collapse;
-  background-color: white;
+  background: white;
+}
+
+.gridTable th,
+.gridTable td {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px solid #e9ecef;
 }
 
 .gridTable th {
-  background-color: #f8f9fa;
-  padding: 12px 8px;
-  text-align: left;
+  background: #f8f9fa;
   font-weight: 600;
-  color: #333;
-  border-bottom: 2px solid #dee2e6;
-  font-size: 14px;
+  color: #495057;
+  font-size: 0.9rem;
 }
 
 .gridTable td {
-  padding: 12px 8px;
-  border-bottom: 1px solid #dee2e6;
-  font-size: 14px;
-  color: #555;
+  color: #333;
+  font-size: 0.9rem;
 }
 
-.gridTable tr:hover {
-  background-color: #f8f9fa;
+.gridTable tbody tr:hover {
+  background: #f8f9fa;
 }
 
-.status {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-  text-align: center;
-  display: inline-block;
-  min-width: 60px;
-}
-
-.status.처리완료 {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.status.처리중 {
-  background-color: #fff3cd;
-  color: #856404;
-}
-
-.status.대기 {
-  background-color: #f8d7da;
-  color: #721c24;
-}
-
-.actionBtn {
-  background-color: #FF9800;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.2s;
-}
-
-.actionBtn:hover {
-  background-color: #F57C00;
-}
-
-.gridPagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 15px;
-}
-
-.paginationBtn {
-  background-color: #FF9800;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
-}
-
-.paginationBtn:hover {
-  background-color: #F57C00;
-}
-
-.paginationBtn:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-.paginationInfo {
-  color: #666;
-  font-size: 14px;
-}
-
+/* 반응형 */
 @media (max-width: 768px) {
+  .container h1 {
+    font-size: 2rem;
+    padding: 20px;
+  }
+  .gridSection {
+    padding: 20px;
+  }
   .gridHeader {
     flex-direction: column;
+    gap: 15px;
     align-items: stretch;
   }
-  
-  .gridControls {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .searchInput,
-  .filterSelect {
-    min-width: auto;
-    width: 100%;
-  }
-  
   .gridTable {
-    font-size: 12px;
+    font-size: 0.85rem;
   }
-  
   .gridTable th,
   .gridTable td {
-    padding: 8px 4px;
-    font-size: 12px;
+    padding: 10px 8px;
   }
 }
