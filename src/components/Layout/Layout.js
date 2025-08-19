@@ -38,7 +38,7 @@ import DefectProcessGrid from "../../pages/defect/DefectProcessGrid";
 import DowntimeChart from "../../pages/downtime/DowntimeChart";
 import DowntimeGrid from "../../pages/downtime/DowntimeGrid";
 import InspectionSystemChart from "../../pages/inspection/InspectionSystemChart";
-// import InspectionGrid from "../../pages/inspection/InspectionSystemData";
+import InspectionGrid from "../../pages/inspection/InspectionSystemData";
 import AdminUserGrid from "../../pages/admin/UserGrid";
 import MoldShotCountGrid from "../../pages/mold/MoldShotCountData"
 import MoldBreakDownGrid from "../../pages/mold/MoldBreakDownGrid"
@@ -267,7 +267,7 @@ class Layout extends React.Component {
                     <Route
                       path={"/app/inspection/data"}
                       exact
-                      // component={InspectionGrid}
+                      component={InspectionGrid}
                     />
                     {/* 관리자 시스템(사원 관리 데이터) */}
                     <Route

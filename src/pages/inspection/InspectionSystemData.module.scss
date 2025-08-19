@@ -1,7 +1,5 @@
 .root {
-  padding: 20px;
-  background-color: #f5f5f5;
-  min-height: 100vh;
+  padding: 30px;
 }
 
 .container {
@@ -14,191 +12,211 @@
 }
 
 .container h1 {
-  background: linear-gradient(135deg, #FF9800, #FF5722);
+  background: linear-gradient(135deg, #FF9800 0%, #FF5722 100%);
   color: white;
   margin: 0;
-  padding: 20px;
-  font-size: 24px;
+  padding: 30px;
+  text-align: center;
+  font-size: 2.5rem;
   font-weight: 600;
 }
 
-.dataSection {
+// 그리드 섹션
+.gridSection {
+  background: white;
   padding: 30px;
 }
 
-.dataHeader {
+.gridHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  gap: 15px;
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e9ecef;
 }
 
-.dataHeader h3 {
-  color: #333;
+.gridHeader h3 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
+  color: #333;
+  font-size: 1.3rem;
 }
 
-.dataControls {
+.gridControls {
   display: flex;
   gap: 15px;
-  align-items: center;
 }
 
 .searchInput {
-  padding: 8px 12px;
+  padding: 10px 15px;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  min-width: 200px;
-}
+  border-radius: 6px;
+  font-size: 0.9rem;
+  width: 200px;
 
-.searchInput:focus {
-  outline: none;
-  border-color: #9C27B0;
-  box-shadow: 0 0 0 2px rgba(156, 39, 176, 0.2);
+  &:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+  }
 }
 
 .filterSelect {
-  padding: 8px 12px;
+  padding: 10px 15px;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  background-color: white;
-  min-width: 120px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: white;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: #667eea;
+  }
 }
 
-.filterSelect:focus {
-  outline: none;
-  border-color: #9C27B0;
-}
-
-.dataTable {
+.gridTable {
   overflow-x: auto;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
   margin-bottom: 20px;
 }
 
-.dataTable table {
+.gridTable table {
   width: 100%;
   border-collapse: collapse;
-  background-color: white;
+  background: white;
 }
 
-.dataTable th {
-  background-color: #f8f9fa;
-  padding: 12px 8px;
+.gridTable th,
+.gridTable td {
+  padding: 15px;
   text-align: left;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.gridTable th {
+  background: #f8f9fa;
   font-weight: 600;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.gridTable td {
   color: #333;
-  border-bottom: 2px solid #dee2e6;
-  font-size: 14px;
+  font-size: 0.9rem;
 }
 
-.dataTable td {
-  padding: 12px 8px;
-  border-bottom: 1px solid #dee2e6;
-  font-size: 14px;
-  color: #555;
+.gridTable tbody tr:hover {
+  background: #f8f9fa;
 }
 
-.dataTable tr:hover {
-  background-color: #f8f9fa;
-}
-
-.result {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
+// 상태 스타일
+.status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
   font-weight: 500;
   text-align: center;
   display: inline-block;
   min-width: 60px;
-}
 
-.result.합격 {
-  background-color: #d4edda;
-  color: #155724;
-}
+  &.완료 {
+    background: #d4edda;
+    color: #155724;
+  }
 
-.result.불합격 {
-  background-color: #f8d7da;
-  color: #721c24;
+  &.진행중 {
+    background: #fff3cd;
+    color: #856404;
+  }
+
+  &.대기 {
+    background: #f8d7da;
+    color: #721c24;
+  }
 }
 
 .actionBtn {
-  background-color: #FF9800;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.2s;
-}
-
-.actionBtn:hover {
-  background-color: #F57C00;
-}
-
-.dataPagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 15px;
-}
-
-.paginationBtn {
-  background-color: #FF9800;
+  background: #FF9800;
   color: white;
   border: none;
   padding: 8px 16px;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
+  font-size: 0.8rem;
+  transition: background 0.3s ease;
+
+  &:hover {
+    background: #F57C00;
+  }
 }
 
-.paginationBtn:hover {
-  background-color: #F57C00;
+// 페이지네이션
+.gridPagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin-top: 20px;
 }
 
-.paginationBtn:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
+.paginationBtn {
+  background: #FF8A65;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.3s ease;
+
+  &:hover {
+    background: #5a6268;
+  }
+
+  &:disabled {
+    background: #dee2e6;
+    cursor: not-allowed;
+  }
 }
 
 .paginationInfo {
-  color: #666;
-  font-size: 14px;
+  color: #6c757d;
+  font-size: 0.9rem;
 }
 
+// 반응형 디자인
 @media (max-width: 768px) {
-  .dataHeader {
+  .container h1 {
+    font-size: 2rem;
+    padding: 20px;
+  }
+
+  .gridSection {
+    padding: 20px;
+  }
+
+  .gridHeader {
     flex-direction: column;
+    gap: 15px;
     align-items: stretch;
   }
-  
-  .dataControls {
+
+  .gridControls {
     flex-direction: column;
-    gap: 10px;
   }
-  
-  .searchInput,
-  .filterSelect {
-    min-width: auto;
+
+  .searchInput {
     width: 100%;
   }
-  
-  .dataTable {
-    font-size: 12px;
+
+  .gridTable {
+    font-size: 0.8rem;
   }
-  
-  .dataTable th,
-  .dataTable td {
-    padding: 8px 4px;
-    font-size: 12px;
+
+  .gridTable th,
+  .gridTable td {
+    padding: 10px 8px;
   }
 }
