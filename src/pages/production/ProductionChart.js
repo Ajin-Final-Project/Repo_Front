@@ -19,10 +19,14 @@ import {
   TrendingUp as TrendingUpIcon
 } from '@mui/icons-material';
 import s from './ProductionChart.module.scss';
-import config from '../dashboard/config';
+import config from '../../config';
 
-const colors = config.app.colors;
-const {inverse, info, primary, danger, warning, success} = colors;
+const t = config.app.themeColors;
+const primary = '#ffb300';       // 카드 라벨 등에서 쓰는 기본 포인트 색
+const info    = t.info;
+const success = t.success;
+const warning = t.warning;
+const danger  = t.danger;
 
 class ProductionChart extends Component {
   constructor(props) {

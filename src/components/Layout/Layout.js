@@ -35,8 +35,8 @@ import MoldCleaningChart from "../../pages/mold/MoldCleaningChart";
 import MoldCleaningData from "../../pages/mold/MoldCleaningData";
 import DefectProcessChart from "../../pages/defect/DefectProcessChart";
 import DefectProcessGrid from "../../pages/defect/DefectProcessGrid";
-import DowntimeStatisticsChart from "../../pages/downtime/DowntimeStatisticsChart";
-import DowntimeStatisticsData from "../../pages/downtime/DowntimeStatisticsData";
+import DowntimeChart from "../../pages/downtime/DowntimeChart";
+import DowntimeGrid from "../../pages/downtime/DowntimeGrid";
 import InspectionSystemChart from "../../pages/inspection/InspectionSystemChart";
 import InspectionSystemData from "../../pages/inspection/InspectionSystemData";
 
@@ -238,12 +238,12 @@ class Layout extends React.Component {
                     <Route
                       path={"/app/downtime/chart"}
                       exact
-                      component={DowntimeStatisticsChart}
+                      component={DowntimeChart}
                     />
                     <Route
                       path={"/app/downtime/data"}
                       exact
-                      component={DowntimeStatisticsData}
+                      component={DowntimeGrid}
                     />
                     {/* 초/중/종품 검사 시스템 */}
                     <Route
