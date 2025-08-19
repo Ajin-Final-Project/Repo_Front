@@ -21,13 +21,13 @@
   font-weight: 600;
 }
 
-// 데이터 섹션
-.dataSection {
+// 그리드 섹션
+.gridSection {
   background: white;
   padding: 30px;
 }
 
-.dataHeader {
+.gridHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -36,13 +36,13 @@
   border-bottom: 1px solid #e9ecef;
 }
 
-.dataHeader h3 {
+.gridHeader h3 {
   margin: 0;
   color: #333;
   font-size: 1.3rem;
 }
 
-.dataControls {
+.gridControls {
   display: flex;
   gap: 15px;
 }
@@ -56,8 +56,8 @@
 
   &:focus {
     outline: none;
-    border-color: #FF5722;
-    box-shadow: 0 0 0 2px rgba(255, 87, 34, 0.2);
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
   }
 }
 
@@ -71,43 +71,43 @@
 
   &:focus {
     outline: none;
-    border-color: #FF5722;
+    border-color: #667eea;
   }
 }
 
-.dataTable {
+.gridTable {
   overflow-x: auto;
   border: 1px solid #e9ecef;
   border-radius: 8px;
   margin-bottom: 20px;
 }
 
-.dataTable table {
+.gridTable table {
   width: 100%;
   border-collapse: collapse;
   background: white;
 }
 
-.dataTable th,
-.dataTable td {
+.gridTable th,
+.gridTable td {
   padding: 15px;
   text-align: left;
   border-bottom: 1px solid #e9ecef;
 }
 
-.dataTable th {
+.gridTable th {
   background: #f8f9fa;
   font-weight: 600;
   color: #495057;
   font-size: 0.9rem;
 }
 
-.dataTable td {
+.gridTable td {
   color: #333;
   font-size: 0.9rem;
 }
 
-.dataTable tbody tr:hover {
+.gridTable tbody tr:hover {
   background: #f8f9fa;
 }
 
@@ -153,7 +153,7 @@
 }
 
 // 페이지네이션
-.dataPagination {
+.gridPagination {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -162,7 +162,7 @@
 }
 
 .paginationBtn {
-  background: #6c757d;
+  background: #FF8A65;
   color: white;
   border: none;
   padding: 10px 20px;
@@ -193,17 +193,17 @@
     padding: 20px;
   }
 
-  .dataSection {
+  .gridSection {
     padding: 20px;
   }
 
-  .dataHeader {
+  .gridHeader {
     flex-direction: column;
     gap: 15px;
     align-items: stretch;
   }
 
-  .dataControls {
+  .gridControls {
     flex-direction: column;
   }
 
@@ -211,12 +211,12 @@
     width: 100%;
   }
 
-  .dataTable {
+  .gridTable {
     font-size: 0.8rem;
   }
 
-  .dataTable th,
-  .dataTable td {
+  .gridTable th,
+  .gridTable td {
     padding: 10px 8px;
   }
 }

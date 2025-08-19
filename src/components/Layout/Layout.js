@@ -199,11 +199,6 @@ class Layout extends React.Component {
                     />
                     {/* 금형세척 시스템 */}
                     <Route
-                      path={"/app/mold"}
-                      exact
-                      render={() => <Redirect to="/app/mold/chart" />}
-                    />
-                    <Route
                       path={"/app/mold/chart"}
                       exact
                       component={MoldCleaningChart}
