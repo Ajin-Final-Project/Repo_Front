@@ -39,6 +39,7 @@ import DowntimeChart from "../../pages/downtime/DowntimeChart";
 import DowntimeGrid from "../../pages/downtime/DowntimeGrid";
 import InspectionSystemChart from "../../pages/inspection/InspectionSystemChart";
 import InspectionSystemData from "../../pages/inspection/InspectionSystemData";
+import AdminUserGrid from "../../pages/admin/UserGrid";
 
 class Layout extends React.Component {
   static propTypes = {
@@ -260,6 +261,17 @@ class Layout extends React.Component {
                       path={"/app/inspection/data"}
                       exact
                       component={InspectionSystemData}
+                    />
+                    {/* 관리자 시스템(사원 관리 데이터) */}
+                    <Route
+                      path="/app/admin"
+                      exact
+                      render={() => <Redirect to="/app/admin/users" />}
+                    />
+                    <Route
+                      path="/app/admin/users"
+                      exact
+                      component={AdminUserGrid}
                     />
                     <Route path={"/app/profile"} component={Profile} />
                     <Route path={"/app/email"} component={Email} />

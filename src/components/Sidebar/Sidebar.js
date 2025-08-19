@@ -1085,7 +1085,7 @@ class Sidebar extends React.Component {
                     },
                     {
                       header: "사원 관리 데이터",
-                      link: "/admin/users",
+                      link: "/app/admin/users",
                     }
                   ]}
               >
