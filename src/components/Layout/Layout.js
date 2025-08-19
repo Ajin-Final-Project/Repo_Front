@@ -38,7 +38,7 @@ import DefectProcessGrid from "../../pages/defect/DefectProcessGrid";
 import DowntimeChart from "../../pages/downtime/DowntimeChart";
 import DowntimeGrid from "../../pages/downtime/DowntimeGrid";
 import InspectionSystemChart from "../../pages/inspection/InspectionSystemChart";
-import InspectionGrid from "../../pages/inspection/InspectionSystemData";
+// import InspectionGrid from "../../pages/inspection/InspectionSystemData";
 import MoldShotCountGrid from "../../pages/mold/MoldShotCountData"
 
 class Layout extends React.Component {
@@ -261,7 +261,7 @@ class Layout extends React.Component {
                     <Route
                       path={"/app/inspection/data"}
                       exact
-                      component={InspectionGrid}
+                      // component={InspectionGrid}
                     />
                     <Route path={"/app/profile"} component={Profile} />
                     <Route path={"/app/email"} component={Email} />
