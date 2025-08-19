@@ -957,13 +957,13 @@ class Sidebar extends React.Component {
                   this.props.dispatch(changeActiveSidebarItem(activeItem))
                 }
                 activeItem={this.props.activeItem}
-                header="금형세척시스템"
+                header="금형관리 시스템"
                 isHeader
                 link="/app/mold/chart"
                 index="mold"
                 childrenLinks={[
                     {
-                      header: "금형세척차트",
+                      header: "금형세척 차트",
                       link: "/app/mold/chart",
                     },
                     {
@@ -973,6 +973,10 @@ class Sidebar extends React.Component {
                     {
                       header: "금형타수 데이터",
                       link: "/app/mold/shotCountData"
+                    },
+                    {
+                      header: "금형고장 데이터",
+                      link: "/app/mold/moldBreakDown"
                     }
                   ]}
               >
@@ -988,7 +992,7 @@ class Sidebar extends React.Component {
                       this.props.dispatch(changeActiveSidebarItem(activeItem))
                   }
                   activeItem={this.props.activeItem}
-                  header="불량공정시스템"
+                  header="불량공정 시스템"
                   isHeader
                   link="/app/defect/chart"
                   index="defect"
@@ -1016,7 +1020,7 @@ class Sidebar extends React.Component {
                   this.props.dispatch(changeActiveSidebarItem(activeItem))
                 }
                 activeItem={this.props.activeItem}
-                header="비가동통계시스템"
+                header="비가동 통계 시스템"
                 isHeader
                 link="/app/downtime/chart"
                 index="downtime"

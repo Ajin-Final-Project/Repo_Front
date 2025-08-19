@@ -40,6 +40,7 @@ import DowntimeGrid from "../../pages/downtime/DowntimeGrid";
 import InspectionSystemChart from "../../pages/inspection/InspectionSystemChart";
 // import InspectionGrid from "../../pages/inspection/InspectionSystemData";
 import MoldShotCountGrid from "../../pages/mold/MoldShotCountData"
+import MoldBreakDownGrid from "../../pages/mold/MoldBreakDownGrid"
 
 class Layout extends React.Component {
   static propTypes = {
@@ -214,7 +215,11 @@ class Layout extends React.Component {
                       exact
                       component ={MoldShotCountGrid}
                     />
-                    
+                    <Route
+                      path = {"/app/mold/moldBreakDown"}
+                      exact
+                      component={MoldBreakDownGrid}
+                    />
                     {/* 불량공정 시스템 */}
                     <Route
                       path={"/app/defect"}
