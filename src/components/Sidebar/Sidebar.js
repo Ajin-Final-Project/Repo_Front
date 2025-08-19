@@ -970,6 +970,10 @@ class Sidebar extends React.Component {
                       header: "금형세척 데이터",
                       link: "/app/mold/data",
                     },
+                    {
+                      header: "금형타수 데이터",
+                      link: "/app/mold/shotCountData"
+                    }
                   ]}
               >
                 <img
