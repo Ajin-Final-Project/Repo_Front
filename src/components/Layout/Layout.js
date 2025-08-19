@@ -38,7 +38,10 @@ import DefectProcessGrid from "../../pages/defect/DefectProcessGrid";
 import DowntimeChart from "../../pages/downtime/DowntimeChart";
 import DowntimeGrid from "../../pages/downtime/DowntimeGrid";
 import InspectionSystemChart from "../../pages/inspection/InspectionSystemChart";
-import InspectionSystemData from "../../pages/inspection/InspectionSystemData";
+// import InspectionGrid from "../../pages/inspection/InspectionSystemData";
+import AdminUserGrid from "../../pages/admin/UserGrid";
+import MoldShotCountGrid from "../../pages/mold/MoldShotCountData"
+import MoldBreakDownGrid from "../../pages/mold/MoldBreakDownGrid"
 
 class Layout extends React.Component {
   static propTypes = {
@@ -197,7 +200,7 @@ class Layout extends React.Component {
                       exact
                       component={ProductionGrid}
                     />
-                    {/* 금형세척 시스템 */}
+                    {/* 금형관리 시스템 */}
                     <Route
                       path={"/app/mold/chart"}
                       exact
@@ -207,6 +210,16 @@ class Layout extends React.Component {
                       path={"/app/mold/data"}
                       exact
                       component={MoldCleaningData}
+                    />
+                    <Route
+                      path= {"/app/mold/shotCountData"}
+                      exact
+                      component ={MoldShotCountGrid}
+                    />
+                    <Route
+                      path = {"/app/mold/moldBreakDown"}
+                      exact
+                      component={MoldBreakDownGrid}
                     />
                     {/* 불량공정 시스템 */}
                     <Route
@@ -254,7 +267,18 @@ class Layout extends React.Component {
                     <Route
                       path={"/app/inspection/data"}
                       exact
-                      component={InspectionSystemData}
+                      // component={InspectionGrid}
+                    />
+                    {/* 관리자 시스템(사원 관리 데이터) */}
+                    <Route
+                      path="/app/admin"
+                      exact
+                      render={() => <Redirect to="/app/admin/users" />}
+                    />
+                    <Route
+                      path="/app/admin/users"
+                      exact
+                      component={AdminUserGrid}
                     />
                     <Route path={"/app/profile"} component={Profile} />
                     <Route path={"/app/email"} component={Email} />
