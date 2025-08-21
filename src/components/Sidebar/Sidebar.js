@@ -963,7 +963,7 @@ class Sidebar extends React.Component {
                 index="mold"
                 childrenLinks={[
                     {
-                      header: "금형세척 차트",
+                      header: "금형데이터 차트",
                       link: "/app/mold/chart",
                     },
                     {

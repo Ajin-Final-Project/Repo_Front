@@ -31,7 +31,7 @@ import ChangePasswordFormPage from "../Users/changePassword/ChangePasswordFormPa
 // 우리가 만든 페이지들
 import ProductionChart from "../../pages/production/ProductionChart";
 import ProductionGrid from "../../pages/production/ProductionGrid";
-import MoldCleaningChart from "../../pages/mold/MoldCleaningChart";
+import MoldChart from "../../pages/mold/MoldChart";
 import MoldCleaningData from "../../pages/mold/MoldCleaningData";
 import DefectProcessChart from "../../pages/defect/DefectProcessChart";
 import DefectProcessGrid from "../../pages/defect/DefectProcessGrid";
@@ -204,7 +204,7 @@ class Layout extends React.Component {
                     <Route
                       path={"/app/mold/chart"}
                       exact
-                      component={MoldCleaningChart}
+                      component={MoldChart}
                     />
                     <Route
                       path={"/app/mold/data"}
