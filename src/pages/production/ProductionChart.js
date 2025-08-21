@@ -1,4 +1,6 @@
 import React, { Component } from 'react';
+import { connect } from "react-redux";
+
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { 
   Box, 
@@ -22,12 +24,22 @@ import {
 import s from './ProductionChart.module.scss';
 import config from '../../config';
 
+import { selectThemeHex, selectThemeKey } from '../../reducers/layout'; // 리덕스에서 색상 상태 불러옴
+
 const t = config.app.themeColors;
 const primary = '#ffb300';       // 카드 라벨 등에서 쓰는 기본 포인트 색
 const info    = t.info;
 const success = t.success;
 const warning = t.warning;
 const danger  = t.danger;
+
+
+function mapStateToProps(state) {
+  return {
+    themeHex: selectThemeHex(state),
+    themeKey: selectThemeKey(state), 
+  };
+}
 
 class ProductionChart extends Component {
   constructor(props) {
@@ -286,16 +298,16 @@ class ProductionChart extends Component {
     this.setState({ endDate: event.target.value });
   }
 
-  renderPieCharts = () => {
+  renderPieCharts = (themeHex) => {
     const { pieChartData, selectedCapacity, startDate, endDate, loading } = this.state;
-    
+
     return (
       <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
         <Typography variant="h6" sx={{ 
           display: 'flex', 
           alignItems: 'center', 
           gap: 1,
-          color: '#ffb300',
+          color: themeHex,
           mb: 2
         }}>
           <PieChartIcon />
@@ -491,7 +503,7 @@ class ProductionChart extends Component {
     );
   }
 
-  renderBarChart = () => {
+  renderBarChart = (themeHex) => {
     const { selectedProduct, barChartData, itemList, startDate, endDate, summaryData } = this.state;
 
     return (
@@ -500,7 +512,7 @@ class ProductionChart extends Component {
           display: 'flex', 
           alignItems: 'center', 
           gap: 1,
-          color: '#ffb300',
+          color: themeHex,
           mb: 2
         }}>
           <BarChartIcon />
@@ -642,7 +654,7 @@ class ProductionChart extends Component {
                 />
                 <Bar 
                   dataKey="quantity" 
-                  fill={warning}
+                  fill={themeHex}
                   radius={[4, 4, 0, 0]}
                   name="양품수량"
                 />
@@ -757,6 +769,8 @@ class ProductionChart extends Component {
   }
 
   render() {
+    const { themeHex } = this.props; 
+
     return (
       <Box className={s.root} sx={{ 
         height: '100vh',
@@ -769,7 +783,7 @@ class ProductionChart extends Component {
         {/* 헤더 섹션 */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="h4" gutterBottom sx={{ 
-            color: '#ffb300',
+            color: themeHex,
             fontWeight: 'bold',
             display: 'flex',
             alignItems: 'center',
@@ -785,13 +799,13 @@ class ProductionChart extends Component {
         </Box>
 
         {/* 파이차트 섹션 */}
-        {this.renderPieCharts()}
+        {this.renderPieCharts(themeHex)}
 
         {/* 막대 그래프 섹션 */}
-        {this.renderBarChart()}
+        {this.renderBarChart(themeHex)}
       </Box>
     );
   }
 }
 
-export default ProductionChart;
+export default connect(mapStateToProps)(ProductionChart);

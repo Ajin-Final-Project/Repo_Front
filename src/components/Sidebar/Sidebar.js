@@ -860,11 +860,11 @@ class Sidebar extends React.Component {
       case "warning":
         return AJIN_logo_white_background;
       case "danger":
-        return logoDanger;
+        return AJIN_logo_white_background;
       case "success":
-        return logoSuccess;
+        return AJIN_logo_white_background;
       case "info":
-        return logoBlue;
+        return AJIN_logo_white_background;
       default:
         return;
     }

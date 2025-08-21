@@ -1,4 +1,6 @@
 import React, { Component } from "react";
+import { connect } from "react-redux";
+
 import {
   Box, Paper, Typography, Grid, Card, CardContent, TextField,
   FormControl, InputLabel, Select, MenuItem, Table, TableBody, TableCell,
@@ -19,6 +21,8 @@ import {
   PieChart as PieChartIcon,
   BarChart as BarChartIcon,
 } from "@mui/icons-material";
+import { selectThemeHex, selectThemeKey } from '../../reducers/layout'; // 리덕스에서 색상 상태 불러옴
+
 import s from "./DefectProcessChart.module.scss";
 import config from "../../config";
 
@@ -28,6 +32,13 @@ const mainColor = "#ff7043"; //#ffb300
 // 숫자/퍼센트 표기 헬퍼
 const fmtInt = (v) => (Number(v) || 0).toLocaleString();
 const fmtPct = (v, digits = 2) => `${(Number(v) || 0).toFixed(digits)}%`;
+
+function mapStateToProps(state) {
+  return {
+    themeHex: selectThemeHex(state),
+    themeKey: selectThemeKey(state), 
+  };
+}
 
 class DefectProcessChart extends Component {
   state = {
@@ -187,7 +198,7 @@ class DefectProcessChart extends Component {
 
   // ───────────────────────────── Renderers ─────────────────────────────
 
-  renderTopBar = () => {
+  renderTopBar = (themeHex) => {
     const { filters, loading } = this.state;
     return (
       <Box className={s.topbar}>
@@ -196,7 +207,7 @@ class DefectProcessChart extends Component {
             프레스
           </Typography>
           <Typography variant="h5" className={s.pageTitle}>
-            <Box component="span" sx={{ fontWeight: 900 }}>기간별 생산 및 불량률 현황 리포트</Box>
+            <Box component="span" sx={{ fontWeight: 900, color: themeHex}}>기간별 생산 및 불량률 현황 리포트</Box>
           </Typography>
           <Typography variant="body2" className={s.pageDesc} sx={{ fontWeight: 400 }}>
             생산 성과 및 품질 지표에 대한 상세 분석 리포트
@@ -298,7 +309,7 @@ class DefectProcessChart extends Component {
     );
   };
 
-  renderDonut = () => {
+  renderDonut = (themeHex) => {
     const { kpis } = this.state;
     const data = [
       { name: "판정대기", value: kpis.wait || 0, color: "#26c6da"},
@@ -310,7 +321,7 @@ class DefectProcessChart extends Component {
     return (
       <Paper className={s.section} sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <Box className={s.sectionHeader}>
-          <Typography className={s.sectionTitle} sx={{ color: mainColor, fontWeight: 800 }}>
+          <Typography className={s.sectionTitle} sx={{ color: themeHex, fontWeight: 800 }}>
             <PieChartIcon /> 주요 불량 구성
           </Typography>
         </Box>
@@ -349,7 +360,7 @@ class DefectProcessChart extends Component {
     );
   };
 
-  renderPareto = () => {
+  renderPareto = (themeHex) => {
     const { byType } = this.state;
     const total = byType.reduce((s, x) => s + (x.qty || 0), 0) || 1;
     let cum = 0;
@@ -362,7 +373,7 @@ class DefectProcessChart extends Component {
     return (
       <Paper className={s.section} sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <Box className={s.sectionHeader}>
-          <Typography className={s.sectionTitle} sx={{ color: mainColor, fontWeight: 800}}>
+          <Typography className={s.sectionTitle} sx={{ color: themeHex, fontWeight: 800}}>
             <BarChartIcon /> 불량유형 파레토
           </Typography>
         </Box>
@@ -402,7 +413,7 @@ class DefectProcessChart extends Component {
   };
 
   // ── 실시간 불량 모니터링(추이): ComposedChart + 최근 7일 하이라이트/목표선/정규화 막대 ──
-  renderTrend = () => {
+  renderTrend = (themeHex) => {
     const { trend, showDefectBars } = this.state;
     const ma = this.movingAvg(trend, "defectRate", 7);
     const data = ma.map(d => {
@@ -425,7 +436,7 @@ class DefectProcessChart extends Component {
     return (
       <Paper className={s.section}>
         <Box className={s.sectionHeader}>
-          <Typography className={s.sectionTitle} sx={{ color: mainColor, fontWeight: 800 }}>
+          <Typography className={s.sectionTitle} sx={{ color: themeHex, fontWeight: 800 }}>
             <BugIcon /> 실시간 불량 모니터링(추이)
           </Typography>
 
@@ -517,7 +528,7 @@ class DefectProcessChart extends Component {
   };
 
   // ── 최근 7일 표: sticky header + 증감 Chip ──
-  renderDailyTable = () => {
+  renderDailyTable = (themeHex) => {
     const { trend } = this.state;
     const last8 = trend.slice(-8); // 증감계산용 +1
     const withDelta = last8.map((r, i) => ({
@@ -538,7 +549,7 @@ class DefectProcessChart extends Component {
             "& .MuiTableCell-head": {
               position: "sticky",
               top: 0,
-              backgroundColor: mainColor,   // 헤더 배경색
+              backgroundColor: themeHex,   // 헤더 배경색
               color: "#333",              // 헤더 글자색
               zIndex: 1,
               fontWeight: 800,
@@ -584,21 +595,23 @@ class DefectProcessChart extends Component {
   };
 
   render() {
+    const { themeHex } = this.props;
+
     return (
       <Box className={s.root}>
-        {this.renderTopBar()}
+        {this.renderTopBar(themeHex)}
         {this.renderKpis()}
 
         <Grid container spacing={2} sx={{ mb: 2 }} alignItems="stretch">
-          <Grid item xs={12} md={5} sx={{ display: 'flex' }}>{this.renderDonut()}</Grid>
-          <Grid item xs={12} md={7} sx={{ display: 'flex' }}>{this.renderPareto()}</Grid>
+          <Grid item xs={12} md={5} sx={{ display: 'flex' }}>{this.renderDonut(themeHex)}</Grid>
+          <Grid item xs={12} md={7} sx={{ display: 'flex' }}>{this.renderPareto(themeHex)}</Grid>
         </Grid>
 
-        <Box sx={{ mb: 2 }}>{this.renderTrend()}</Box>
-        {this.renderDailyTable()}
+        <Box sx={{ mb: 2 }}>{this.renderTrend(themeHex)}</Box>
+        {this.renderDailyTable(themeHex)}
       </Box>
     );
   }
 }
 
-export default DefectProcessChart;
+export default connect(mapStateToProps)(DefectProcessChart);

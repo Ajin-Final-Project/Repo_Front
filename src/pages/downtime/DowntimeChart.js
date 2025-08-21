@@ -1,5 +1,7 @@
 // DowntimeChart.jsx
 import React, { Component } from 'react';
+import { connect } from "react-redux";
+
 import { BarChart } from '@mui/x-charts/BarChart';
 import { PieChart } from '@mui/x-charts/PieChart';
 import {
@@ -20,6 +22,16 @@ import TimelineIcon from '@mui/icons-material/Timeline';
 import BuildIcon from '@mui/icons-material/Build';
 
 import s from './DowntimeChart.module.scss';
+
+// 리덕스에서 색상 상태 불러옴
+import { selectThemeHex, selectThemeKey } from '../../reducers/layout';
+
+function mapStateToProps(state) {
+  return {
+    themeHex: selectThemeHex(state),
+    themeKey: selectThemeKey(state), 
+  };
+}
 
 class DowntimeChart extends Component {
   constructor(props) {
@@ -467,22 +479,24 @@ class DowntimeChart extends Component {
       topNotes, actionTop, causeTop, itemSearch
     } = this.state;
 
+    const { themeHex } = this.props; // HEX만 꺼내 씀
+
     return (
       <div className={s.root}>
         <div className={s.titleCon}>
-          <h1>비가동 데이터 차트</h1>
+          <h1 style={{ color: themeHex }}>비가동 데이터 차트</h1>
           <p className={s.contant}>비가동 현황을 차트로 한눈에 파악할 수 있습니다.</p>
         </div>
 
         {/* KPI + 공통 필터 */}
         <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#ffb300', mb: 2 }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: themeHex, mb: 2 }}>
             <PieChartIcon />
             비가동 현황 지표
           </Typography>
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                     mb: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+                      mb: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #e0e0e0' }}>
             {/* 프레스 */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Typography variant="body2" sx={{ fontWeight: 500, color: '#333', minWidth: '120px' }}>
@@ -551,7 +565,7 @@ class DowntimeChart extends Component {
 
         {/* 차트 + 자재번호 검색 */}
         <Paper sx={{ p: 3, mb: 3, borderRadius: '16px' }}>
-          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#ffb300', mb: 2 }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: themeHex, mb: 2 }}>
             <BarChartIcon />
             자재별 월간 비가동
           </Typography>
@@ -666,7 +680,7 @@ class DowntimeChart extends Component {
                 label: '비가동(분)',
                 data: chartSeries[0].data,
                 valueFormatter: (v) => `${this.fmtNumber(v)}분`,
-                color: '#ffb300',
+                color: themeHex,
               }]}
               barLabel={(item) => `${item.value?.toString()}분`}
               height={420}
@@ -756,7 +770,7 @@ class DowntimeChart extends Component {
                     series={[{ 
                       data: actionTop.map((d) => d.minutes), 
                       valueFormatter: (v) => `${this.fmtNumber(v)}분`,
-                      color: '#ffb300'
+                      color: themeHex
                     }]}
                     height={320}
                     margin={{ top: 16, right: 24, bottom: 64, left: 64 }}
@@ -781,7 +795,7 @@ class DowntimeChart extends Component {
                     series={[{ 
                       data: causeTop.map((d) => d.count), 
                       valueFormatter: (v) => `${this.fmtNumber(v)}건`,
-                      color: '#ffb300'
+                      color: themeHex
                     }]}
                     height={320}
                     margin={{ top: 16, right: 24, bottom: 64, left: 64 }}
@@ -804,4 +818,4 @@ class DowntimeChart extends Component {
   }
 }
 
-export default DowntimeChart;
+export default connect(mapStateToProps)(DowntimeChart);
