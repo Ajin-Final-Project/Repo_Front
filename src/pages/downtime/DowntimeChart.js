@@ -4,24 +4,33 @@ import { BarChart } from '@mui/x-charts/BarChart';
 import { PieChart } from '@mui/x-charts/PieChart';
 import {
   Box, Grid, TextField, MenuItem, Paper, Typography, Stack,
-  InputAdornment, IconButton, List, ListItem, ListItemText, Chip
+  InputAdornment, IconButton, List, ListItem, Chip
 } from '@mui/material';
+import Autocomplete from '@mui/material/Autocomplete';
 import { 
   Search as SearchIcon, 
   Clear as ClearIcon,
   PieChart as PieChartIcon,
   BarChart as BarChartIcon
 } from '@mui/icons-material';
+
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import BuildIcon from '@mui/icons-material/Build';
+
 import s from './DowntimeChart.module.scss';
 
 class DowntimeChart extends Component {
   constructor(props) {
     super(props);
 
-    const DEFAULT_END = '2025-06-30'; // 기본 종료일(요구)
+    const DEFAULT_END = '2025-06-30';
     const jan1 = new Date(new Date().getFullYear(), 0, 1).toLocaleDateString('sv-SE');
 
     this.DEFAULT_END = DEFAULT_END;
+    this.PIE_TOP_N = 5;
+    this.PIE_WITH_OTHERS = true;
 
     this.state = {
       loading: false,
@@ -30,21 +39,20 @@ class DowntimeChart extends Component {
       // 원본 데이터
       formattedData: [],
 
-      // KPI 필터(프레스+기간) — KPI에만 적용
-      kpiFilters: { start_work_date: jan1, end_work_date: DEFAULT_END, press: '' },
+      // 공통 필터(프레스+기간)
+      kpiFilters: { start_work_date: jan1, end_work_date: DEFAULT_END, press: '1500T' },
       kpiSummary: { total: 0, count: 0, avg: 0, topName: '-', topValue: 0 },
 
-      // 차트 필터(자재번호) — 차트/파이/비고 요약에만 적용
+      // 자재번호
       itemCodeOptions: [],
-      chartItemCode: '76121-G9000-F1', // 기본 자재번호(요구)
+      chartItemCode: '76121-G9000-F1',
+      itemSearch: '76121-G9000-F1', // 🔍 검색창의 실제 표시값(유저 입력)
+
+      // 시각화 데이터
       chartMonths: [],
       chartSeries: [{ label: '비가동(분)', data: [] }],
       pieData: [],
-
-      // 파이 옆 Top 비고(정규화)
-      topNotes: [], // [{text, count, minutes}]
-
-      // (옵션) 추가 요약용
+      topNotes: [],
       actionTop: [],
       causeTop: [],
     };
@@ -78,14 +86,12 @@ class DowntimeChart extends Component {
   fetchAllData = async () => {
     this.setState({ loading: true, error: null });
     try {
-      // 1차: POST 시도
       let res = await fetch('http://localhost:8000/smartFactory/downtime_grid/list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}), // 서버 필터 미적용: KPI/차트 각자 로컬필터
+        body: JSON.stringify({}),
       });
 
-      // 405 등 실패 시 GET 폴백
       if (!res.ok) {
         if (res.status === 405) {
           res = await fetch('http://localhost:8000/smartFactory/downtime_grid/list');
@@ -97,29 +103,38 @@ class DowntimeChart extends Component {
       const arr = (Array.isArray(json) && json) || json?.data || json?.result || [];
       const formatted = this.formatApiData(arr);
 
-      // 자재번호 옵션
       const itemCodes = [...new Set(formatted.map(r => (r.itemCode || '').trim()).filter(Boolean))]
         .sort((a, b) => a.localeCompare(b, 'ko'));
 
-      // 기본 자재 존재 여부 확인
       const preferred = '76121-G9000-F1';
       const defaultCode = itemCodes.includes(preferred) ? preferred : (itemCodes[0] || '');
 
-      // KPI 초기 요약
-      const kpiSummary = this.computeKPISummary(this.applyKpiFilters(formatted, this.state.kpiFilters));
+      const kpiSummary = this.computeKPISummary(
+        this.applyKpiFilters(formatted, this.state.kpiFilters)
+      );
 
-      // 차트/파이/비고 요약 초기화
-      const { months, data } = this.aggregateMonthlyByItem(formatted, defaultCode);
-      const pieData = this.aggregateDowntimeNamePie(formatted, defaultCode);
-      const topNotes = this.summarizeTopNotes(formatted, defaultCode);
-      const actionTop = this.summarizeActions(formatted, defaultCode, 8);
-      const causeTop = this.summarizeCauses(formatted, defaultCode, 8);
+      const { months, data } = this.aggregateMonthlyByItem(
+        formatted, defaultCode, this.state.kpiFilters
+      );
+      const pieData = this.aggregateDowntimeNamePie(
+        formatted, defaultCode, this.PIE_TOP_N, this.PIE_WITH_OTHERS, this.state.kpiFilters
+      );
+      const topNotes = this.summarizeTopNotes(
+        formatted, defaultCode, 10, this.state.kpiFilters
+      );
+      const actionTop = this.summarizeActions(
+        formatted, defaultCode, 8, this.state.kpiFilters
+      );
+      const causeTop = this.summarizeCauses(
+        formatted, defaultCode, 8, this.state.kpiFilters
+      );
 
       this.setState({
         loading: false,
         formattedData: formatted,
         itemCodeOptions: itemCodes,
         chartItemCode: defaultCode,
+        itemSearch: defaultCode, // 🔄 검색창도 동기화
         kpiSummary,
         chartMonths: months,
         chartSeries: [{ label: '비가동(분)', data }],
@@ -147,7 +162,7 @@ class DowntimeChart extends Component {
       note: item.note ?? item.비고 ?? '',
     }));
 
-  // ---------- KPI (프레스+기간만 적용) ----------
+  // ---------- 공통 필터(프레스+기간) ----------
   applyKpiFilters = (rows, f) => {
     const s = f.start_work_date ? this.parseDate(f.start_work_date) : null;
     const e = f.end_work_date ? this.parseDate(f.end_work_date) : null;
@@ -158,7 +173,9 @@ class DowntimeChart extends Component {
         if (s && r.workDate < s) return false;
         if (e && r.workDate > e) return false;
       }
-      if (f.press && !kw(r.workplace).includes(kw(f.press))) return false;
+      if (f.press && f.press.trim()) {
+        if (!kw(r.workplace).includes(kw(f.press))) return false;
+      }
       return true;
     });
   };
@@ -168,7 +185,6 @@ class DowntimeChart extends Component {
     const count = rows.length;
     const avg = count ? total / count : 0;
 
-    // 최다 비가동명(분 기준)
     const by = new Map();
     rows.forEach((r) => {
       const k = (r.downtimeName || '(없음)').trim();
@@ -183,7 +199,6 @@ class DowntimeChart extends Component {
     return { total, count, avg, topName, topValue };
   };
 
-  // 날짜 역전 자동 보정(시작 > 종료면 종료일을 시작일로 맞춤)
   ensureValidRange = (f) => {
     const s = this.parseDate(f.start_work_date);
     const e = this.parseDate(f.end_work_date);
@@ -193,53 +208,26 @@ class DowntimeChart extends Component {
     return f;
   };
 
-  // ★ 변경 포인트: 입력 즉시 KPI 재계산(적용 버튼 제거)
+  // KPI/차트 동시 갱신
   onKpiChange = (k) => (e) => {
     let next = { ...this.state.kpiFilters, [k]: e.target.value };
     next = this.ensureValidRange(next);
-    const filtered = this.applyKpiFilters(this.state.formattedData, next);
-    const kpiSummary = this.computeKPISummary(filtered);
-    this.setState({ kpiFilters: next, kpiSummary });
-  };
 
-  // ---------- 차트(자재 기준) ----------
-  aggregateMonthlyByItem = (rows, itemCode) => {
-    if (!itemCode) return { months: [], data: [] };
-    const m = new Map();
-    rows.forEach((r) => {
-      if ((r.itemCode || '').trim() !== itemCode) return;
-      const k = this.monthKey(r.workDate);
-      if (!k) return;
-      m.set(k, (m.get(k) || 0) + (r.downtimeMinutes || 0));
-    });
-    const months = [...m.keys()].sort(); // 데이터가 있는 월만
-    const data = months.map((k) => m.get(k));
-    return { months, data };
-  };
+    const base = this.applyKpiFilters(this.state.formattedData, next);
+    const kpiSummary = this.computeKPISummary(base);
 
-  aggregateDowntimeNamePie = (rows, itemCode) => {
-    if (!itemCode) return [];
-    const m = new Map();
-    rows.forEach((r) => {
-      if ((r.itemCode || '').trim() !== itemCode) return;
-      const k = (r.downtimeName || '(비가동명없음)').trim();
-      m.set(k, (m.get(k) || 0) + (r.downtimeMinutes || 0));
-    });
-    return [...m.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .map(([label, value], i) => ({ id: i, label, value }));
-  };
-
-  onItemChange = (e) => {
-    const code = e.target.value;
-    const { months, data } = this.aggregateMonthlyByItem(this.state.formattedData, code);
-    const pieData = this.aggregateDowntimeNamePie(this.state.formattedData, code);
-    const topNotes = this.summarizeTopNotes(this.state.formattedData, code);
-    const actionTop = this.summarizeActions(this.state.formattedData, code, 8);
-    const causeTop = this.summarizeCauses(this.state.formattedData, code, 8);
+    const code = this.state.chartItemCode;
+    const { months, data } = this.aggregateMonthlyByItem(this.state.formattedData, code, next);
+    const pieData = this.aggregateDowntimeNamePie(
+      this.state.formattedData, code, this.PIE_TOP_N, this.PIE_WITH_OTHERS, next
+    );
+    const topNotes = this.summarizeTopNotes(this.state.formattedData, code, 10, next);
+    const actionTop = this.summarizeActions(this.state.formattedData, code, 8, next);
+    const causeTop = this.summarizeCauses(this.state.formattedData, code, 8, next);
 
     this.setState({
-      chartItemCode: code,
+      kpiFilters: next,
+      kpiSummary,
       chartMonths: months,
       chartSeries: [{ label: '비가동(분)', data }],
       pieData,
@@ -249,28 +237,112 @@ class DowntimeChart extends Component {
     });
   };
 
-  // ---------- 파이 옆 Top 비고(정규화) ----------
+  // ---------- 자재 자동완성 ----------
+  // 입력어 기준 부분일치 정렬
+  rankItemOptions = (options, inputValue) => {
+    if (!inputValue) return options.slice(0, 20);
+    const q = inputValue.toLowerCase();
+    return options
+      .map(o => ({ o, idx: o.toLowerCase().indexOf(q) }))
+      .filter(x => x.idx >= 0)
+      .sort((a, b) => a.idx - b.idx || a.o.length - b.o.length)
+      .map(x => x.o)
+      .slice(0, 20);
+  };
+
+  // 선택/입력 확정 시 차트 갱신
+  commitItemCode = (code) => {
+    if (!code) return;
+    const { itemCodeOptions, kpiFilters } = this.state;
+    const lower = code.toLowerCase();
+    const exact = itemCodeOptions.find(c => c.toLowerCase() === lower);
+    const fallback = itemCodeOptions.find(c => c.toLowerCase().includes(lower));
+    const selected = exact || fallback;
+    if (!selected) return;
+
+    const { months, data } = this.aggregateMonthlyByItem(this.state.formattedData, selected, kpiFilters);
+    const pieData = this.aggregateDowntimeNamePie(this.state.formattedData, selected, this.PIE_TOP_N, this.PIE_WITH_OTHERS, kpiFilters);
+    const topNotes = this.summarizeTopNotes(this.state.formattedData, selected, 10, kpiFilters);
+    const actionTop = this.summarizeActions(this.state.formattedData, selected, 8, kpiFilters);
+    const causeTop = this.summarizeCauses(this.state.formattedData, selected, 8, kpiFilters);
+
+    this.setState({
+      chartItemCode: selected,
+      itemSearch: selected,
+      chartMonths: months,
+      chartSeries: [{ label: '비가동(분)', data }],
+      pieData,
+      topNotes,
+      actionTop,
+      causeTop,
+    });
+  };
+
+  clearItemSearch = () => {
+    // ✅ 입력창만 깨끗하게 초기화 (차트 선택은 유지)
+    this.setState({ itemSearch: '' });
+  };
+
+  // ---------- 집계 ----------
+  aggregateMonthlyByItem = (rows, itemCode, kpiFilters = null) => {
+    if (!itemCode) return { months: [], data: [] };
+    let src = rows;
+    if (kpiFilters) src = this.applyKpiFilters(src, kpiFilters);
+
+    const m = new Map();
+    src.forEach((r) => {
+      if ((r.itemCode || '').trim() !== itemCode) return;
+      const k = this.monthKey(r.workDate);
+      if (!k) return;
+      m.set(k, (m.get(k) || 0) + (r.downtimeMinutes || 0));
+    });
+    const months = [...m.keys()].sort();
+    const data = months.map((k) => m.get(k));
+    return { months, data };
+  };
+
+  aggregateDowntimeNamePie = (rows, itemCode, topN = 5, withOthers = true, kpiFilters = null) => {
+    if (!itemCode) return [];
+    let src = rows;
+    if (kpiFilters) src = this.applyKpiFilters(src, kpiFilters);
+
+    const m = new Map();
+    src.forEach((r) => {
+      if ((r.itemCode || '').trim() !== itemCode) return;
+      const k = (r.downtimeName || '(비가동명없음)').trim();
+      m.set(k, (m.get(k) || 0) + (r.downtimeMinutes || 0));
+    });
+
+    if (!m.size) return [];
+
+    const sorted = [...m.entries()].sort((a, b) => b[1] - a[1]);
+    const top = sorted.slice(0, Math.max(0, topN));
+    const othersSum = sorted.slice(topN).reduce((acc, [, v]) => acc + v, 0);
+
+    const data = top.map(([label, value], i) => ({ id: i, label, value }));
+    if (withOthers && othersSum > 0) data.push({ id: data.length, label: '기타', value: othersSum });
+    return data;
+  };
+
+  // ---------- 비고 정규화/요약 ----------
   normalizeNote = (txt) => {
     if (!txt) return '';
     let t = String(txt).trim();
 
-    // 자주 등장하는 숫자/횟수/시간/하이픈류 제거·정리
     t = t
       .replace(/\s+/g, ' ')
-      .replace(/\b(\d{1,2}):\d{2}(?:-\d{1,2}:\d{2})?\b/g, '') // 07:00-07:40 등
+      .replace(/\b(\d{1,2}):\d{2}(?:-\d{1,2}:\d{2})?\b/g, '')
       .replace(/\b\d+\s*EA\b/ig, '')
       .replace(/\b\d+\s*회\b/g, '')
       .replace(/[-–—]+/g, ' ')
       .replace(/\s{2,}/g, ' ')
       .trim();
 
-    // OP/R/P 등 표기 통일
     t = t
       .replace(/\bOP\s*0?(\d{1,2})\b/ig, 'OP$1')
       .replace(/\bR#?\s*(\d)\b/ig, 'R#$1')
       .replace(/\bP#?\s*(\d)\b/ig, 'P#$1');
 
-    // 동의어 통합
     const repl = [
       [/세정|세척/g, '청소'],
       [/교환/g, '교체'],
@@ -280,16 +352,17 @@ class DowntimeChart extends Component {
       [/티칭수정/g, '티칭 수정'],
       [/무빙변경/g, '무빙 변경'],
     ];
-    repl.forEach(([re, to]) => {
-      t = t.replace(re, to);
-    });
+    repl.forEach(([re, to]) => { t = t.replace(re, to); });
 
     return t.trim();
   };
 
-  summarizeTopNotes = (rows, itemCode, topN = 10) => {
+  summarizeTopNotes = (rows, itemCode, topN = 10, kpiFilters = null) => {
+    let src = rows;
+    if (kpiFilters) src = this.applyKpiFilters(src, kpiFilters);
+
     const map = new Map();
-    rows.forEach((r) => {
+    src.forEach((r) => {
       if ((r.itemCode || '').trim() !== itemCode) return;
       const norm = this.normalizeNote(r.note || '');
       if (!norm || norm.length < 2) return;
@@ -302,8 +375,10 @@ class DowntimeChart extends Component {
       .slice(0, topN);
   };
 
-  // ---------- (옵션) 조치/원인 요약 ----------
-  summarizeActions = (rows, itemCode, topN = 10) => {
+  summarizeActions = (rows, itemCode, topN = 10, kpiFilters = null) => {
+    let src = rows;
+    if (kpiFilters) src = this.applyKpiFilters(src, kpiFilters);
+
     const rules = [
       ['청소', /(청소|세척|세정)/],
       ['교체', /(교체|교환)/],
@@ -321,7 +396,7 @@ class DowntimeChart extends Component {
       const v = agg.get(k) || { count: 0, minutes: 0 };
       agg.set(k, { count: v.count + 1, minutes: v.minutes + (mins || 0) });
     };
-    rows.forEach((r) => {
+    src.forEach((r) => {
       if ((r.itemCode || '').trim() !== itemCode) return;
       const t = String(r.note || '');
       let matched = false;
@@ -339,7 +414,10 @@ class DowntimeChart extends Component {
       .slice(0, topN);
   };
 
-  summarizeCauses = (rows, itemCode, topN = 10) => {
+  summarizeCauses = (rows, itemCode, topN = 10, kpiFilters = null) => {
+    let src = rows;
+    if (kpiFilters) src = this.applyKpiFilters(src, kpiFilters);
+
     const rules = [
       ['진공 이상', /(진공이상|진공에러|진공솔\s*작동\s*불|진공\s*지연)/],
       ['2매 감지', /(2매감지|두매\s*감지)/],
@@ -362,7 +440,7 @@ class DowntimeChart extends Component {
       const v = agg.get(k) || { count: 0, minutes: 0 };
       agg.set(k, { count: v.count + 1, minutes: v.minutes + (mins || 0) });
     };
-    rows.forEach((r) => {
+    src.forEach((r) => {
       if ((r.itemCode || '').trim() !== itemCode) return;
       const t = String(r.note || '');
       let hit = false;
@@ -386,7 +464,7 @@ class DowntimeChart extends Component {
       loading, error,
       kpiFilters, kpiSummary,
       itemCodeOptions, chartItemCode, chartMonths, chartSeries, pieData,
-      topNotes, actionTop, causeTop
+      topNotes, actionTop, causeTop, itemSearch
     } = this.state;
 
     return (
@@ -396,215 +474,183 @@ class DowntimeChart extends Component {
           <p className={s.contant}>비가동 현황을 차트로 한눈에 파악할 수 있습니다.</p>
         </div>
 
-
-        {/* KPI 필터: 프레스(좌) / 시작·종료(우) */}
-        {/* KPI 필터: 프레스 + 기간 */}
+        {/* KPI + 공통 필터 */}
         <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-          <Typography variant="h6" sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 1,
-            color: '#ffb300',
-            mb: 2
-          }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#ffb300', mb: 2 }}>
             <PieChartIcon />
             비가동 현황 지표
           </Typography>
 
-          {/* 필터 박스 */}
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            mb: 3,
-            p: 2,
-            backgroundColor: '#f8f9fa',
-            borderRadius: 2,
-            border: '1px solid #e0e0e0'
-          }}>
-            {/* 프레스 검색 */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                     mb: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+            {/* 프레스 */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Typography variant="body2" sx={{ 
-                fontWeight: 500,
-                color: '#333',
-                minWidth: '100px'
-              }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, color: '#333', minWidth: '120px' }}>
                 프레스(작업장):
               </Typography>
               <TextField
-                size="small"
-                placeholder="프레스 검색"
-                value={kpiFilters.press}
-                onChange={this.onKpiChange('press')}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                  endAdornment: !!kpiFilters.press && (
-                    <IconButton
-                      size="small"
-                      onClick={() => this.onKpiChange('press')({ target: { value: '' } })}
-                    >
-                      <ClearIcon fontSize="small" />
-                    </IconButton>
-                  ),
-                }}
-                sx={{ 
-                  backgroundColor: 'white',
-                  minWidth: 200,
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': { borderColor: '#4CAF50' },
-                    '&.Mui-focused fieldset': { borderColor: '#4CAF50' },
-                  }
-                }}
-              />
+                select size="small" value={kpiFilters.press} onChange={this.onKpiChange('press')}
+                sx={{ backgroundColor: 'white', minWidth: 200,
+                      '& .MuiOutlinedInput-root': {
+                        '&:hover fieldset': { borderColor: '#4CAF50' },
+                        '&.Mui-focused fieldset': { borderColor: '#4CAF50' },
+                      }}}
+              >
+                <MenuItem value="">전체</MenuItem>
+                <MenuItem value="1500T">1500T</MenuItem>
+                <MenuItem value="1200T">1200T</MenuItem>
+                <MenuItem value="1000T">1000T</MenuItem>
+                <MenuItem value="1000PT">1000PT</MenuItem>
+              </TextField>
             </Box>
 
-            {/* 기간 선택 */}
+            {/* 기간 */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Typography variant="body2" sx={{ 
-                fontWeight: 500,
-                color: '#333',
-                minWidth: '80px'
-              }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, color: '#333', minWidth: '80px' }}>
                 기간 선택:
               </Typography>
-              <TextField
-                type="date"
-                size="small"
-                value={kpiFilters.start_work_date}
-                onChange={this.onKpiChange('start_work_date')}
-                sx={{ 
-                  backgroundColor: 'white',
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': { borderColor: '#4CAF50' },
-                    '&.Mui-focused fieldset': { borderColor: '#4CAF50' },
-                  }
-                }}
+              <TextField type="date" size="small" value={kpiFilters.start_work_date} onChange={this.onKpiChange('start_work_date')}
+                sx={{ backgroundColor: 'white',
+                      '& .MuiOutlinedInput-root': {
+                        '&:hover fieldset': { borderColor: '#4CAF50' },
+                        '&.Mui-focused fieldset': { borderColor: '#4CAF50' },
+                      }}}
               />
               <Typography variant="body2" sx={{ color: '#666' }}>~</Typography>
-              <TextField
-                type="date"
-                size="small"
-                value={kpiFilters.end_work_date}
-                onChange={this.onKpiChange('end_work_date')}
-                sx={{ 
-                  backgroundColor: 'white',
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': { borderColor: '#4CAF50' },
-                    '&.Mui-focused fieldset': { borderColor: '#4CAF50' },
-                  }
-                }}
+              <TextField type="date" size="small" value={kpiFilters.end_work_date} onChange={this.onKpiChange('end_work_date')}
+                sx={{ backgroundColor: 'white',
+                      '& .MuiOutlinedInput-root': {
+                        '&:hover fieldset': { borderColor: '#4CAF50' },
+                        '&.Mui-focused fieldset': { borderColor: '#4CAF50' },
+                      }}}
               />
             </Box>
           </Box>
 
-          {/* KPI 카드 (KPI 필터만 반영) */}
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper elevation={2} sx={{ p: 2, borderRadius: '16px', textAlign: 'center' }}>
-                <Typography variant="overline" color="text.secondary">총 비가동(분)</Typography>
-                <Typography variant="h4" sx={{ mt: .5 }}>{this.fmtMinutes(kpiSummary.total)}</Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper elevation={2} sx={{ p: 2, borderRadius: '16px', textAlign: 'center' }}>
-                <Typography variant="overline" color="text.secondary">건수</Typography>
-                <Typography variant="h4" sx={{ mt: .5 }}>{this.fmtNumber(kpiSummary.count)}건</Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper elevation={2} sx={{ p: 2, borderRadius: '16px', textAlign: 'center' }}>
-                <Typography variant="overline" color="text.secondary">1건 평균(분)</Typography>
-                <Typography variant="h4" sx={{ mt: .5 }}>{this.fmtMinutes(kpiSummary.avg)}</Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper elevation={2} sx={{ p: 2, borderRadius: '16px', textAlign: 'center' }}>
-                <Typography variant="overline" color="text.secondary">최다 비가동명</Typography>
-                <Typography variant="h6" sx={{ mt: .5, lineHeight: 1.3 }}>{kpiSummary.topName}</Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: .5 }}>
-                  누적 {this.fmtMinutes(kpiSummary.topValue)}
-                </Typography>
-              </Paper>
-            </Grid>
+          {/* KPI 카드 */}
+          <Grid container spacing={2}>
+            {[
+              { label: '총 비가동(분)', value: this.fmtMinutes(kpiSummary.total), icon: <AccessTimeIcon color="warning" /> },
+              { label: '건수', value: `${this.fmtNumber(kpiSummary.count)}건`, icon: <AssignmentIcon color="primary" /> },
+              { label: '1건 평균(분)', value: this.fmtMinutes(kpiSummary.avg), icon: <TimelineIcon color="success" /> },
+              { label: '최다 비가동명', value: kpiSummary.topName, icon: <BuildIcon color="error" /> },
+            ].map((kpi, i) => (
+              <Grid item xs={12} sm={6} md={3} key={i}>
+                <Paper elevation={3} sx={{ p: 2, borderRadius: '16px', textAlign: 'center',
+                  height: 160, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
+                    {React.cloneElement(kpi.icon, { fontSize: "large" })}
+                  </Box>
+                  <Typography variant="overline" sx={{fontSize: '13px', fontWeight: 'bold', color: 'text.secondary'}}>{kpi.label}</Typography>
+                  <Typography variant="h4" sx={{ mt: .5, fontSize: '28px', fontWeight: 'bold' }}>{kpi.value}</Typography>
+                </Paper>
+              </Grid>
+            ))}
           </Grid>
         </Paper>
 
-          {/* 차트 필터 (자재번호) */}
-        <Paper sx={{ p: 2, mb: 3, borderRadius: '16px' }}>
-            <Typography variant="h6" sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 1,
-                color: '#ffb300',
-                mb: 2
-              }}>
-              <BarChartIcon />
-              자재별 월간 비가동
-            </Typography>
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              mb: 3
-            }}>
-              <Typography variant="body1" sx={{ 
-                fontWeight: 500,
-                color: '#333'
-              }}>
-                월별 비가동을 확인하려면 자재를 선택하세요
-              </Typography>
-            </Box>
-
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 2,
-              p: 2,
-              backgroundColor: '#f8f9fa',
-              borderRadius: 2,
-              border: '1px solid #e0e0e0'
-            }}>
-              <Typography variant="body2" sx={{ 
-                fontWeight: 500,
-                color: '#333',
-                minWidth: '80px'
-              }}>
-                자재번호:
-              </Typography>
-
-              <TextField
-                select
-                size="small"
-                value={chartItemCode}
-                onChange={this.onItemChange}
-                sx={{ 
-                  backgroundColor: 'white',
-                  minWidth: 300,
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': { borderColor: '#4CAF50' },
-                    '&.Mui-focused fieldset': { borderColor: '#4CAF50' },
-                  }
-                }}
-              >
-                {itemCodeOptions.length === 0 && (
-                  <MenuItem value="">(자재번호 없음)</MenuItem>
-                )}
-                {itemCodeOptions.map((c) => (
-                  <MenuItem key={c} value={c}>
-                    {c}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Box>
-
-        {/* 월별 합계 막대차트 (자재 기준) */}
-          <Typography variant="h6" sx={{ mb: 1 }}>
-            {/* {chartItemCode ? `${chartItemCode} · 월별 비가동(분)` : '자재번호를 선택하세요'} */}
+        {/* 차트 + 자재번호 검색 */}
+        <Paper sx={{ p: 3, mb: 3, borderRadius: '16px' }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#ffb300', mb: 2 }}>
+            <BarChartIcon />
+            자재별 월간 비가동
           </Typography>
+
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 2, p: 2,
+                      backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+            <Typography variant="body2" sx={{ fontWeight: 500, color: '#333', minWidth: '20px' }}>
+              자재번호:
+            </Typography>
+
+            {/* 🔍 Google 스타일 자동완성 (입력 전용 제어) */}
+            <Autocomplete
+              freeSolo
+              autoHighlight
+              openOnFocus
+              // 내장 clear는 끄고(버그 유발), 커스텀 X 사용
+              disableClearable
+              clearOnEscape
+              clearOnBlur={false}
+              selectOnFocus
+              handleHomeEndKeys
+              options={this.rankItemOptions(itemCodeOptions, itemSearch)}
+              filterOptions={(x) => x} // 우리가 직접 필터/정렬함
+              // ✅ 입력값만 제어: value는 아예 주지 않음(선택값이 입력을 덮어쓰지 않도록)
+              inputValue={itemSearch}
+              onInputChange={(e, value) => this.setState({ itemSearch: value })}
+              // 옵션 선택 시 커밋
+              onChange={(e, value) => this.commitItemCode(value)}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  size="small"
+                  placeholder="자재번호 검색"
+                  onFocus={(e) => e.target.select()}              // 포커스 시 전체 선택 → 바로 덮어쓰기
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      this.commitItemCode(this.state.itemSearch);
+                    }
+                    if (e.key === 'Escape') {
+                      e.preventDefault();
+                      this.clearItemSearch();
+                    }
+                  }}
+                  InputProps={{
+                    ...params.InputProps,
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <>
+                        {this.state.itemSearch ? (
+                          <InputAdornment position="end">
+                            <IconButton
+                              size="small"
+                              aria-label="clear"
+                              onMouseDown={(ev) => ev.preventDefault()} // 포커스 유지
+                              onClick={this.clearItemSearch}
+                            >
+                              <ClearIcon fontSize="small" />
+                            </IconButton>
+                          </InputAdornment>
+                        ) : null}
+                        {params.InputProps.endAdornment /* Autocomplete 내부 adornment(loading 등) 유지 */}
+                      </>
+                    ),
+                  }}
+                  sx={{ 
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    minWidth: 220,
+                    '& .MuiOutlinedInput-root': {
+                      '&:hover fieldset': { borderColor: '#4CAF50' },
+                      '&.Mui-focused fieldset': { borderColor: '#4CAF50' },
+                    }
+                  }}
+                />
+              )}
+              renderOption={(props, option, { inputValue }) => {
+                const i = option.toLowerCase().indexOf((inputValue || '').toLowerCase());
+                return (
+                  <li {...props}>
+                    {i >= 0 ? (
+                      <>
+                        {option.slice(0, i)}
+                        <strong>{option.slice(i, i + inputValue.length)}</strong>
+                        {option.slice(i + inputValue.length)}
+                      </>
+                    ) : option}
+                  </li>
+                );
+              }}
+              noOptionsText={itemSearch ? '일치하는 자재번호가 없어요' : '검색어를 입력하세요'}
+            />
+          </Box>
+
+          {/* 월별 합계 막대차트 */}
           {!loading && !error && chartItemCode && chartMonths.length > 0 ? (
             <BarChart
               xAxis={[{
@@ -612,7 +658,7 @@ class DowntimeChart extends Component {
                 scaleType: 'band',
                 data: chartMonths,
                 label: '월',
-                valueFormatter: this.tickMonth, // '1월' 형식
+                valueFormatter: this.tickMonth,
                 tickLabelInterval: () => true,
               }]}
               yAxis={[{ label: '비가동(분)' }]}
@@ -622,8 +668,10 @@ class DowntimeChart extends Component {
                 valueFormatter: (v) => `${this.fmtNumber(v)}분`,
                 color: '#ffb300',
               }]}
+              barLabel={(item) => `${item.value?.toString()}분`}
               height={420}
               margin={{ top: 24, right: 24, bottom: 64, left: 64 }}
+              borderRadius={8}
               slotProps={{ legend: { hidden: true } }}
             />
           ) : (
@@ -631,155 +679,126 @@ class DowntimeChart extends Component {
               표시할 데이터가 없습니다.
             </Box>
           )}
-        </Paper>
 
-        {/* 파이차트 + Top 비고(정규화) 나란히 */}
-        <Grid container spacing={2} sx={{ mb: 2 }}>
-          {/* 좌: 비가동명 파이 */}
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ 
-                p: 2, 
-                borderRadius: '16px', 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'center', 
-                alignItems: 'center'
-              }}>
-              <Typography variant="h6" sx={{ mb: 1, textAlign: 'center' }}>{chartItemCode} · 비가동명 비중</Typography>
-              <Box
-                  sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'center', 
-                  alignItems: 'center', 
-                  width: '100%' 
-                }}
-              >
-                {pieData?.length ? (
-                  <PieChart
-                    series={[{
-                      data: pieData,
-                      arcLabel: (it) => it.label,
-                      arcLabelMinAngle: 12,
-                      innerRadius: 40,
-                      paddingAngle: 2,
+          {/* 파이 + 비고 Top */}
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={12} md={6}>
+              <Paper sx={{ p: 2, borderRadius: '16px', height: '100%', display: 'flex',
+                           flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600, textAlign: 'center' }}>
+                  {chartItemCode} · 비가동명 비중 (Top {this.PIE_TOP_N}{this.PIE_WITH_OTHERS ? ' + 기타' : ''})
+                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+                  {pieData?.length ? (
+                    <PieChart
+                      series={[{
+                        data: pieData,
+                        arcLabel: (it) => it.label,
+                        arcLabelMinAngle: 12,
+                        innerRadius: 40,
+                        paddingAngle: 2,
+                      }]}
+                      height={360}
+                      margin={{ top: 16, right: 16, bottom: 16, left: 16 }}
+                      slotProps={{ legend: { direction: 'column', position: { vertical: 'middle', horizontal: 'right' } } }}
+                    />
+                  ) : (
+                    <Box sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.secondary' }}>
+                      해당 자재번호의 비가동명 데이터가 없습니다.
+                    </Box>
+                  )}
+                </Box>
+              </Paper>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Paper sx={{ p: 2, borderRadius: '16px', height: '100%' }}>
+                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600, textAlign: 'center' }}>
+                  {chartItemCode} · 가장 많이 등장한 비고
+                </Typography>
+                {topNotes.length ? (
+                  <List dense>
+                    {topNotes.map((n, i) => (
+                      <ListItem key={i} disableGutters>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                    width: '100%', p: 0.5, borderBottom: '1px solid #f0f0f0' }}>
+                          <Box sx={{ fontSize: '0.85rem', fontWeight: 500, color: '#333' }}>
+                            {i + 1}. {n.text}
+                          </Box>
+                          <Stack direction="row" spacing={1} sx={{ minWidth: 85 }}>
+                            <Chip size="small" label={`${this.fmtNumber(n.count)}건`} 
+                                  sx={{ minWidth: 45, backgroundColor: '#e3f2fd', color: '#1976d2', fontWeight: 600 }} />
+                            <Chip size="small" label={`${this.fmtNumber(n.minutes)}분`} 
+                                  sx={{ minWidth: 45, backgroundColor: '#fce4ec', color: '#d81b60', fontWeight: 600 }} />
+                          </Stack>
+                        </Box>
+                      </ListItem>
+                    ))}
+                  </List>
+                ) : (
+                  <Typography color="text.secondary">반복적으로 등장한 비고가 없습니다.</Typography>
+                )}
+              </Paper>
+            </Grid>
+          </Grid>
+
+          {/* 행동/원인 요약 */}
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <Paper sx={{ p: 2, borderRadius: '16px', height: '100%' }}>
+                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600, textAlign: 'center' }}>
+                  조치 유형 Top (누적 분)
+                </Typography>
+                {actionTop.length ? (
+                  <BarChart
+                    xAxis={[{ id: 'act', scaleType: 'band', data: actionTop.map((d) => d.label) }]}
+                    yAxis={[{ label: '누적 분' }]}
+                    series={[{ 
+                      data: actionTop.map((d) => d.minutes), 
+                      valueFormatter: (v) => `${this.fmtNumber(v)}분`,
+                      color: '#ffb300'
                     }]}
-                    height={360}
-                    margin={{ top: 16, right: 16, bottom: 16, left: 16 }}
-                    slotProps={{ legend: { direction: 'column', position: { vertical: 'middle', horizontal: 'right' } } }}
+                    height={320}
+                    margin={{ top: 16, right: 24, bottom: 64, left: 64 }}
+                    borderRadius={8}
+                    slotProps={{ legend: { hidden: true } }}
                   />
                 ) : (
-                  <Box sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.secondary' }}>
-                    해당 자재번호의 비가동명 데이터가 없습니다.
-                  </Box>
+                  <Typography color="text.secondary">표시할 데이터 없음</Typography>
                 )}
-              </Box>
-            </Paper>
+              </Paper>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Paper sx={{ p: 2, borderRadius: '16px', height: '100%' }}>
+                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600, textAlign: 'center' }}>
+                  원인/증상 Top (건수)
+                </Typography>
+                {causeTop.length ? (
+                  <BarChart
+                    xAxis={[{ id: 'cause', scaleType: 'band', data: causeTop.map((d) => d.label) }]}
+                    yAxis={[{ label: '건수' }]}
+                    series={[{ 
+                      data: causeTop.map((d) => d.count), 
+                      valueFormatter: (v) => `${this.fmtNumber(v)}건`,
+                      color: '#ffb300'
+                    }]}
+                    height={320}
+                    margin={{ top: 16, right: 24, bottom: 64, left: 64 }}
+                    borderRadius={8}
+                    slotProps={{ legend: { hidden: true } }}
+                  />
+                ) : (
+                  <Typography color="text.secondary">표시할 데이터 없음</Typography>
+                )}
+              </Paper>
+            </Grid>
           </Grid>
 
-          {/* 우: 가장 많이 등장한 비고(정규화) */}
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2, borderRadius: '16px', height: '100%' }}>
-              <Typography variant="h6" sx={{ mb: 1, textAlign: 'center' }}>{chartItemCode} · 가장 많이 등장한 비고</Typography>
-              {topNotes.length ? (
-                <List dense>
-                  {topNotes.map((n, i) => (
-                    <ListItem key={i} disableGutters>
-                      <Box 
-                        sx={{ 
-                          display: 'flex', 
-                          justifyContent: 'space-between', 
-                          alignItems: 'center', 
-                          width: '100%',
-                          p: 0.5,
-                          borderBottom: '1px solid #f0f0f0'
-                        }}
-                      >
-                        {/* 왼쪽 조치 내용 */}
-                        <Box sx={{ 
-                          // px: 1.5, py: 0.5, 
-                          borderRadius: 1, 
-                          // backgroundColor: '#f5f5f5',
-                          fontSize: '0.85rem',
-                          fontWeight: 500,
-                          color: '#333'
-                        }}>
-                          {i + 1}. {n.text}
-                        </Box>
+          {loading && <Typography sx={{ mt: 2 }}>로딩 중…</Typography>}
+          {error && <Typography color="error" sx={{ mt: 2 }}>{error}</Typography>}
+        </Paper>
 
-                        {/* 오른쪽 집계 */}
-                        <Stack direction="row" spacing={1} sx={{ minWidth: 85 }}>
-                          <Chip 
-                            size="small" 
-                            label={`${this.fmtNumber(n.count)}건`} 
-                            sx={{ minWidth: 45, backgroundColor: '#e3f2fd', color: '#1976d2', fontWeight: 600 }}
-                          />
-                          <Chip 
-                            size="small" 
-                            label={`${this.fmtNumber(n.minutes)}분`} 
-                            sx={{ minWidth: 45, backgroundColor: '#fce4ec', color: '#d81b60', fontWeight: 600 }}
-                          />
-                        </Stack>
-                      </Box>
-                    </ListItem>
-                  ))}
-                </List>
-              ) : (
-                <Typography color="text.secondary">반복적으로 등장한 비고가 없습니다.</Typography>
-              )}
-            </Paper>
-          </Grid>
-        </Grid>
-
-        {/* (옵션) 행동/원인 요약 */}
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2, borderRadius: '16px', height: '100%' }}>
-              <Typography variant="subtitle1" sx={{ mb: 1, textAlign: 'center' }}>조치 유형 Top (누적 분)</Typography>
-              {actionTop.length ? (
-                <BarChart
-                  xAxis={[{ id: 'act', scaleType: 'band', data: actionTop.map((d) => d.label) }]}
-                  yAxis={[{ label: '누적 분' }]}
-                  series={[{ 
-                    data: actionTop.map((d) => d.minutes), 
-                    valueFormatter: (v) => `${this.fmtNumber(v)}분`,
-                    color: '#ffb300'
-                  }]}
-                  height={320}
-                  margin={{ top: 16, right: 24, bottom: 64, left: 64 }}
-                  slotProps={{ legend: { hidden: true } }}
-                />
-              ) : (
-                <Typography color="text.secondary">표시할 데이터 없음</Typography>
-              )}
-            </Paper>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2, borderRadius: '16px', height: '100%' }}>
-              <Typography variant="subtitle1" sx={{ mb: 1, textAlign: 'center' }}>원인/증상 Top (건수)</Typography>
-              {causeTop.length ? (
-                <BarChart
-                  xAxis={[{ id: 'cause', scaleType: 'band', data: causeTop.map((d) => d.label) }]}
-                  yAxis={[{ label: '건수' }]}
-                  series={[{ 
-                    data: causeTop.map((d) => d.count), 
-                    valueFormatter: (v) => `${this.fmtNumber(v)}건`,
-                    color: '#ffb300'
-                  }]}
-                  height={320}
-                  margin={{ top: 16, right: 24, bottom: 64, left: 64 }}
-                  slotProps={{ legend: { hidden: true } }}
-                />
-              ) : (
-                <Typography color="text.secondary">표시할 데이터 없음</Typography>
-              )}
-            </Paper>
-          </Grid>
-        </Grid>
-
-        {loading && <Typography sx={{ mt: 2 }}>로딩 중…</Typography>}
-        {error && <Typography color="error" sx={{ mt: 2 }}>{error}</Typography>}
       </div>
     );
   }
