@@ -1,11 +1,11 @@
 .root {
-  padding: 20px;
+  padding: 24px;
   background-color: #f5f5f5;
   min-height: 100vh;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
   background: white;
   border-radius: 8px;
@@ -13,13 +13,26 @@
   overflow: hidden;
 }
 
-.container h1 {
-  background: linear-gradient(135deg, #FF9800, #FF5722);
-  color: white;
-  margin: 0;
-  padding: 20px;
-  font-size: 24px;
-  font-weight: 600;
+.root .titleCon {
+  margin-bottom: 24px;
+}
+
+.root .titleCon h1 {
+  color: #ffb300;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px; // gap: 1 → theme.spacing(1) = 8px
+}
+
+.root .titleCon .contant {
+    margin: 0;
+    font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+    font-weight: 400;
+    font-size: 1rem;
+    line-height: 1.5;
+    letter-spacing: 0.00938em;
+    color: rgba(0, 0, 0, 0.6);
 }
 
 .chartSection {

@@ -1,4 +1,4 @@
-// src/pages/mold/MoldShotCountData.js
+// src/pages/mold/MoldBreakdownData.js
 import React, { Component } from 'react';
 import {
   Box,
@@ -17,51 +17,40 @@ import {
   Alert
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
-import { 
-  Search as SearchIcon, 
-  Clear as ClearIcon, 
+import {
+  Search as SearchIcon,
+  Clear as ClearIcon,
   FilterList as FilterIcon,
   ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  ThermostatOutlined
+  ExpandLess as ExpandLessIcon
 } from '@mui/icons-material';
 
-import s from './MoldCleaningData.module.scss'; // 스타일 재사용(원하면 파일명 변경)
+import s from './MoldCleaningData.module.scss'; 
 
-const API_URL = 'http://localhost:8000/smartFactory/mold_shotCount/list'; 
-// ↑ 백엔드 경로가 다르면 여기만 수정하세요.
+const API_URL = 'http://localhost:8000/smartFactory/mold_breakDown/list';
 
-class MoldBreakDownGrid extends Component {
+class MoldBreakdownGrid extends Component {
   constructor(props) {
     super(props);
-
     this.state = {
       filters: {
-        // === 주신 스키마를 그대로 반영 (초기값은 공란) ===
-        plant: '',
-        equipment_type: '',
-        mold_no: '',
-        mold_name: '',
-        measuring_point: '',
-        measuring_position: '',
-        cum_shot_min: '',
-        cum_shot_max: '',
-        inspection_hit_count: '',
-        maintenance_cycle: '',
-        maintenance_cycle_unit: '',
-        progress_min: '',
-        progress_max: '',
-        functional_location: '',
-        functional_location_desc: '',
-        planner_group: '',
-        maintenance_plan: '',
-        startDate: "2025-01-01",
-        endDate: "2025-06-30",
-        part_no1: '',
-        part_no2: '',
-        part_no3: '',
-        part_no4: '',
-        part_no5: ''
+        // 문자열
+        status: '',
+        document: '',
+        function_location: '',
+        function_location_detail: '',
+        equipment_detail: '',
+        order_type: '',
+        order_type_detail: '',
+        order_detail: '',
+        failure: '',
+        // 숫자
+        equipment: '',
+        order_no: '',
+        notification_no: '',
+        // 날짜(문자열 YYYY-MM-DD)
+        start_date: '',
+        end_date: ''
       },
       filterExpanded: false,
       rows: [],
@@ -74,41 +63,42 @@ class MoldBreakDownGrid extends Component {
     this.fetchData();
   }
 
-  // 빈 값 제거 + 숫자/실수 변환
+  // 빈 값 / '0' / 0 제거 로직
   buildPayload = () => {
     const f = this.state.filters;
 
-    const parseIntOrNull = (v) => (v === '' || v === null || v === undefined ? null : parseInt(v, 10));
-    const parseFloatOrNull = (v) => (v === '' || v === null || v === undefined ? null : parseFloat(v));
-
-    const payload = {
-      plant: parseIntOrNull(f.plant),
-      equipment_type: f.equipment_type?.trim() || null,
-      mold_no: parseIntOrNull(f.mold_no),
-      mold_name: f.mold_name?.trim() || null,
-      measuring_point: parseIntOrNull(f.measuring_point),
-      measuring_position: f.measuring_position?.trim() || null,
-      cum_shot_min: parseIntOrNull(f.cum_shot_min),
-      cum_shot_max: parseIntOrNull(f.cum_shot_max),
-      inspection_hit_count: parseIntOrNull(f.inspection_hit_count),
-      maintenance_cycle: parseIntOrNull(f.maintenance_cycle),
-      maintenance_cycle_unit: f.maintenance_cycle_unit?.trim() || null,
-      progress_min: parseFloatOrNull(f.progress_min),
-      progress_max: parseFloatOrNull(f.progress_max),
-      functional_location: f.functional_location?.trim() || null,
-      functional_location_desc: f.functional_location_desc?.trim() || null,
-      planner_group: f.planner_group?.trim() || null,
-      maintenance_plan: f.maintenance_plan?.trim() || null,
-      startDate: f.startDate || null, // YYYY-MM-DD
-      endDate: f.endDate || null,
-      part_no1: f.part_no1?.trim() || null,
-      part_no2: f.part_no2?.trim() || null,
-      part_no3: f.part_no3?.trim() || null,
-      part_no4: f.part_no4?.trim() || null,
-      part_no5: f.part_no5?.trim() || null
+    const parseIntOrNull = (v) => {
+      if (v === '' || v === null || v === undefined) return null;
+      const n = parseInt(v, 10);
+      // 기본값 0은 필터 의미가 아니므로 제거 (필요 시 조건 주석 변경)
+      if (n === 0) return null;
+      return Number.isNaN(n) ? null : n;
     };
 
-    // 값이 null/''/undefined인 키는 제거 → 불필요한 0/빈값 전송 방지
+    const cleanStr = (v) => {
+      if (v === null || v === undefined) return null;
+      const s = String(v).trim();
+      return s === '' ? null : s;
+    };
+
+    const payload = {
+      status: cleanStr(f.status),
+      document: cleanStr(f.document),
+      function_location: cleanStr(f.function_location),
+      function_location_detail: cleanStr(f.function_location_detail),
+      equipment: parseIntOrNull(f.equipment),        // 0 -> null (필터 제외)
+      equipment_detail: cleanStr(f.equipment_detail),
+      order_type: cleanStr(f.order_type),
+      order_type_detail: cleanStr(f.order_type_detail),
+      order_no: parseIntOrNull(f.order_no),           // 0 -> null
+      order_detail: cleanStr(f.order_detail),
+      notification_no: parseIntOrNull(f.notification_no), // 0 -> null
+      failure: cleanStr(f.failure),
+      start_date: cleanStr(f.start_date),
+      end_date: cleanStr(f.end_date)
+    };
+
+    // null/''/undefined 키 제거
     Object.keys(payload).forEach((k) => {
       if (payload[k] === null || payload[k] === '' || payload[k] === undefined) {
         delete payload[k];
@@ -126,70 +116,59 @@ class MoldBreakDownGrid extends Component {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(this.buildPayload()),
       });
-      console.log(JSON.stringify(this.buildPayload()))
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const json = await response.json();
-      // 백엔드가 { data: [...] } 형태라면 아래처럼, 아니면 json로 교체
-      const formatted = this.formatApiData(json.data);
+      const formatted = this.formatApiData(json.data ?? json); // 서버 포맷에 맞춰 사용
       this.setState({ rows: formatted, loading: false });
     } catch (error) {
-      console.error('금형타발수 데이터 로드 오류:', error);
+      console.error('금형고장내역 데이터 로드 오류:', error);
       this.setState({ error: '데이터를 불러오는 중 오류가 발생했습니다.', loading: false });
     }
   };
 
+  // API 응답(한글/영문 키 혼용 대비) → DataGrid 행 매핑
   formatApiData = (apiData) => {
     if (!Array.isArray(apiData)) return [];
     return apiData.map((item, index) => {
-      // 한글 컬럼 ↔ 영문 키 매핑 (SELECT * 원본을 그대로 받더라도 안전)
-      const plant = item.plant ?? item['플랜트'] ?? null;
-      const equipment_type = item.equipment_type ?? item['설비유형'] ?? '';
-      const mold_no = item.mold_no ?? item['금형번호'] ?? null;
-      const mold_name = item.mold_name ?? item['금형내역'] ?? '';
-      const measuring_point = item.measuring_point ?? item['측정지점'] ?? null;
-      const measuring_position = item.measuring_position ?? item['측정위치'] ?? '';
-      const cum_shot = item.cum_shot ?? item['누적 Shot 수'] ?? null;
-      const inspection_hit_count = item.inspection_hit_count ?? item['점검타발수'] ?? null;
-      const maintenance_cycle = item.maintenance_cycle ?? item['유지보수주기'] ?? null;
-      const progress = item.progress ?? item['진행률(%)'] ?? null;
-      const maintenance_cycle_unit = item.maintenance_cycle_unit ?? item['유지보수주기단위'] ?? '';
-      const functional_location = item.functional_location ?? item['기능위치'] ?? '';
-      const functional_location_desc = item.functional_location_desc ?? item['기능위치 내역'] ?? '';
-      const planner_group = item.planner_group ?? item['계획자그룹'] ?? '';
-      const maintenance_plan = item.maintenance_plan ?? item['유지보수계획'] ?? '';
-      const last_result_date = item.last_result_date ?? item['생산실적처리 최종일'] ?? ''; // date
-      const part_no1 = item.part_no1 ?? item['타발처리 품번1'] ?? '';
-      const part_no2 = item.part_no2 ?? item['타발처리 품번2'] ?? '';
-      const part_no3 = item.part_no3 ?? item['타발처리 품번3'] ?? '';
-      const part_no4 = item.part_no4 ?? item['타발처리 품번4'] ?? '';
-      const part_no5 = item.part_no5 ?? item['타발처리 품번5'] ?? '';
+      const status = item.status ?? item['상태'] ?? '';
+      const document = item.document ?? item['문서'] ?? '';
+      const function_location = item.function_location ?? item['기능위치'] ?? '';
+      const function_location_detail = item.function_location_detail ?? item['기능위치내역'] ?? '';
+      const equipment = item.equipment ?? item['설비'] ?? null;
+      const equipment_detail = item.equipment_detail ?? item['설비내역'] ?? '';
+      const order_type = item.order_type ?? item['오더유형'] ?? '';
+      const order_type_detail = item.order_type_detail ?? item['오더유형내역'] ?? '';
+      const order_no = item.order_no ?? item['오더번호'] ?? null;
+      const order_detail = item.order_detail ?? item['오더내역'] ?? '';
+      const start_date = item.start_date ?? item['기본시작일'] ?? null;
+      const end_date = item.end_date ?? item['기본종료일'] ?? null;
+      const planned_cost = item.planned_cost ?? item['계획비용'] ?? null;
+      const actual_cost = item.actual_cost ?? item['실적비용'] ?? null;
+      const settled_cost = item.settled_cost ?? item['정산비용'] ?? null;
+      const notification_no = item.notification_no ?? item['통지번호'] ?? null;
+      const failure = item.failure ?? item['고장'] ?? '';
 
       return {
-        id: index+1,
-        plant,
-        equipment_type,
-        mold_no,
-        mold_name,
-        measuring_point,
-        measuring_position,
-        cum_shot,
-        inspection_hit_count,
-        maintenance_cycle,
-        progress,
-        maintenance_cycle_unit,
-        functional_location,
-        functional_location_desc,
-        planner_group,
-        maintenance_plan,
-        last_result_date,
-        part_no1,
-        part_no2,
-        part_no3,
-        part_no4,
-        part_no5
+        id: index + 1,
+        status,
+        document,
+        function_location,
+        function_location_detail,
+        equipment,
+        equipment_detail,
+        order_type,
+        order_type_detail,
+        order_no,
+        order_detail,
+        start_date,
+        end_date,
+        planned_cost,
+        actual_cost,
+        settled_cost,
+        notification_no,
+        failure
       };
     });
   };
@@ -197,30 +176,20 @@ class MoldBreakDownGrid extends Component {
   clearFilters = () => {
     this.setState({
       filters: {
-        plant: '',
-        equipment_type: '',
-        mold_no: '',
-        mold_name: '',
-        measuring_point: '',
-        measuring_position: '',
-        cum_shot_min: '',
-        cum_shot_max: '',
-        inspection_hit_count: '',
-        maintenance_cycle: '',
-        maintenance_cycle_unit: '',
-        progress_min: '',
-        progress_max: '',
-        functional_location: '',
-        functional_location_desc: '',
-        planner_group: '',
-        maintenance_plan: '',
-        startDate: '',
-        endDate: '',
-        part_no1: '',
-        part_no2: '',
-        part_no3: '',
-        part_no4: '',
-        part_no5: ''
+        status: '',
+        document: '',
+        function_location: '',
+        function_location_detail: '',
+        equipment_detail: '',
+        order_type: '',
+        order_type_detail: '',
+        order_detail: '',
+        failure: '',
+        equipment: '',
+        order_no: '',
+        notification_no: '',
+        start_date: '',
+        end_date: ''
       },
       rows: []
     });
@@ -243,58 +212,68 @@ class MoldBreakDownGrid extends Component {
 
   columns = [
     { field: 'id', headerName: 'ID', width: 70, type: 'string',
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'},
-    { field: 'last_result_date', headerName: '최종처리일', width: 140, type: 'date',
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+
+    { field: 'status', headerName: '상태', width: 90,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
-      valueGetter: (params) => (params.value ? new Date(params.value) : null) },
-    { field: 'plant', headerName: '플랜트', width: 100, type: 'number',
+      renderCell: (p) => <Chip size="small" label={p.value || '-'} /> },
+
+    { field: 'document', headerName: '문서', width: 120,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'equipment_type', headerName: '설비유형', width: 110,
+
+    { field: 'function_location', headerName: '기능위치', width: 150,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'mold_no', headerName: '금형번호', width: 110, type: 'number',
+
+    { field: 'function_location_detail', headerName: '기능위치내역', width: 160,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'mold_name', headerName: '금형내역', width: 100,
+
+    { field: 'equipment', headerName: '설비', width: 100, type: 'number',
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+
+    { field: 'equipment_detail', headerName: '설비내역', width: 160,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+
+    { field: 'order_type', headerName: '오더유형', width: 120,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+
+    { field: 'order_type_detail', headerName: '오더유형내역', width: 130,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+
+    { field: 'order_no', headerName: '오더번호', width: 110, type: 'number',
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+
+    { field: 'order_detail', headerName: '오더내역', width: 180,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+
+    { field: 'start_date', headerName: '기본시작일', width: 130, type: 'date',
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
-      renderCell: (params) => (<Chip label={params.value || '-'} size="small" variant="outlined" />) },
-    { field: 'measuring_point', headerName: '측정지점', width: 110, type: 'number',
+      valueGetter: (p) => (p.value ? new Date(p.value) : null) },
+
+    { field: 'end_date', headerName: '기본종료일', width: 130, type: 'date',
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
+      valueGetter: (p) => (p.value ? new Date(p.value) : null) },
+
+    { field: 'planned_cost', headerName: '계획비용', width: 110, type: 'number',
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'measuring_position', headerName: '측정위치', width: 160,
+
+    { field: 'actual_cost', headerName: '실적비용', width: 110, type: 'number',
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'cum_shot', headerName: '누적 Shot 수', width: 130, type: 'number',
+
+    { field: 'settled_cost', headerName: '정산비용', width: 110, type: 'number',
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'inspection_hit_count', headerName: '점검타발수', width: 120, type: 'number',
+
+    { field: 'notification_no', headerName: '통지번호', width: 120, type: 'number',
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'maintenance_cycle', headerName: '유지보수주기', width: 120, type: 'number',
+
+    { field: 'failure', headerName: '고장', width: 180,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'maintenance_cycle_unit', headerName: '주기단위', width: 100,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'progress', headerName: '진행률(%)', width: 110, type: 'number',
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'functional_location', headerName: '기능위치', width: 150,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'functional_location_desc', headerName: '기능위치 내역', width: 150,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'planner_group', headerName: '계획자그룹', width: 120,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'maintenance_plan', headerName: '유지보수계획', width: 180,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'part_no1', headerName: '품번1', width: 110,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'part_no2', headerName: '품번2', width: 110,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'part_no3', headerName: '품번3', width: 110,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'part_no4', headerName: '품번4', width: 110,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'part_no5', headerName: '품번5', width: 110,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' }
   ];
 
   render() {
     const { filters, filterExpanded, rows, loading, error } = this.state;
 
     return (
-      <Box className={s.root} sx={{ 
+      <Box className={s.root} sx={{
         height: '100vh',
         p: 3,
         display: 'flex',
@@ -303,7 +282,7 @@ class MoldBreakDownGrid extends Component {
       }}>
         {/* 헤더 */}
         <Box sx={{ mb: 3 }}>
-          <Typography variant="h4" gutterBottom sx={{ 
+          <Typography variant="h4" gutterBottom sx={{
             color: '#ffb300',
             fontWeight: 'bold',
             display: 'flex',
@@ -311,10 +290,10 @@ class MoldBreakDownGrid extends Component {
             gap: 1
           }}>
             <FilterIcon />
-            금형타발수 데이터 그리드
+            금형고장내역 데이터 그리드
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            금형타발수(누적/점검타발/주기/진행률) 및 기능/계획/품번 정보 조회.
+            상태/문서/기능위치/오더/기간/비용/통지/고장 등 조건으로 조회합니다.
           </Typography>
         </Box>
 
@@ -322,9 +301,9 @@ class MoldBreakDownGrid extends Component {
         <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
           <CardHeader
             title={
-              <Typography variant="h6" sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
+              <Typography variant="h6" sx={{
+                display: 'flex',
+                alignItems: 'center',
                 gap: 1,
                 color: 'white'
               }}>
@@ -337,7 +316,7 @@ class MoldBreakDownGrid extends Component {
                 {filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
               </IconButton>
             }
-            sx={{ 
+            sx={{
               backgroundColor: '#ff8f00',
               color: 'white',
               borderRadius: 1,
@@ -350,32 +329,33 @@ class MoldBreakDownGrid extends Component {
             <Grid item xs={12} sm={6} md={3}>
               <TextField
                 fullWidth label="검색 시작일" type="date"
-                value={filters.startDate}
-                onChange={(e) => this.handleFilterChange('startDate', e.target.value)}
+                value={filters.start_date}
+                onChange={(e) => this.handleFilterChange('start_date', e.target.value)}
                 InputLabelProps={{ shrink: true }} size="small" variant="outlined"
               />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <TextField
                 fullWidth label="검색 종료일" type="date"
-                value={filters.endDate}
-                onChange={(e) => this.handleFilterChange('endDate', e.target.value)}
+                value={filters.end_date}
+                onChange={(e) => this.handleFilterChange('end_date', e.target.value)}
                 InputLabelProps={{ shrink: true }} size="small" variant="outlined"
               />
             </Grid>
+
             <Grid item xs={12} sm={6} md={3}>
               <TextField
-                fullWidth label="플랜트" type="number"
-                value={filters.plant}
-                onChange={(e) => this.handleFilterChange('plant', e.target.value)}
+                fullWidth label="상태"
+                value={filters.status}
+                onChange={(e) => this.handleFilterChange('status', e.target.value)}
                 size="small" variant="outlined"
               />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <TextField
-                fullWidth label="설비유형"
-                value={filters.equipment_type}
-                onChange={(e) => this.handleFilterChange('equipment_type', e.target.value)}
+                fullWidth label="문서"
+                value={filters.document}
+                onChange={(e) => this.handleFilterChange('document', e.target.value)}
                 size="small" variant="outlined"
               />
             </Grid>
@@ -387,160 +367,93 @@ class MoldBreakDownGrid extends Component {
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
-                  fullWidth label="금형번호" type="number"
-                  value={filters.mold_no}
-                  onChange={(e) => this.handleFilterChange('mold_no', e.target.value)}
+                  fullWidth label="기능위치"
+                  value={filters.function_location}
+                  onChange={(e) => this.handleFilterChange('function_location', e.target.value)}
                   size="small" variant="outlined"
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
-                  fullWidth label="금형내역"
-                  value={filters.mold_name}
-                  onChange={(e) => this.handleFilterChange('mold_name', e.target.value)}
+                  fullWidth label="기능위치내역"
+                  value={filters.function_location_detail}
+                  onChange={(e) => this.handleFilterChange('function_location_detail', e.target.value)}
+                  size="small" variant="outlined"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth label="설비" type="number"
+                  value={filters.equipment}
+                  onChange={(e) => this.handleFilterChange('equipment', e.target.value)}
+                  size="small" variant="outlined"
+                  helperText="0은 자동 제거(필터 미적용)"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth label="설비내역"
+                  value={filters.equipment_detail}
+                  onChange={(e) => this.handleFilterChange('equipment_detail', e.target.value)}
+                  size="small" variant="outlined"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth label="오더유형"
+                  value={filters.order_type}
+                  onChange={(e) => this.handleFilterChange('order_type', e.target.value)}
+                  size="small" variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth label="오더유형내역"
+                  value={filters.order_type_detail}
+                  onChange={(e) => this.handleFilterChange('order_type_detail', e.target.value)}
+                  size="small" variant="outlined"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth label="오더번호" type="number"
+                  value={filters.order_no}
+                  onChange={(e) => this.handleFilterChange('order_no', e.target.value)}
+                  size="small" variant="outlined"
+                  helperText="0은 자동 제거(필터 미적용)"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth label="오더내역"
+                  value={filters.order_detail}
+                  onChange={(e) => this.handleFilterChange('order_detail', e.target.value)}
                   size="small" variant="outlined"
                   InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon /></InputAdornment>) }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth label="측정지점" type="number"
-                  value={filters.measuring_point}
-                  onChange={(e) => this.handleFilterChange('measuring_point', e.target.value)}
-                  size="small" variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth label="측정위치"
-                  value={filters.measuring_position}
-                  onChange={(e) => this.handleFilterChange('measuring_position', e.target.value)}
-                  size="small" variant="outlined"
-                />
-              </Grid>
 
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
-                  fullWidth label="누적 Shot 수 (이상)" type="number"
-                  value={filters.cum_shot_min}
-                  onChange={(e) => this.handleFilterChange('cum_shot_min', e.target.value)}
+                  fullWidth label="통지번호" type="number"
+                  value={filters.notification_no}
+                  onChange={(e) => this.handleFilterChange('notification_no', e.target.value)}
                   size="small" variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth label="누적 Shot 수 (이하)" type="number"
-                  value={filters.cum_shot_max}
-                  onChange={(e) => this.handleFilterChange('cum_shot_max', e.target.value)}
-                  size="small" variant="outlined"
+                  helperText="0은 자동 제거(필터 미적용)"
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={9}>
                 <TextField
-                  fullWidth label="점검타발수" type="number"
-                  value={filters.inspection_hit_count}
-                  onChange={(e) => this.handleFilterChange('inspection_hit_count', e.target.value)}
+                  fullWidth label="고장"
+                  value={filters.failure}
+                  onChange={(e) => this.handleFilterChange('failure', e.target.value)}
                   size="small" variant="outlined"
                 />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth label="유지보수주기" type="number"
-                  value={filters.maintenance_cycle}
-                  onChange={(e) => this.handleFilterChange('maintenance_cycle', e.target.value)}
-                  size="small" variant="outlined"
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth label="주기단위"
-                  value={filters.maintenance_cycle_unit}
-                  onChange={(e) => this.handleFilterChange('maintenance_cycle_unit', e.target.value)}
-                  size="small" variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth label="진행률(%) (이상)" type="number"
-                  value={filters.progress_min}
-                  onChange={(e) => this.handleFilterChange('progress_min', e.target.value)}
-                  size="small" variant="outlined" inputProps={{ step: '0.01' }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth label="진행률(%) (이하)" type="number"
-                  value={filters.progress_max}
-                  onChange={(e) => this.handleFilterChange('progress_max', e.target.value)}
-                  size="small" variant="outlined" inputProps={{ step: '0.01' }}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth label="기능위치"
-                  value={filters.functional_location}
-                  onChange={(e) => this.handleFilterChange('functional_location', e.target.value)}
-                  size="small" variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth label="기능위치 내역"
-                  value={filters.functional_location_desc}
-                  onChange={(e) => this.handleFilterChange('functional_location_desc', e.target.value)}
-                  size="small" variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth label="계획자그룹"
-                  value={filters.planner_group}
-                  onChange={(e) => this.handleFilterChange('planner_group', e.target.value)}
-                  size="small" variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth label="유지보수계획"
-                  value={filters.maintenance_plan}
-                  onChange={(e) => this.handleFilterChange('maintenance_plan', e.target.value)}
-                  size="small" variant="outlined"
-                />
-              </Grid>
-
-              {/* 품번 1~5 */}
-              <Grid item xs={12} sm={6} md={2.4}>
-                <TextField fullWidth label="품번1"
-                  value={filters.part_no1}
-                  onChange={(e) => this.handleFilterChange('part_no1', e.target.value)}
-                  size="small" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6} md={2.4}>
-                <TextField fullWidth label="품번2"
-                  value={filters.part_no2}
-                  onChange={(e) => this.handleFilterChange('part_no2', e.target.value)}
-                  size="small" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6} md={2.4}>
-                <TextField fullWidth label="품번3"
-                  value={filters.part_no3}
-                  onChange={(e) => this.handleFilterChange('part_no3', e.target.value)}
-                  size="small" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6} md={2.4}>
-                <TextField fullWidth label="품번4"
-                  value={filters.part_no4}
-                  onChange={(e) => this.handleFilterChange('part_no4', e.target.value)}
-                  size="small" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6} md={2.4}>
-                <TextField fullWidth label="품번5"
-                  value={filters.part_no5}
-                  onChange={(e) => this.handleFilterChange('part_no5', e.target.value)}
-                  size="small" variant="outlined" />
               </Grid>
             </Grid>
           </Collapse>
@@ -639,4 +552,4 @@ class MoldBreakDownGrid extends Component {
   }
 }
 
-export default MoldBreakDownGrid;
+export default MoldBreakdownGrid;
