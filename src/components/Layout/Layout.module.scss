@@ -37,7 +37,7 @@
   flex-grow: 1;
   // 20px for footer height
   padding: $content-padding $content-padding ($content-padding + 20px);
-  background-color: $body-bg;
+  // background-color: $body-bg;
 
   @media (max-width: breakpoint-max(sm)) {
     padding: 25px $content-padding-sm ($content-padding + 30px);

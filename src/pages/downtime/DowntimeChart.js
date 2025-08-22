@@ -482,7 +482,7 @@ class DowntimeChart extends Component {
     const { themeHex } = this.props; // HEX만 꺼내 씀
 
     return (
-      <div className={s.root}>
+      <div className={s.root} >
         <div className={s.titleCon}>
           <h1 style={{ color: themeHex }}>비가동 데이터 차트</h1>
           <p className={s.contant}>비가동 현황을 차트로 한눈에 파악할 수 있습니다.</p>
@@ -496,15 +496,15 @@ class DowntimeChart extends Component {
           </Typography>
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      mb: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+                      mb: 3, p: 2, backgroundColor: 'background.paper', borderRadius: 2, border: '1px solid #e0e0e0' }}>
             {/* 프레스 */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, color: '#333', minWidth: '120px' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, minWidth: '120px' }}>
                 프레스(작업장):
               </Typography>
               <TextField
                 select size="small" value={kpiFilters.press} onChange={this.onKpiChange('press')}
-                sx={{ backgroundColor: 'white', minWidth: 200,
+                sx={{ backgroundColor: 'background.paper', minWidth: 200,
                       '& .MuiOutlinedInput-root': {
                         '&:hover fieldset': { borderColor: '#4CAF50' },
                         '&.Mui-focused fieldset': { borderColor: '#4CAF50' },
@@ -520,19 +520,21 @@ class DowntimeChart extends Component {
 
             {/* 기간 */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, color: '#333', minWidth: '80px' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, minWidth: '80px' }}>
                 기간 선택:
               </Typography>
               <TextField type="date" size="small" value={kpiFilters.start_work_date} onChange={this.onKpiChange('start_work_date')}
-                sx={{ backgroundColor: 'white',
+                sx={{ 
+                      backgroundColor: 'background.paper',
                       '& .MuiOutlinedInput-root': {
                         '&:hover fieldset': { borderColor: '#4CAF50' },
                         '&.Mui-focused fieldset': { borderColor: '#4CAF50' },
-                      }}}
+                  }}}
               />
               <Typography variant="body2" sx={{ color: '#666' }}>~</Typography>
               <TextField type="date" size="small" value={kpiFilters.end_work_date} onChange={this.onKpiChange('end_work_date')}
-                sx={{ backgroundColor: 'white',
+                sx={{ 
+                      backgroundColor: 'background.paper',    
                       '& .MuiOutlinedInput-root': {
                         '&:hover fieldset': { borderColor: '#4CAF50' },
                         '&.Mui-focused fieldset': { borderColor: '#4CAF50' },
@@ -550,9 +552,23 @@ class DowntimeChart extends Component {
               { label: '최다 비가동명', value: kpiSummary.topName, icon: <BuildIcon color="error" /> },
             ].map((kpi, i) => (
               <Grid item xs={12} sm={6} md={3} key={i}>
-                <Paper elevation={3} sx={{ p: 2, borderRadius: '16px', textAlign: 'center',
-                  height: 160, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
+                <Paper 
+                  elevation={3} 
+                  sx={{ 
+                    p: 2, 
+                    borderRadius: '16px', 
+                    textAlign: 'center',
+                    height: 160, 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'center',
+                    "&:hover": {
+                        backgroundColor: "#f5f5f5", // hover 시 배경색
+                        cursor: "pointer",          // 마우스 포인터
+                      },
+                    }}>
+                  <Box 
+                    sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
                     {React.cloneElement(kpi.icon, { fontSize: "large" })}
                   </Box>
                   <Typography variant="overline" sx={{fontSize: '13px', fontWeight: 'bold', color: 'text.secondary'}}>{kpi.label}</Typography>
@@ -571,8 +587,8 @@ class DowntimeChart extends Component {
           </Typography>
 
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 2, p: 2,
-                      backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #e0e0e0' }}>
-            <Typography variant="body2" sx={{ fontWeight: 500, color: '#333', minWidth: '20px' }}>
+                      backgroundColor: 'background.paper', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+            <Typography variant="body2" sx={{ fontWeight: 500, minWidth: '20px' }}>
               자재번호:
             </Typography>
 
@@ -636,7 +652,7 @@ class DowntimeChart extends Component {
                     ),
                   }}
                   sx={{ 
-                    backgroundColor: 'white',
+                    backgroundColor: 'background.paper',
                     borderRadius: '8px',
                     minWidth: 220,
                     '& .MuiOutlinedInput-root': {
@@ -698,7 +714,7 @@ class DowntimeChart extends Component {
           <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={12} md={6}>
               <Paper sx={{ p: 2, borderRadius: '16px', height: '100%', display: 'flex',
-                           flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                            flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
                 <Typography variant="h6" sx={{ mb: 1, fontWeight: 600, textAlign: 'center' }}>
                   {chartItemCode} · 비가동명 비중 (Top {this.PIE_TOP_N}{this.PIE_WITH_OTHERS ? ' + 기타' : ''})
                 </Typography>
@@ -733,10 +749,18 @@ class DowntimeChart extends Component {
                 {topNotes.length ? (
                   <List dense>
                     {topNotes.map((n, i) => (
-                      <ListItem key={i} disableGutters>
+                      <ListItem 
+                      key={i} 
+                      disableGutters 
+                      sx={{
+                        "&:hover": {
+                          backgroundColor: "#f5f5f5", // hover 시 배경색
+                          cursor: "pointer",          // 마우스 포인터
+                        },
+                      }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                                     width: '100%', p: 0.5, borderBottom: '1px solid #f0f0f0' }}>
-                          <Box sx={{ fontSize: '0.85rem', fontWeight: 500, color: '#333' }}>
+                          <Box sx={{ fontSize: '0.85rem', fontWeight: 500 }}>
                             {i + 1}. {n.text}
                           </Box>
                           <Stack direction="row" spacing={1} sx={{ minWidth: 85 }}>

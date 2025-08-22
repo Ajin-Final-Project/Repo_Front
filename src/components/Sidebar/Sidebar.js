@@ -894,7 +894,6 @@ class Sidebar extends React.Component {
             <span className={s.companyType}>INDS., LTD.</span> */}
           </header>
           <section className={s.menuWrapper}>
-            <h5 className={s.navTitle}>APP</h5>
             <ul className={s.nav}>
               <LinksGroup
                 onActiveSidebarItemChange={(activeItem) =>
