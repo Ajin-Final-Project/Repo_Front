@@ -1,152 +1,469 @@
+// // .root {
+// //   background: #f5f7fb;
+// //   min-height: 100vh;
+// //   padding: 24px;
+// // }
+
+// // /* Top Bar */
+// // .topbar {
+// //   display: flex;
+// //   flex-direction: column;
+// //   align-items: stretch;
+// //   gap: 12px;
+// //   margin-bottom: 16px;
+// // }
+
+// // .titleWrap {
+// //   display: flex;
+// //   flex-direction: column;
+// //   gap: 6px;
+// // }
+
+// // .breadcrumb {
+// //   background: #e8f2ff;
+// //   color: #1e88e5;
+// //   padding: 4px 10px;
+// //   border-radius: 12px;
+// //   width: fit-content;
+// //   font-weight: 600;
+// //   letter-spacing: 0.2px;
+// // }
+
+// // .pageTitle { color: #2f3640; font-weight: 900; }
+// // .pageDesc  { color: #6b7076; }
+
+// // /* 필터 바 */
+// // .tools {
+// //   display: flex;
+// //   flex-wrap: wrap;
+// //   gap: 10px 12px;
+// //   align-items: center;
+// //   background: #f9fbff;
+// //   border: 1px solid #e3e7ee;
+// //   border-radius: 12px;
+// //   padding: 12px;
+// //   width: 100%;
+// // }
+// // .field      { width: 190px; }
+// // .fieldSmall { width: 120px; }
+// // /* ✅ 날짜도 Select와 같은 폭/높이로 */
+// // .dateField  { width: 190px; }
+// // .rowBreak { flex-basis: 100%; height: 0; }
+
+// // .buttonGroup {
+// //   display: flex;
+// //   gap: 8px;
+// //   margin-left: auto;
+// // }
+
+// // /* KPI */
+// // .kpiCard {
+// //   border: 1px solid #eceff1;
+// //   border-radius: 12px;
+// //   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+// //   transition: transform .15s ease;
+// //   height: 100%;
+// //   display: flex;
+// // }
+// // .kpiCard:hover { transform: translateY(-2px); }
+
+// // .kpiBody {
+// //   padding: 16px;
+// //   text-align: left;
+// //   display: flex;
+// //   flex-direction: column;
+// //   justify-content: space-between;
+// //   height: 100%;
+// //   flex: 1;
+// // }
+
+// // .kpiTitle { font-size: 12px; font-weight: 800; opacity: 0.9; }
+// // .kpiValue { font-size: 22px; font-weight: 900; margin-top: 4px; }
+
+// // .kpiFoot {
+// //   display: flex;
+// //   justify-content: space-between;
+// //   align-items: center;
+// //   margin-top: 6px;
+// // }
+// // .kpiSub { font-size: 12px; color: #8694a5; }
+
+// // /* 공통 섹션 */
+// // .section {
+// //   background: #fff;
+// //   border: 1px solid #eceff1;
+// //   border-radius: 12px;
+// //   padding: 16px;
+// //   box-shadow: 0 2px 10px rgba(0,0,0,.03);
+// //   display: flex;
+// //   flex-direction: column;
+// //   height: 100%;
+// //   width: 100%;
+// // }
+
+// // .sectionHeader {
+// //   display: flex;
+// //   align-items: center;
+// //   justify-content: space-between;
+// //   margin-bottom: 8px;
+// // }
+// // .sectionTitle {
+// //   display: flex;
+// //   align-items: center;
+// //   gap: 8px;
+// //   font-weight: 900;
+// //   letter-spacing: .2px;
+// // }
+
+// // /* Donut legend */
+// // .legendRow {
+// //   display: flex;
+// //   gap: 16px;
+// //   flex-wrap: wrap;
+// //   justify-content: center;
+// //   margin-top: 8px;
+// //   color: #677483;
+// //   font-size: 13px;
+// // }
+// // .legendItem { display: inline-flex; align-items: center; gap: 6px; }
+// // .legendDot { width: 10px; height: 10px; border-radius: 999px; }
+
+// // /* 반응형 */
+// // @media (max-width: 960px) {
+// //   .field, .fieldSmall, .dateField { width: 100%; }
+// //   .buttonGroup { width: 100%; justify-content: flex-end; }
+// // }
+
+// .root {
+//   background: #f5f7fb;
+//   min-height: 100vh;
+//   padding: 24px;
+// }
+
+// /* Top Bar */
+// .topbar {
+//   display: flex;
+//   flex-direction: column;
+//   align-items: stretch;
+//   gap: 12px;
+//   margin-bottom: 16px;
+// }
+
+// .titleWrap {
+//   display: flex;
+//   flex-direction: column;
+//   gap: 6px;
+// }
+
+// .breadcrumb {
+//   background: #e8f2ff;
+//   color: #1e88e5;
+//   padding: 4px 10px;
+//   border-radius: 12px;
+//   width: fit-content;
+//   font-weight: 600;
+//   letter-spacing: 0.2px;
+// }
+
+// .pageTitle { color: #2f3640; font-weight: 900; }
+// .pageDesc  { color: #6b7076; }
+
+// /* 필터 바 */
+// .tools {
+//   display: flex;
+//   flex-wrap: wrap;
+//   gap: 10px 12px;
+//   align-items: center;
+//   background: #f9fbff;
+//   border: 1px solid #e3e7ee;
+//   border-radius: 12px;
+//   padding: 12px;
+//   width: 100%;
+// }
+// .field      { width: 190px; }
+// .fieldSmall { width: 120px; }
+// .dateField  { width: 190px; }
+// .rowBreak { flex-basis: 100%; height: 0; }
+
+// /* 오른쪽 컨트롤(프리셋 + 버튼) */
+// .rightControls {
+//   margin-left: auto;
+//   display: flex;
+//   align-items: center;
+//   gap: 8px;
+//   flex-wrap: wrap;
+// }
+
+// .presetBar {
+//   display: flex;
+//   gap: 6px;
+//   flex-wrap: wrap;
+// }
+
+// .presetBtn {
+//   text-transform: none !important;
+//   font-weight: 700 !important;
+//   height: 32px;
+// }
+
+// .buttonGroup {
+//   display: flex;
+//   gap: 8px;
+//   /* margin-left 제거 → 프리셋 바로 우측에 버튼 배치 */
+// }
+
+// /* KPI */
+// .kpiCard {
+//   border: 1px solid #eceff1;
+//   border-radius: 12px;
+//   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+//   transition: transform .15s ease;
+//   height: 100%;
+//   display: flex;
+// }
+// .kpiCard:hover { transform: translateY(-2px); }
+
+// .kpiBody {
+//   padding: 16px;
+//   text-align: left;
+//   display: flex;
+//   flex-direction: column;
+//   justify-content: space-between;
+//   height: 100%;
+//   flex: 1;
+// }
+
+// .kpiTitle { font-size: 12px; font-weight: 800; opacity: 0.9; }
+// .kpiValue { font-size: 22px; font-weight: 900; margin-top: 4px; }
+
+// .kpiFoot {
+//   display: flex;
+//   justify-content: space-between;
+//   align-items: center;
+//   margin-top: 6px;
+// }
+// .kpiSub { font-size: 12px; color: #8694a5; }
+
+// /* 공통 섹션 */
+// .section {
+//   background: #fff;
+//   border: 1px solid #eceff1;
+//   border-radius: 12px;
+//   padding: 16px;
+//   box-shadow: 0 2px 10px rgba(0,0,0,.03);
+//   display: flex;
+//   flex-direction: column;
+//   height: 100%;
+//   width: 100%;
+// }
+
+// .sectionHeader {
+//   display: flex;
+//   align-items: center;
+//   justify-content: space-between;
+//   margin-bottom: 8px;
+// }
+// .sectionTitle {
+//   display: flex;
+//   align-items: center;
+//   gap: 8px;
+//   font-weight: 900;
+//   letter-spacing: .2px;
+// }
+
+// /* Donut legend */
+// .legendRow {
+//   display: flex;
+//   gap: 16px;
+//   flex-wrap: wrap;
+//   justify-content: center;
+//   margin-top: 8px;
+//   color: #677483;
+//   font-size: 13px;
+// }
+// .legendItem { display: inline-flex; align-items: center; gap: 6px; }
+// .legendDot { width: 10px; height: 10px; border-radius: 999px; }
+
+// /* 반응형 */
+// @media (max-width: 960px) {
+//   .field, .fieldSmall, .dateField { width: 100%; }
+//   .rightControls { width: 100%; justify-content: flex-end; }
+// }
+
 .root {
-  padding: 20px;
-  background-color: #f5f5f5;
+  background: #f5f7fb;
   min-height: 100vh;
+  padding: 24px;
+  position: relative; /* 내부로 렌더된 레이어 기준 명확히 */
 }
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-.container h1 {
-  background: linear-gradient(135deg, #FF9800, #FF5722);
-  color: white;
-  margin: 0;
-  padding: 20px;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.chartSection {
-  padding: 30px;
-}
-
-.chartContainer {
-  margin-bottom: 30px;
-}
-
-.chartContainer h3 {
-  color: #333;
-  margin-bottom: 20px;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.chartGrid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.chartItem {
-  text-align: center;
-}
-
-.chartBar {
-  height: 200px;
-  background-color: #f0f0f0;
-  border-radius: 8px;
-  position: relative;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: flex-end;
-  overflow: hidden;
-}
-
-.barFill {
-  width: 100%;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  min-height: 20px;
-}
-
-.chartLabel {
+/* Top Bar */
+.topbar {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  font-size: 12px;
-  color: #666;
+  align-items: stretch;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
-.averageRate {
-  font-weight: 600;
-  color: #9C27B0;
-}
-
-.chartLegend {
+.titleWrap {
   display: flex;
-  justify-content: center;
-  gap: 20px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.legendItem {
+.breadcrumb {
+  background: #e8f2ff;
+  color: #1e88e5;
+  padding: 4px 10px;
+  border-radius: 12px;
+  width: fit-content;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.pageTitle { color: #2f3640; font-weight: 900; }
+.pageDesc  { color: #6b7076; }
+
+/* 필터 바 */
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  align-items: center;
+  background: #f9fbff;
+  border: 1px solid #e3e7ee;
+  border-radius: 12px;
+  padding: 12px;
+  width: 100%;
+}
+
+.field      { width: 190px; }
+.fieldSmall { width: 120px; }
+.dateField  { width: 190px; }
+.rowBreak   { flex-basis: 100%; height: 0; }
+
+/* 오른쪽 컨트롤 */
+.rightControls {
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
-  color: #666;
+  flex-wrap: wrap;
 }
 
-.legendColor {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
+.presetBtn {
+  text-transform: none !important;
+  font-weight: 700 !important;
+  height: 32px;
 }
 
-.summaryCards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+/* 드롭다운/팝오버 Paper */
+.menuPaper {
+  padding: 4px 0;
+  border: 1px solid #e3e7ee;
+  border-radius: 12px !important;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0,0,0,.08);
 }
 
-.summaryCard {
-  background: linear-gradient(135deg, #FF9800, #FF5722);
-  color: white;
-  padding: 20px;
-  border-radius: 8px;
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+.customPaper {
+  padding: 12px;
+  border: 1px solid #e3e7ee !important;
+  border-radius: 12px !important;
+  background: #fff;
+  box-shadow: 0 6px 24px rgba(0,0,0,.08);
 }
 
-.summaryCard h4 {
-  margin: 0 0 10px 0;
-  font-size: 14px;
-  font-weight: 500;
-  opacity: 0.9;
+.customRow { width: 300px; margin-bottom: 8px; }
+.customRow:last-child { margin-bottom: 0; }
+
+/* KPI */
+.kpiCard {
+  border: 1px solid #eceff1;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: transform .15s ease;
+  height: 100%;
+  display: flex;
+}
+.kpiCard:hover { transform: translateY(-2px); }
+
+.kpiBody {
+  padding: 16px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  flex: 1;
 }
 
-.summaryValue {
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 5px;
+.kpiTitle { font-size: 12px; font-weight: 800; opacity: 0.9; }
+.kpiValue { font-size: 22px; font-weight: 900; margin-top: 4px; }
+
+.kpiFoot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}
+.kpiSub { font-size: 12px; color: #8694a5; }
+
+/* 공통 섹션 */
+.section {
+  background: #fff;
+  border: 1px solid #eceff1;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.03);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
 }
 
-.summaryUnit {
-  font-size: 12px;
-  opacity: 0.8;
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 900;
+  letter-spacing: .2px;
 }
 
-@media (max-width: 768px) {
-  .chartGrid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-  }
-  
-  .summaryCards {
-    grid-template-columns: 1fr;
-    gap: 15px;
-  }
-  
-  .chartLegend {
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-  }
+/* Donut legend */
+.legendRow {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 8px;
+  color: #677483;
+  font-size: 13px;
+}
+.legendItem { display: inline-flex; align-items: center; gap: 6px; }
+.legendDot { width: 10px; height: 10px; border-radius: 999px; }
+
+/* 도넛 중앙 텍스트 */
+.donutCenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+/* 반응형 */
+@media (max-width: 960px) {
+  .field, .fieldSmall, .dateField { width: 100%; }
+  .rightControls { width: 100%; justify-content: flex-end; }
+  .customRow { width: 100%; }
 }
