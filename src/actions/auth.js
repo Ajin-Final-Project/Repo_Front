@@ -21,9 +21,11 @@ export const REGISTER_REQUEST = 'REGISTER_REQUEST';
 export const REGISTER_SUCCESS = 'REGISTER_SUCCESS';
 export const LOGIN_FAILURE = 'LOGIN_FAILURE';
 
+const API_BASE = process.env.REACT_APP_API_BASE;
+
 async function findMe() {
   if (config.isBackend) {
-    const response = await axios.get('/auth/me');
+    const response = await axios.get(`${API_BASE}/auth/me`);
     return response.data;
   } else {
     return mockUser;
@@ -50,20 +52,18 @@ export function doInit() {
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          // ✅ 토큰이 있으면 헤더를 확실히 복구하고 /auth/me 호출
+          // ✅ 토큰이 있으면 헤더를 복구하고 /auth/me 호출
           axios.defaults.headers.common['Authorization'] = "Bearer " + token;
           currentUser = await findMe();
         }
         dispatch({ type: AUTH_INIT_SUCCESS, payload: { currentUser } });
       } catch (error) {
-        // 토큰 문제면 조용히 정리
         const code = error?.response?.status;
         if (code === 401 || code === 404) {
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           delete axios.defaults.headers.common['Authorization'];
         } else {
-          // 그 외만 사용자에게 노출
           Errors.handle(error);
         }
         dispatch({ type: AUTH_INIT_ERROR, payload: error });
@@ -81,11 +81,6 @@ export function logoutUser() {
     dispatch(requestLogout());
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-
-    // document.cookie = 'token=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    // axios.defaults.headers.common['Authorization'] = "";
-    
-    // 쿠키 안 쓰니 위 줄은 의미 없음. Authorization은 "삭제"가 핵심
     delete axios.defaults.headers.common['Authorization'];
     dispatch(receiveLogout());
     dispatch(push('/login'));
@@ -109,7 +104,6 @@ export function receiveToken(token) {
     localStorage.setItem('user', JSON.stringify(user));
     axios.defaults.headers.common['Authorization'] = "Bearer " + token;
     dispatch(receiveLogin());
-    // dispatch(push('/app'));
     dispatch(push('/app/dashboard/analytics'));
   }
 }
@@ -123,23 +117,25 @@ export function loginUser(creds) {
     } else {
       dispatch(requestLogin());
       if (creds.social) {
-        window.location.href = config.baseURLApi + "/auth/signin/" + creds.social + '?app=' + config.redirectUrl;
+        window.location.href =
+          API_BASE + "/auth/signin/" + creds.social + '?app=' + config.redirectUrl;
       } else if (creds.email?.length > 0 && creds.password?.length > 0) {
-        axios.post("/auth/login", creds).then(({ data }) => {
-          const token = data?.token || data; // {token, user} 또는 문자열 대응
-          dispatch(receiveToken(token));
-          dispatch(doInit());
-          dispatch(push('/app'));
-        }).catch(err => {
-          // ✅ 에러 메시지를 문자열로 안전하게 추출
-          const msg =
-            err?.response?.data?.detail ||
-            err?.response?.data?.message ||
-            (typeof err?.response?.data === 'string' ? err.response.data : null) ||
-            err?.message ||
-            '로그인에 실패했습니다.';
-          dispatch(loginError(msg));
-        });
+        axios.post(`${API_BASE}/auth/login`, creds)
+          .then(({ data }) => {
+            const token = data?.token || data; // {token, user} 또는 문자열 대응
+            dispatch(receiveToken(token));
+            dispatch(doInit());
+            dispatch(push('/app'));
+          })
+          .catch(err => {
+            const msg =
+              err?.response?.data?.detail ||
+              err?.response?.data?.message ||
+              (typeof err?.response?.data === 'string' ? err.response.data : null) ||
+              err?.message ||
+              '로그인에 실패했습니다.';
+            dispatch(loginError(msg));
+          });
       } else {
         dispatch(authError('아이디와 비밀번호를 입력하세요.'));
       }
@@ -147,20 +143,21 @@ export function loginUser(creds) {
   };
 }
 
-// 아래 reset/send/register는 그대로 두셔도 무방 (로그인만 쓰면 호출 안 됨)
 export function resetPassword(token, password) {
   return (dispatch) => {
     if (!config.isBackend) {
       dispatch(push('/login'));
     } else {
       dispatch({ type: RESET_REQUEST });
-      axios.put("/auth/password-reset", { token, password }).then(() => {
-        dispatch({ type: RESET_SUCCESS });
-        toast.success("Password has been updated");
-        dispatch(push('/login'));
-      }).catch(err => {
-        dispatch(authError(err.response?.data));
-      })
+      axios.put(`${API_BASE}/auth/password-reset`, { token, password })
+        .then(() => {
+          dispatch({ type: RESET_SUCCESS });
+          toast.success("Password has been updated");
+          dispatch(push('/login'));
+        })
+        .catch(err => {
+          dispatch(authError(err.response?.data));
+        })
     }
   }
 }
@@ -171,13 +168,15 @@ export function sendPasswordResetEmail(email) {
       dispatch(push('/login'));
     } else {
       dispatch({ type: PASSWORD_RESET_EMAIL_REQUEST });
-      axios.post("/auth/send-password-reset-email", { email }).then(() => {
-        dispatch({ type: PASSWORD_RESET_EMAIL_SUCCESS });
-        toast.success("Email with resetting instructions has been sent");
-        dispatch(push('/login'));
-      }).catch(err => {
-        dispatch(authError(err.response?.data));
-      })
+      axios.post(`${API_BASE}/auth/send-password-reset-email`, { email })
+        .then(() => {
+          dispatch({ type: PASSWORD_RESET_EMAIL_SUCCESS });
+          toast.success("Email with resetting instructions has been sent");
+          dispatch(push('/login'));
+        })
+        .catch(err => {
+          dispatch(authError(err.response?.data));
+        })
     }
   }
 }
@@ -189,13 +188,15 @@ export function registerUser(creds) {
     } else {
       dispatch({ type: REGISTER_REQUEST });
       if (creds.email?.length > 0 && creds.password?.length > 0) {
-        axios.get("/auth/singup", creds).then(() => {
-          dispatch({ type: REGISTER_SUCCESS });
-          toast.success("You've been registered successfully. Please check your email for verification link");
-          dispatch(push('/user/profile'));
-        }).catch(err => {
-          dispatch(authError(err.response?.data));
-        })
+        axios.get(`${API_BASE}/auth/singup`, creds)
+          .then(() => {
+            dispatch({ type: REGISTER_SUCCESS });
+            toast.success("You've been registered successfully. Please check your email for verification link");
+            dispatch(push('/user/profile'));
+          })
+          .catch(err => {
+            dispatch(authError(err.response?.data));
+          })
       } else {
         dispatch(authError('Something was wrong. Try again.'));
       }

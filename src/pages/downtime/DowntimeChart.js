@@ -465,9 +465,24 @@ class DowntimeChart extends Component {
                   { label: '최다 비가동명', value: kpiSummary.topName, icon: <BuildIcon color="error" /> },
                 ].map((kpi, i) => (
                   <Grid item xs={12} sm={6} md={3} key={i}>
-                    <Paper elevation={3} sx={{ p:2, borderRadius:'16px', textAlign:'center',
-                      height:160, display:'flex', flexDirection:'column', justifyContent:'center',
-                      "&:hover": { backgroundColor:"#f5f5f5", cursor:"pointer" }}}>
+                    <Paper
+                      elevation={3}
+                      sx={(theme) => ({
+                        p: 2,
+                        borderRadius: "16px",
+                        textAlign: "center",
+                        height: 160,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        "&:hover": {
+                          backgroundColor:
+                            theme.palette.mode === "dark" ? "#444" : "#f5f5f5",
+                          cursor: "pointer",
+                        },
+                      })}
+                    >
+
                       <Box sx={{ display:'flex', justifyContent:'center', mb:1 }}>
                         {React.cloneElement(kpi.icon, { fontSize:"large" })}
                       </Box>
@@ -631,7 +646,17 @@ class DowntimeChart extends Component {
                     {topNotes.length ? (
                       <List dense>
                         {topNotes.map((n, i) => (
-                          <ListItem key={i} disableGutters sx={{ "&:hover": { backgroundColor: "#f5f5f5", cursor: "pointer" }}}>
+                          <ListItem 
+                            key={i} 
+                            disableGutters 
+                            sx={(theme) => ({ 
+                              "&:hover": {
+                                backgroundColor:
+                                  theme.palette.mode === "dark" ? "#444" : "#f5f5f5",
+                                cursor: "pointer",
+                              },
+                            })}
+                          >
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                                         width: '100%', p: 0.5, borderBottom: '1px solid #f0f0f0' }}>
                               <Box sx={{ fontSize: '0.85rem', fontWeight: 500 }}>
