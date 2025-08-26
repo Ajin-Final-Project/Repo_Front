@@ -1,5 +1,73 @@
+// @import '../../styles/app';
+
+// .root {
+//   height: 100%;
+//   position: relative;
+//   left: 0;
+//   transition: left $sidebar-transition-time ease-in-out;
+// }
+
+// .wrap {
+//   position: relative;
+//   min-height: 100vh;
+//   display: flex;
+//   margin-left: 284px;
+//   flex-direction: column;
+//   //left: $sidebar-width-open - $sidebar-width-closed;
+//   right: 0;
+//   transition: left $sidebar-transition-time ease-in-out, margin-left $sidebar-transition-time ease-in-out;
+
+//   @media (max-width: breakpoint-max(sm)) {
+//     margin-left: 0;
+//     //left: $sidebar-width-open;
+//   }
+// }
+
+// .sidebarClose div.wrap {
+//   left: 0;
+// }
+
+// .sidebarStatic .wrap {
+//   left: 0;
+//   margin-left: $sidebar-width-open;
+// }
+
+// .content {
+//   position: relative;
+//   flex-grow: 1;
+//   // 20px for footer height
+//   padding: $content-padding $content-padding ($content-padding + 20px);
+//   // background-color: $body-bg;
+
+//   @media (max-width: breakpoint-max(sm)) {
+//     padding: 25px $content-padding-sm ($content-padding + 30px);
+//   }
+
+//   // hammers disallows text selection, allowing it for large screens
+//   @media (min-width: breakpoint-min(sm)) {
+//     user-select: auto !important;
+//   }
+// }
+
+// .contentFooter {
+//   position: absolute;
+//   bottom: 15px;
+//   color: $text-muted;
+// }
+
 @import '../../styles/app';
 
+/* 사이드바 폭 기본값(전역에 없으면 사용됨) */
+$sidebar-width-open: 284px !default;  /* 펼침 폭 */
+$sidebar-width-mini: 56px !default;   /* 아이콘 레일 폭 */
+
+/* JS에서도 쓰기 쉽게 CSS 변수로 노출 */
+:root {
+  --sidebar-open-w: #{$sidebar-width-open};
+  --sidebar-mini-w: #{$sidebar-width-mini};
+}
+
+/* root 컨테이너 */
 .root {
   height: 100%;
   position: relative;
@@ -7,43 +75,53 @@
   transition: left $sidebar-transition-time ease-in-out;
 }
 
+/* 본문 래퍼: 좌측 여백을 사이드바 폭에 연동 */
 .wrap {
   position: relative;
   min-height: 100vh;
   display: flex;
-  margin-left: 284px;
+
+  /* 사이드바 폭을 CSS 변수(--sidebar-w)로 전달받아 사용
+     (전달 안되면 open 폭이 기본값) */
+  margin-left: var(--sidebar-w, var(--sidebar-open-w));
+
   flex-direction: column;
-  //left: $sidebar-width-open - $sidebar-width-closed;
   right: 0;
-  transition: left $sidebar-transition-time ease-in-out, margin-left $sidebar-transition-time ease-in-out;
+  transition:
+    left $sidebar-transition-time ease-in-out,
+    margin-left $sidebar-transition-time ease-in-out;
 
   @media (max-width: breakpoint-max(sm)) {
-    margin-left: 0;
-    //left: $sidebar-width-open;
+    margin-left: 0; /* 모바일에선 사이드바 오버레이 처리 */
   }
 }
 
-.sidebarClose div.wrap {
-  left: 0;
+/* sidebarClose 클래스가 붙으면(데스크톱) 아이콘 레일 폭 사용 */
+.root.sidebarClose .wrap {
+  margin-left: var(--sidebar-mini-w);
+
+  @media (max-width: breakpoint-max(sm)) {
+    margin-left: 0;
+  }
 }
 
+/* 고정 사이드바(기존 동작 유지) */
 .sidebarStatic .wrap {
   left: 0;
-  margin-left: $sidebar-width-open;
+  margin-left: var(--sidebar-open-w);
 }
 
 .content {
   position: relative;
   flex-grow: 1;
-  // 20px for footer height
+  /* 20px for footer height */
   padding: $content-padding $content-padding ($content-padding + 20px);
-  // background-color: $body-bg;
 
   @media (max-width: breakpoint-max(sm)) {
     padding: 25px $content-padding-sm ($content-padding + 30px);
   }
 
-  // hammers disallows text selection, allowing it for large screens
+  /* hammers disallows text selection, allowing it for large screens */
   @media (min-width: breakpoint-min(sm)) {
     user-select: auto !important;
   }

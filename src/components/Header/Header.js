@@ -28,9 +28,8 @@ import {
 } from "../../actions/navigation";
 
 import userAvatar from "../../images/userAvatar.jpg";
-import arrowActive from '../../images/Arrow 6.svg'
-import arrowUnactive from '../../images/Arrow 5.svg'
-
+import arrowActive from "../../images/Arrow 6.svg";
+import arrowUnactive from "../../images/Arrow 5.svg";
 
 import s from "./Header.module.scss";
 
@@ -67,13 +66,13 @@ class Header extends React.Component {
       showNewMessage: false,
       hideMessage: true,
       run: false,
-      arrowImg: arrowUnactive
+      arrowImg: arrowUnactive,
     };
   }
 
   componentDidMount() {
-    if (window.location.href.includes('main')){
-      this.setState({run: true})
+    if (window.location.href.includes("main")) {
+      this.setState({ run: true });
     }
   }
 
@@ -105,14 +104,14 @@ class Header extends React.Component {
 
   changeArrowImg() {
     this.setState({
-      arrowImg: arrowActive
-    })
+      arrowImg: arrowActive,
+    });
   }
 
   changeArrowImgOut() {
     this.setState({
-      arrowImg: arrowUnactive
-    })
+      arrowImg: arrowUnactive,
+    });
   }
 
   // collapse/uncolappse
@@ -147,15 +146,11 @@ class Header extends React.Component {
       menuOpen: !this.state.menuOpen,
     });
   }
-  render() {
-    const { focus } = this.state;
-    const { navbarType, navbarColor, openUsersList } = this.props;
-    
-    // ✅ 기존
-    // const user = JSON.parse(localStorage.getItem("user") || {});
-    // const firstUserLetter = (user.name || user.email || "카리나")[0].toUpperCase();
 
-    // ✅ 수정
+  render() {
+    const { navbarType, navbarColor, openUsersList } = this.props;
+
+    // 사용자 정보 안전 파싱
     const raw = localStorage.getItem("user");
     let user = null;
     try {
@@ -167,129 +162,100 @@ class Header extends React.Component {
     const avatarLetter =
       (user?.name?.charAt(0) || user?.email?.charAt(0) || "U").toUpperCase();
 
-
-    console.log(user)
     return (
       <Navbar
-  className={`${s.root} ${cx({[s.rootLight]: navbarColor === '#FFFFFF'})} d-print-none ${
-    navbarType === NavbarTypes.FLOATING ? s.navbarFloatingType : ""
-  }`}
-  style={{ zIndex: !openUsersList ? 100 : 0, backgroundColor: navbarColor }}
->
-  {/* 좌측: 토글/검색 등 */}
-  <NavItem className={`${s.toggleSidebarNav} d-md-none d-flex mr-2`}>
-    {/* ... */}
-  </NavItem>
-  <NavItem className={"d-md-down-block d-md-none ml-auto"}>
-    {/* ... */}
-  </NavItem>
-
-  {/* ① 왼쪽 Nav: 알림/메시지 */}
-  <Nav className="align-items-center">
-    <Dropdown
-      nav
-      isOpen={this.state.notificationsOpen}
-      toggle={this.toggleNotifications}
-      id="basic-nav-dropdown"
-      className={s.notificationsMenu}
-    >
-      <DropdownMenu
-        right
-        className={`${s.notificationsWrapper} py-0 animated animated-fast fadeInUp`}
+        className={`${s.root} ${cx({
+          [s.rootLight]: navbarColor === "#FFFFFF",
+        })} d-print-none ${
+          navbarType === NavbarTypes.FLOATING ? s.navbarFloatingType : ""
+        }`}
+        style={{ zIndex: !openUsersList ? 100 : 0, backgroundColor: navbarColor }}
       >
-        <Notifications />
-      </DropdownMenu>
-    </Dropdown>
+        {/* (왼쪽 토글 핸들 제거됨) */}
 
-    <Dropdown
-      nav
-      isOpen={this.state.messagesOpen}
-      toggle={this.toggleMessages}
-      className={s.notificationsMenu}
-    >
-      <DropdownMenu
-        right
-        className={`${s.notificationsWrapper} py-0 animated animated-fast fadeInUp`}
-      >
-        <Notifications notificationsTabSelected={2} />
-      </DropdownMenu>
-    </Dropdown>
-  </Nav>
+        {/* 좌측—모바일 전용 메뉴 자리(필요 시 사용) */}
+        <NavItem className={"d-md-down-block d-md-none ml-auto"}>{/* ... */}</NavItem>
 
-  {/* ② 오른쪽 Nav: 계정 (여기에 ml/ms-auto!) */}
-  <Nav className="ml-auto align-items-center">{/* BS5라면 ms-auto 로 교체 */}
-    <Dropdown
-      nav
-      isOpen={this.state.accountOpen}
-      toggle={this.toggleAccount}
-      className={s.notificationsMenu}
-    >
-      <DropdownToggle
-        nav
-        className={chroma(navbarColor).luminance() < 0.4 ? "text-white" : ""}
-        aria-label="Account menu"
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {/* ① 왼쪽 Nav: 알림/메시지 */}
+        <Nav className="align-items-center">
+          <Dropdown
+            nav
+            isOpen={this.state.notificationsOpen}
+            toggle={this.toggleNotifications}
+            id="basic-nav-dropdown"
+            className={s.notificationsMenu}
+          >
+            <DropdownMenu
+              right
+              className={`${s.notificationsWrapper} py-0 animated animated-fast fadeInUp`}
+            >
+              <Notifications />
+            </DropdownMenu>
+          </Dropdown>
 
-          {/* ✅ 기존 */}
-          {/* <span className="navbar-text">AJIN INDUSTRIAL CO.LTD</span> */}
-          {/* 오타: calssName */}
-          {/* <span calssName="navbar-text">{firstUserLetter}님</span> */}
-          {/* <span className={`${s.avatar} rounded-circle thumb-sm`}>
-            {user?.avatar || user?.email === "admin@flatlogic.com" ? (
-              <img src={user?.avatar || userAvatar} alt="User avatar" />
-            ) : (
-              <span>{(user?.email?.[0] || "?").toUpperCase()}</span>
-            )}
-          </span> */}
+          <Dropdown
+            nav
+            isOpen={this.state.messagesOpen}
+            toggle={this.toggleMessages}
+            className={s.notificationsMenu}
+          >
+            <DropdownMenu
+              right
+              className={`${s.notificationsWrapper} py-0 animated animated-fast fadeInUp`}
+            >
+              <Notifications notificationsTabSelected={2} />
+            </DropdownMenu>
+          </Dropdown>
+        </Nav>
 
-          {/* ✅ 수정 */}
-          <span className="navbar-text">AJIN INDUSTRIAL CO.LTD</span>
-          <span className="navbar-text">{displayName} 님</span>
-          <span className={`${s.avatar} rounded-circle thumb-sm`}>
-            {user?.avatar ? (
-              <img src={user.avatar} alt="User avatar" />
-            ) : (
-              <span>{avatarLetter}</span>
-            )}
-          </span>
-        </div>
-      </DropdownToggle>
+        {/* ② 오른쪽 Nav: 계정 */}
+        <Nav className="ml-auto align-items-center">
+          <Dropdown
+            nav
+            isOpen={this.state.accountOpen}
+            toggle={this.toggleAccount}
+            className={s.notificationsMenu}
+          >
+            <DropdownToggle
+              nav
+              className={chroma(navbarColor).luminance() < 0.4 ? "text-white" : ""}
+              aria-label="Account menu"
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span className="navbar-text">AJIN INDUSTRIAL CO.LTD</span>
+                <span className="navbar-text">{displayName} 님</span>
+                <span className={`${s.avatar} rounded-circle thumb-sm`}>
+                  {user?.avatar ? (
+                    <img src={user.avatar} alt="User avatar" />
+                  ) : (
+                    <span>{avatarLetter}</span>
+                  )}
+                </span>
+              </div>
+            </DropdownToggle>
 
-      {/* 기존 */}
-      {/* <DropdownMenu
-        end
-        className={`${s.notificationsWrapper} py-0 animated animated-fast fadeInUp`}
-      >
-        <Notifications notificationsTabSelected={4} />
-      </DropdownMenu> */}
+            <DropdownMenu
+              end
+              className={`${s.notificationsWrapper} py-0 animated animated-fast fadeInUp`}
+            >
+              <div className="p-3">
+                <div className="mb-1 font-weight-bold">
+                  {user?.name || user?.email?.split("@")[0] || "User"}
+                  {user?.role ? (
+                    <span className="text-muted" style={{ marginLeft: 8 }}>
+                      | {user.role}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="text-warning">{user?.email || ""}</div>
+              </div>
 
-      {/* 수정: 사용자 정보/로그아웃을 직접 렌더링 */}
-      <DropdownMenu
-        end
-        className={`${s.notificationsWrapper} py-0 animated animated-fast fadeInUp`}
-      >
-        <div className="p-3">
-          <div className="mb-1 font-weight-bold">
-            {user?.name || (user?.email?.split('@')[0]) || 'User'}
-            {user?.role ? (
-              <span className="text-muted" style={{ marginLeft: 8 }}>
-                | {user.role}
-              </span>
-            ) : null}
-          </div>
-          <div className="text-warning">
-            {user?.email || ''}
-          </div>
-        </div>
-
-        {/* ▶ 원래 템플릿의 메뉴(아이콘 포함) */}
-        <Notifications notificationsTabSelected={4} hideHeader />
-        
-      </DropdownMenu>
-    </Dropdown>
-  </Nav>
-</Navbar>
+              {/* 원래 템플릿의 메뉴(아이콘 포함) */}
+              <Notifications notificationsTabSelected={4} hideHeader />
+            </DropdownMenu>
+          </Dropdown>
+        </Nav>
+      </Navbar>
     );
   }
 }

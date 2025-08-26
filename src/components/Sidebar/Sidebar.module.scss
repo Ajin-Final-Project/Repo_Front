@@ -1,16 +1,688 @@
+// // // @import "../../styles/app";
+
+// // // // 안전한 기본값(전역에 이미 있으면 이 값은 무시됨)
+// // // $font-weight-medium: 500 !default;
+
+// // // .root {
+// // //   position: fixed;
+// // //   width: $sidebar-width-open;
+// // //   left: 0;
+// // //   top: 0;
+// // //   bottom: 0;
+// // //   height: 100vh;
+// // //   //border-right: $sidebar-border;
+// // //   background-color: var(--sidebar-bg-color);
+// // //   color: var(--sidebar-color);
+// // //   transition: background-color 0.2s ease, margin 0.2s ease;
+
+// // //   .menuWrapper {
+// // //     @include scroll-bar($sidebar-scrollbar-bg);
+// // //     overflow-y: auto;
+// // //     height: 100%;
+// // //   }
+// // // }
+
+// // // .logoStyle {
+// // //   margin-right: 8px;
+// // // }
+
+// // // .sidebarWrapper {
+// // //   position: absolute;
+// // //   left: 0;
+// // //   top: 0;
+// // //   bottom: 0;
+// // //   overflow-y: hidden;
+// // //   overflow-x: hidden;
+// // //   min-width: $sidebar-width-open;
+// // //   transition: min-width $sidebar-transition-time ease-in-out;
+// // //   background-color: var(--sidebar-bg-color);
+// // //   z-index: 999;
+// // //   box-shadow: 4px 4px 25px rgba(109, 105, 105, 0.15);
+// // // }
+
+// // // .sidebarClose.sidebarWrapper {
+// // //   @include media-breakpoint-down(sm) {
+// // //     min-width: 0;
+// // //   }
+// // //   & .root {
+// // //     @include media-breakpoint-down(sm) {
+// // //       width: 0;
+// // //     }
+// // //   }
+// // // }
+
+// // // .logo {
+// // //   display: flex;
+// // //   justify-content: center;
+// // //   align-items: center;
+// // //   height: 66px;
+// // //   background-color: var(--logo-background-color);
+// // //   font-size: 30px;
+// // //   width: 100%;
+// // //   font-weight: $font-weight-light;
+// // //   transition: width $sidebar-transition-time ease-in-out;
+// // //   color: var(--logo-color);
+// // //   a {
+// // //     padding: 0 5px;
+// // //     text-decoration: none;
+// // //     white-space: nowrap;
+// // //   }
+
+// // //   // 전체 폰트 한방에 조절
+// // //   // span {
+// // //   //   font-weight: $font-weight-bold;
+// // //   // }
+
+
+// // //   // 브랜드명-회사유형으로 나눠서 각각 따로 스타일 지정
+// // //   .brand {
+// // //     font-weight: $font-weight-bold; // AJIN만 굵게
+// // //     font-size: 1em;                 // .logo의 font-size 기준 1배
+// // //     letter-spacing: 0.02em;
+// // //   }
+
+// // //   .companyType {
+// // //     font-weight: $font-weight-medium; // 500(중간 굵기)
+// // //     font-size: 0.5em;                // AJIN 대비 약 50%
+// // //     letter-spacing: 0.06em;
+// // //     opacity: 0.9;
+// // //     margin-left: 0.12em;              // 약간의 간격
+// // //     white-space: nowrap;              // 줄바꿈 방지
+// // //   }
+
+// // //   // 반응형(선택)
+// // //   @media (max-width: 1200px) {
+// // //     font-size: 26px;                  // 전체 기준 크기 축소
+// // //   }
+// // //   @media (max-width: 768px) {
+// // //     font-size: 22px;
+// // //     .companyType { font-size: 0.74em; }
+// // //   }
+// // // }
+
+
+
+// // // .sidebarClose .logo {
+// // //   display: none;
+// // // }
+
+// // // .staticSidebar .logo {
+// // //   width: 100%;
+// // // }
+
+// // // .nav {
+// // //   padding: 30px 0 10px;
+// // //   overflow-y: auto;
+// // //   overflow-x: hidden;
+// // // }
+
+// // // .downNav {
+// // //   hr {
+// // //     background-color: rgba(#000000, 0.2);
+// // //     width: 85%;
+// // //   }
+// // //   padding: 0 0 10px;
+// // //   overflow-y: auto;
+// // //   overflow-x: hidden;
+// // //   width: 100%;
+// // //   height: 250px;
+// // // }
+
+// // // .navTitle {
+// // //   margin: 35px 0 0px 32px;
+// // //   font-size: $font-size-larger;
+// // //   transition: opacity $sidebar-transition-time ease-in-out;
+// // //   color: var(--sidebar-nav-title-color);
+
+// // //   @media (min-width: breakpoint-min(lg)) {
+// // //     opacity: 1;
+// // //   }
+// // // }
+
+// // // .sidebarClose .navTitle {
+// // //   opacity: 0;
+// // // }
+
+// // // .staticSidebar .navTitle {
+// // //   opacity: 1;
+// // //   transition: none;
+// // // }
+
+// // // .actionLink {
+// // //   color: #aaa;
+// // //   float: right;
+// // //   margin-right: 15px;
+// // //   margin-top: -1px;
+// // // }
+
+// // // .labelName {
+// // //   opacity: 1;
+// // //   transition: opacity $sidebar-transition-time ease-in-out;
+// // // }
+
+// // // .sidebarClose .labelName {
+// // //   opacity: 0;
+// // // }
+
+// // // .staticSidebar .labelName {
+// // //   transition: none;
+// // //   opacity: 1;
+// // // }
+
+// // // .glyphiconSm {
+// // //   font-size: 9px;
+// // // }
+
+// // // .sidebarLabels {
+// // //   margin-left: 5px;
+// // //   list-style-type: none;
+// // //   padding: 11px;
+// // //   padding-right: 15px;
+
+// // //   > li + li {
+// // //     margin-top: 10px;
+// // //   }
+
+// // //   li > a {
+// // //     font-size: $font-size-base;
+// // //     color: var(--sidebar-color);
+// // //     text-decoration: none;
+
+// // //     > i {
+// // //       font-size: 11px;
+// // //       vertical-align: 1px;
+// // //       transition: margin-left $sidebar-transition-time ease-in-out;
+// // //     }
+// // //   }
+// // // }
+
+// // // .sidebarClose {
+// // //   .sidebarLabels > li > a > i {
+// // //     margin-left: 8px;
+// // //     transition: margin-left $sidebar-transition-time ease-in-out;
+// // //   }
+// // // }
+
+// // // .staticSidebar {
+// // //   .sidebarLabels > li > a > i {
+// // //     transition: none;
+// // //     margin-left: 0;
+// // //   }
+// // // }
+
+// // // .sidebarAlerts {
+// // //   margin-bottom: $spacer * 2;
+// // //   transition: opacity $sidebar-transition-time ease-in-out;
+// // //   opacity: 1;
+// // // }
+
+// // // .sidebarClose .sidebarAlerts {
+// // //   opacity: 0;
+// // // }
+
+// // // .staticSidebar .sidebarAlerts {
+// // //   opacity: 1;
+// // //   transition: none;
+// // // }
+
+// // // .sidebarAlert {
+// // //   background: transparent;
+// // //   margin-bottom: 0;
+// // //   padding: 0.5rem 11px;
+// // //   padding-right: 15px;
+// // // }
+
+// // // .sidebarProgress {
+// // //   background-color: var(--sidebar-progress-bg-color);
+// // // }
+
+// // // .groupTitle {
+// // //   margin-bottom: 15px;
+// // // }
+
+
+// // @import "../../styles/app";
+
+// // // 안전한 기본값(전역에 이미 있으면 이 값은 무시됨)
+// // $font-weight-medium: 500 !default;
+
+// // .root {
+// //   position: fixed;
+// //   width: $sidebar-width-open;
+// //   left: 0;
+// //   top: 0;
+// //   bottom: 0;
+// //   height: 100vh;
+// //   background-color: var(--sidebar-bg-color);
+// //   color: var(--sidebar-color);
+// //   transition: background-color 0.2s ease, margin 0.2s ease;
+
+// //   .menuWrapper {
+// //     @include scroll-bar($sidebar-scrollbar-bg);
+// //     overflow-y: auto;
+// //     height: 100%;
+// //   }
+// // }
+
+// // .logoStyle {
+// //   margin-right: 8px;
+// // }
+
+// // .sidebarWrapper {
+// //   position: absolute;
+// //   left: 0;
+// //   top: 0;
+// //   bottom: 0;
+// //   overflow-y: hidden;
+// //   overflow-x: hidden;
+// //   min-width: $sidebar-width-open;
+// //   transition: min-width $sidebar-transition-time ease-in-out;
+// //   background-color: var(--sidebar-bg-color);
+// //   z-index: 999;
+// //   box-shadow: 4px 4px 25px rgba(109, 105, 105, 0.15);
+// // }
+
+// // .sidebarClose.sidebarWrapper {
+// //   @include media-breakpoint-down(sm) {
+// //     min-width: 0;
+// //   }
+// //   & .root {
+// //     @include media-breakpoint-down(sm) {
+// //       width: 0;
+// //     }
+// //   }
+// // }
+
+// // /* ------------------ 로고 영역 ------------------ */
+// // .logo {
+// //   display: flex;
+// //   justify-content: center;
+// //   align-items: center;
+// //   height: 66px;
+// //   background-color: var(--logo-background-color);
+// //   font-size: 30px;
+// //   width: 100%;
+// //   font-weight: $font-weight-light;
+// //   transition: width $sidebar-transition-time ease-in-out, opacity .2s ease;
+// //   color: var(--logo-color);
+// //   cursor: pointer;                 /* 버튼 역할 */
+// //   user-select: none;
+
+// //   a {
+// //     padding: 0 5px;
+// //     text-decoration: none;
+// //     white-space: nowrap;
+// //   }
+
+// //   /* 로고 이미지 기본 크기 */
+// //   .logoImg { height: 36px; }
+
+// //   /* 기본(열림) 상태: 심볼만 버튼, 글자 로고는 숨김 */
+// //   .logoFull { display: none; }     /* 글자 포함 로고 */
+// //   .logoMark { display: block; }    /* 심볼 로고 */
+// // }
+
+// // /* 닫힘 상태에서는 글자 포함 로고가 버튼, 심볼은 숨김 */
+// // .sidebarClose .logo {
+// //   .logoFull { display: block; }
+// //   .logoMark { display: none; }
+// // }
+
+// // /* 브랜드/회사타입 텍스트(사용 시) */
+// // .brand {
+// //   font-weight: $font-weight-bold;
+// //   font-size: 1em;
+// //   letter-spacing: 0.02em;
+// // }
+
+// // .companyType {
+// //   font-weight: $font-weight-medium;
+// //   font-size: 0.5em;
+// //   letter-spacing: 0.06em;
+// //   opacity: 0.9;
+// //   margin-left: 0.12em;
+// //   white-space: nowrap;
+// // }
+
+// // @media (max-width: 1200px) {
+// //   .logo { font-size: 26px; }
+// // }
+// // @media (max-width: 768px) {
+// //   .logo { font-size: 22px; }
+// //   .companyType { font-size: 0.74em; }
+// // }
+
+// // /* ------------------ 메뉴/푸터 ------------------ */
+
+// // .nav {
+// //   padding: 30px 0 10px;
+// //   overflow-y: auto;
+// //   overflow-x: hidden;
+// // }
+
+// // .downNav {
+// //   hr {
+// //     background-color: rgba(#000000, 0.2);
+// //     width: 85%;
+// //   }
+// //   padding: 0 0 10px;
+// //   overflow-y: auto;
+// //   overflow-x: hidden;
+// //   width: 100%;
+// //   height: 250px;
+// // }
+
+// // .navTitle {
+// //   margin: 35px 0 0px 32px;
+// //   font-size: $font-size-larger;
+// //   transition: opacity $sidebar-transition-time ease-in-out;
+// //   color: var(--sidebar-nav-title-color);
+
+// //   @media (min-width: breakpoint-min(lg)) {
+// //     opacity: 1;
+// //   }
+// // }
+
+// // .sidebarClose .navTitle { opacity: 0; }
+
+// // .staticSidebar .navTitle {
+// //   opacity: 1;
+// //   transition: none;
+// // }
+
+// // .actionLink {
+// //   color: #aaa;
+// //   float: right;
+// //   margin-right: 15px;
+// //   margin-top: -1px;
+// // }
+
+// // .labelName {
+// //   opacity: 1;
+// //   transition: opacity $sidebar-transition-time ease-in-out;
+// // }
+
+// // .sidebarClose .labelName { opacity: 0; }
+
+// // .staticSidebar .labelName {
+// //   transition: none;
+// //   opacity: 1;
+// // }
+
+// // .glyphiconSm { font-size: 9px; }
+
+// // .sidebarLabels {
+// //   margin-left: 5px;
+// //   list-style-type: none;
+// //   padding: 11px;
+// //   padding-right: 15px;
+
+// //   > li + li { margin-top: 10px; }
+
+// //   li > a {
+// //     font-size: $font-size-base;
+// //     color: var(--sidebar-color);
+// //     text-decoration: none;
+
+// //     > i {
+// //       font-size: 11px;
+// //       vertical-align: 1px;
+// //       transition: margin-left $sidebar-transition-time ease-in-out;
+// //     }
+// //   }
+// // }
+
+// // .sidebarClose {
+// //   .sidebarLabels > li > a > i {
+// //     margin-left: 8px;
+// //     transition: margin-left $sidebar-transition-time ease-in-out;
+// //   }
+// // }
+
+// // .staticSidebar {
+// //   .sidebarLabels > li > a > i {
+// //     transition: none;
+// //     margin-left: 0;
+// //   }
+// // }
+
+// // .sidebarAlerts {
+// //   margin-bottom: $spacer * 2;
+// //   transition: opacity $sidebar-transition-time ease-in-out;
+// //   opacity: 1;
+// // }
+
+// // .sidebarClose .sidebarAlerts { opacity: 0; }
+
+// // .staticSidebar .sidebarAlerts {
+// //   opacity: 1;
+// //   transition: none;
+// // }
+
+// // .sidebarAlert {
+// //   background: transparent;
+// //   margin-bottom: 0;
+// //   padding: 0.5rem 11px;
+// //   padding-right: 15px;
+// // }
+
+// // .sidebarProgress { background-color: var(--sidebar-progress-bg-color); }
+
+// // .groupTitle { margin-bottom: 15px; }
+
+// @import "../../styles/app";
+
+// /* 전역에 없을 때 쓸 안전한 기본값 */
+// $sidebar-width-open: 260px !default;
+// $sidebar-width-mini: 64px !default;
+// $sidebar-transition-time: .25s !default;
+// $sidebar-scrollbar-bg: rgba(0, 0, 0, .15) !default;
+// $font-weight-medium: 500 !default;
+
+// .root {
+//   position: fixed;
+//   width: $sidebar-width-open;
+//   left: 0; top: 0; bottom: 0;
+//   height: 100vh;
+//   background-color: var(--sidebar-bg-color);
+//   color: var(--sidebar-color);
+//   transition: background-color 0.2s ease, margin 0.2s ease;
+
+//   .menuWrapper {
+//     @include scroll-bar($sidebar-scrollbar-bg);
+//     overflow-y: auto;
+//     height: 100%;
+//     position: relative; /* 아이콘 하단 고정용 */
+//   }
+// }
+
+// /* 기존 로고 이미지 여백 클래스(호환용) */
+// .logoStyle { margin-right: 8px; }
+
+// .sidebarWrapper {
+//   position: absolute;
+//   left: 0; top: 0; bottom: 0;
+//   overflow-y: hidden; overflow-x: hidden;
+
+//   width: $sidebar-width-open;
+//   min-width: $sidebar-width-open;
+
+//   transition:
+//     width $sidebar-transition-time ease-in-out,
+//     min-width $sidebar-transition-time ease-in-out,
+//     background-color 0.2s ease;
+//   background-color: var(--sidebar-bg-color);
+//   z-index: 999;
+//   box-shadow: 4px 4px 25px rgba(109, 105, 105, 0.15);
+// }
+
+// /* 닫힘: 데스크톱=미니폭, 모바일=완전닫힘 */
+// .sidebarClose.sidebarWrapper {
+//   width: $sidebar-width-mini;
+//   min-width: $sidebar-width-mini;
+
+//   @include media-breakpoint-down(sm) {
+//     width: 0;
+//     min-width: 0;
+//   }
+
+//   & .root {
+//     width: $sidebar-width-mini;
+
+//     @include media-breakpoint-down(sm) { width: 0; }
+//   }
+// }
+
+// /* 헤더(로고) */
+// .logo {
+//   display: flex; justify-content: center; align-items: center;
+//   height: 66px;
+//   background-color: var(--logo-background-color);
+//   font-size: 30px; width: 100%;
+//   font-weight: $font-weight-light;
+//   transition: width $sidebar-transition-time ease-in-out;
+//   color: var(--logo-color);
+//   cursor: pointer;
+
+//   a { padding: 0 5px; text-decoration: none; white-space: nowrap; }
+//   .brand { font-weight: $font-weight-bold; font-size: 1em; letter-spacing: .02em; }
+//   .companyType { font-weight: $font-weight-medium; font-size: .5em; letter-spacing: .06em; opacity: .9; margin-left: .12em; white-space: nowrap; }
+
+//   @media (max-width: 1200px) { font-size: 26px; }
+//   @media (max-width: 768px)  { font-size: 22px; .companyType { font-size: .74em; } }
+// }
+
+// /* 로고 토글 공통 */
+// .logoImg { height: 80px; width: auto; display: block; }
+// .logoFull { display: block; }   /* 열림: 글자 로고 표시 */
+// .logoMark { display: none; }  /* 열림: 심볼 숨김 */
+
+// .sidebarClose .logoFull { display: none; }  /* 닫힘: 글자 로고 숨김 */
+// .sidebarClose .logoMark { display: block; }   /* 닫힘: 심볼 표시 */
+
+// /* 모바일에서 닫힘이면 로고 영역 숨김 */
+// .sidebarClose .logo {
+//   @include media-breakpoint-down(sm) { display: none; }
+// }
+
+// .staticSidebar .logo { width: 100%; }
+
+// /* ====== 펼침 모드에서 쓰는 풀 내비 ====== */
+// .nav {
+//   padding: 30px 0 10px;
+//   overflow-y: auto; overflow-x: hidden;
+// }
+// .downNav {
+//   hr { background-color: rgba(#000000, 0.2); width: 85%; }
+//   padding: 0 0 10px;
+//   overflow-y: auto; overflow-x: hidden;
+//   width: 100%; height: 250px;
+// }
+
+// /* 접힘일 때 풀 내비 숨김 */
+// .sidebarClose .nav,
+// .sidebarClose .downNav { display: none; }
+
+// /* ====== 접힘 모드 전용: 아이콘 내비 ====== */
+// .iconNav {
+//   display: none; /* 기본은 숨김, 접힘에서만 표시 */
+//   list-style: none;
+//   padding: 8px 0;
+//   margin: 0;
+//   width: 100%;
+// }
+// .iconItem {
+//   position: relative;
+// }
+// .iconBtn {
+//   width: 100%;
+//   height: 48px;
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+//   background: transparent;
+//   border: 0;
+//   padding: 0;
+//   cursor: pointer;
+//   text-decoration: none;
+//   color: inherit;
+// }
+// .iconBtn:hover {
+//   background: rgba(0,0,0,.06);
+// }
+// .iconBadge {
+//   position: absolute;
+//   top: 6px; right: 12px;
+//   transform: translateX(50%);
+//   min-width: 18px; height: 18px;
+//   border-radius: 9px;
+//   font-size: 11px;
+//   line-height: 18px;
+//   text-align: center;
+//   background: var(--badge-bg, #ffb800);
+//   color: #000;
+// }
+
+// /* 접힘 상태에서만 아이콘 내비 표시 */
+// .sidebarClose .iconNav { display: flex; flex-direction: column; }
+
+// /* 하단 고정 아이콘 바 */
+// .iconNavBottom {
+//   position: absolute;
+//   left: 0; right: 0; bottom: 0;
+//   padding-bottom: 10px;
+// }
+
+// /* ====== 기타 ====== */
+// .navTitle {
+//   margin: 35px 0 0 32px;
+//   font-size: $font-size-larger;
+//   transition: opacity $sidebar-transition-time ease-in-out;
+//   color: var(--sidebar-nav-title-color);
+//   @media (min-width: breakpoint-min(lg)) { opacity: 1; }
+// }
+// .sidebarClose .navTitle { opacity: 0; }
+// .staticSidebar .navTitle { opacity: 1; transition: none; }
+
+// .actionLink { color: #aaa; float: right; margin-right: 15px; margin-top: -1px; }
+// .labelName { opacity: 1; transition: opacity $sidebar-transition-time ease-in-out; }
+// .sidebarClose .labelName { opacity: 0; }
+// .staticSidebar .labelName { transition: none; opacity: 1; }
+
+// .glyphiconSm { font-size: 9px; }
+// .sidebarLabels {
+//   margin-left: 5px; list-style-type: none; padding: 11px; padding-right: 15px;
+//   > li + li { margin-top: 10px; }
+//   li > a {
+//     font-size: $font-size-base; color: var(--sidebar-color); text-decoration: none;
+//     > i { font-size: 11px; vertical-align: 1px; transition: margin-left $sidebar-transition-time ease-in-out; }
+//   }
+// }
+// .sidebarClose { .sidebarLabels > li > a > i { margin-left: 8px; transition: margin-left $sidebar-transition-time ease-in-out; } }
+// .staticSidebar { .sidebarLabels > li > a > i { transition: none; margin-left: 0; } }
+
+// .sidebarAlerts { margin-bottom: $spacer * 2; transition: opacity $sidebar-transition-time ease-in-out; opacity: 1; }
+// .sidebarClose .sidebarAlerts { opacity: 0; }
+// .staticSidebar .sidebarAlerts { opacity: 1; transition: none; }
+
+// .sidebarAlert { background: transparent; margin-bottom: 0; padding: .5rem 11px; padding-right: 15px; }
+// .sidebarProgress { background-color: var(--sidebar-progress-bg-color); }
+// .groupTitle { margin-bottom: 15px; }
+
 @import "../../styles/app";
 
-// 안전한 기본값(전역에 이미 있으면 이 값은 무시됨)
+/* 전역에 없을 때 쓸 안전한 기본값 */
+$sidebar-width-open: 260px !default;
+$sidebar-width-mini: 64px !default;
+$sidebar-transition-time: .25s !default;
+$sidebar-scrollbar-bg: rgba(0, 0, 0, .15) !default;
 $font-weight-medium: 500 !default;
 
 .root {
   position: fixed;
   width: $sidebar-width-open;
-  left: 0;
-  top: 0;
-  bottom: 0;
+  left: 0; top: 0; bottom: 0;
   height: 100vh;
-  //border-right: $sidebar-border;
   background-color: var(--sidebar-bg-color);
   color: var(--sidebar-color);
   transition: background-color 0.2s ease, margin 0.2s ease;
@@ -19,223 +691,186 @@ $font-weight-medium: 500 !default;
     @include scroll-bar($sidebar-scrollbar-bg);
     overflow-y: auto;
     height: 100%;
+    position: relative; /* 아이콘 하단 고정용 */
   }
 }
 
-.logoStyle {
-  margin-right: 8px;
-}
+/* 기존 로고 이미지 여백 클래스(호환용) */
+.logoStyle { margin-right: 8px; }
 
 .sidebarWrapper {
   position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  overflow-y: hidden;
-  overflow-x: hidden;
+  left: 0; top: 0; bottom: 0;
+  overflow-y: hidden; overflow-x: hidden;
+
+  width: $sidebar-width-open;
   min-width: $sidebar-width-open;
-  transition: min-width $sidebar-transition-time ease-in-out;
+
+  /* 상태별 토큰 */
+  --logo-open-h: 80px;     /* 열림(워드마크) 높이 */
+  --logo-closed-h: 45px;   /* 닫힘(심볼) 높이     */
+  --icon-size: 24px;       /* 내비 아이콘 통일 크기 */
+  --logo-h: var(--logo-open-h);
+
+  transition:
+    width $sidebar-transition-time ease-in-out,
+    min-width $sidebar-transition-time ease-in-out,
+    background-color 0.2s ease;
   background-color: var(--sidebar-bg-color);
   z-index: 999;
   box-shadow: 4px 4px 25px rgba(109, 105, 105, 0.15);
 }
 
+/* 닫힘: 데스크톱=미니폭, 모바일=완전닫힘 */
 .sidebarClose.sidebarWrapper {
+  width: $sidebar-width-mini;
+  min-width: $sidebar-width-mini;
+  --logo-h: var(--logo-closed-h);
+
   @include media-breakpoint-down(sm) {
+    width: 0;
     min-width: 0;
   }
+
   & .root {
-    @include media-breakpoint-down(sm) {
-      width: 0;
-    }
+    width: $sidebar-width-mini;
+
+    @include media-breakpoint-down(sm) { width: 0; }
   }
 }
 
+/* 헤더(로고) */
 .logo {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: flex; justify-content: center; align-items: center;
   height: 66px;
   background-color: var(--logo-background-color);
-  font-size: 30px;
-  width: 100%;
+  font-size: 30px; width: 100%;
   font-weight: $font-weight-light;
   transition: width $sidebar-transition-time ease-in-out;
   color: var(--logo-color);
-  a {
-    padding: 0 5px;
-    text-decoration: none;
-    white-space: nowrap;
-  }
+  cursor: pointer;
 
-  // 전체 폰트 한방에 조절
-  // span {
-  //   font-weight: $font-weight-bold;
-  // }
+  a { padding: 0 5px; text-decoration: none; white-space: nowrap; }
+  .brand { font-weight: $font-weight-bold; font-size: 1em; letter-spacing: .02em; }
+  .companyType { font-weight: $font-weight-medium; font-size: .5em; letter-spacing: .06em; opacity: .9; margin-left: .12em; white-space: nowrap; }
 
-
-  // 브랜드명-회사유형으로 나눠서 각각 따로 스타일 지정
-  .brand {
-    font-weight: $font-weight-bold; // AJIN만 굵게
-    font-size: 1em;                 // .logo의 font-size 기준 1배
-    letter-spacing: 0.02em;
-  }
-
-  .companyType {
-    font-weight: $font-weight-medium; // 500(중간 굵기)
-    font-size: 0.5em;                // AJIN 대비 약 50%
-    letter-spacing: 0.06em;
-    opacity: 0.9;
-    margin-left: 0.12em;              // 약간의 간격
-    white-space: nowrap;              // 줄바꿈 방지
-  }
-
-  // 반응형(선택)
-  @media (max-width: 1200px) {
-    font-size: 26px;                  // 전체 기준 크기 축소
-  }
-  @media (max-width: 768px) {
-    font-size: 22px;
-    .companyType { font-size: 0.74em; }
-  }
+  @media (max-width: 1200px) { font-size: 26px; }
+  @media (max-width: 768px)  { font-size: 22px; .companyType { font-size: .74em; } }
 }
 
+/* 로고 토글 공통 */
+.logoImg { height: var(--logo-h); width: auto; display: block; }
+.logoFull { display: block; }   /* 열림: 글자 로고 표시 */
+.logoMark { display: none; }    /* 열림: 심볼 숨김 */
 
+.sidebarClose .logoFull { display: none; }  /* 닫힘: 글자 로고 숨김 */
+.sidebarClose .logoMark { display: block; } /* 닫힘: 심볼 표시 */
 
+/* 모바일에서 닫힘이면 로고 영역 숨김 */
 .sidebarClose .logo {
-  display: none;
+  @include media-breakpoint-down(sm) { display: none; }
 }
 
-.staticSidebar .logo {
-  width: 100%;
-}
+.staticSidebar .logo { width: 100%; }
 
+/* ====== 펼침 모드에서 쓰는 풀 내비 ====== */
 .nav {
   padding: 30px 0 10px;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow-y: auto; overflow-x: hidden;
 }
-
 .downNav {
-  hr {
-    background-color: rgba(#000000, 0.2);
-    width: 85%;
-  }
+  hr { background-color: rgba(#000000, 0.2); width: 85%; }
   padding: 0 0 10px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  width: 100%;
-  height: 250px;
+  overflow-y: auto; overflow-x: hidden;
+  width: 100%; height: 250px;
 }
 
+/* 접힘일 때 풀 내비 숨김 */
+.sidebarClose .nav,
+.sidebarClose .downNav { display: none; }
+
+/* ====== 접힘 모드 전용: 아이콘 내비 ====== */
+.iconNav {
+  display: none; /* 기본은 숨김, 접힘에서만 표시 */
+  list-style: none;
+  padding: 8px 0;
+  margin: 0;
+  width: 100%;
+}
+.iconItem { position: relative; }
+
+.iconBtn {
+  width: 100%;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+
+  img { width: var(--icon-size); height: var(--icon-size); } /* 아이콘 크기 통일 */
+}
+.iconBtn:hover { background: rgba(0,0,0,.06); }
+
+.iconBadge {
+  position: absolute;
+  top: 6px; right: 12px;
+  transform: translateX(50%);
+  min-width: 18px; height: 18px;
+  border-radius: 9px;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  background: var(--badge-bg, #ffb800);
+  color: #000;
+}
+
+/* 접힘 상태에서만 아이콘 내비 표시 */
+.sidebarClose .iconNav { display: flex; flex-direction: column; }
+
+/* 하단 고정 아이콘 바 */
+.iconNavBottom {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding-bottom: 10px;
+}
+
+/* ====== 기타 ====== */
 .navTitle {
-  margin: 35px 0 0px 32px;
+  margin: 35px 0 0 32px;
   font-size: $font-size-larger;
   transition: opacity $sidebar-transition-time ease-in-out;
   color: var(--sidebar-nav-title-color);
-
-  @media (min-width: breakpoint-min(lg)) {
-    opacity: 1;
-  }
+  @media (min-width: breakpoint-min(lg)) { opacity: 1; }
 }
+.sidebarClose .navTitle { opacity: 0; }
+.staticSidebar .navTitle { opacity: 1; transition: none; }
 
-.sidebarClose .navTitle {
-  opacity: 0;
-}
+.actionLink { color: #aaa; float: right; margin-right: 15px; margin-top: -1px; }
+.labelName { opacity: 1; transition: opacity $sidebar-transition-time ease-in-out; }
+.sidebarClose .labelName { opacity: 0; }
+.staticSidebar .labelName { transition: none; opacity: 1; }
 
-.staticSidebar .navTitle {
-  opacity: 1;
-  transition: none;
-}
-
-.actionLink {
-  color: #aaa;
-  float: right;
-  margin-right: 15px;
-  margin-top: -1px;
-}
-
-.labelName {
-  opacity: 1;
-  transition: opacity $sidebar-transition-time ease-in-out;
-}
-
-.sidebarClose .labelName {
-  opacity: 0;
-}
-
-.staticSidebar .labelName {
-  transition: none;
-  opacity: 1;
-}
-
-.glyphiconSm {
-  font-size: 9px;
-}
-
+.glyphiconSm { font-size: 9px; }
 .sidebarLabels {
-  margin-left: 5px;
-  list-style-type: none;
-  padding: 11px;
-  padding-right: 15px;
-
-  > li + li {
-    margin-top: 10px;
-  }
-
+  margin-left: 5px; list-style-type: none; padding: 11px; padding-right: 15px;
+  > li + li { margin-top: 10px; }
   li > a {
-    font-size: $font-size-base;
-    color: var(--sidebar-color);
-    text-decoration: none;
-
-    > i {
-      font-size: 11px;
-      vertical-align: 1px;
-      transition: margin-left $sidebar-transition-time ease-in-out;
-    }
+    font-size: $font-size-base; color: var(--sidebar-color); text-decoration: none;
+    > i { font-size: 11px; vertical-align: 1px; transition: margin-left $sidebar-transition-time ease-in-out; }
   }
 }
+.sidebarClose { .sidebarLabels > li > a > i { margin-left: 8px; transition: margin-left $sidebar-transition-time ease-in-out; } }
+.staticSidebar { .sidebarLabels > li > a > i { transition: none; margin-left: 0; } }
 
-.sidebarClose {
-  .sidebarLabels > li > a > i {
-    margin-left: 8px;
-    transition: margin-left $sidebar-transition-time ease-in-out;
-  }
-}
+.sidebarAlerts { margin-bottom: $spacer * 2; transition: opacity $sidebar-transition-time ease-in-out; opacity: 1; }
+.sidebarClose .sidebarAlerts { opacity: 0; }
+.staticSidebar .sidebarAlerts { opacity: 1; transition: none; }
 
-.staticSidebar {
-  .sidebarLabels > li > a > i {
-    transition: none;
-    margin-left: 0;
-  }
-}
-
-.sidebarAlerts {
-  margin-bottom: $spacer * 2;
-  transition: opacity $sidebar-transition-time ease-in-out;
-  opacity: 1;
-}
-
-.sidebarClose .sidebarAlerts {
-  opacity: 0;
-}
-
-.staticSidebar .sidebarAlerts {
-  opacity: 1;
-  transition: none;
-}
-
-.sidebarAlert {
-  background: transparent;
-  margin-bottom: 0;
-  padding: 0.5rem 11px;
-  padding-right: 15px;
-}
-
-.sidebarProgress {
-  background-color: var(--sidebar-progress-bg-color);
-}
-
-.groupTitle {
-  margin-bottom: 15px;
-}
+.sidebarAlert { background: transparent; margin-bottom: 0; padding: .5rem 11px; padding-right: 15px; }
+.sidebarProgress { background-color: var(--sidebar-progress-bg-color); }
+.groupTitle { margin-bottom: 15px; }
