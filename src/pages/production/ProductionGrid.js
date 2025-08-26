@@ -50,11 +50,15 @@ import {
   Clear as ClearIcon, 
   FilterList as FilterIcon,
   ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon
+  ExpandLess as ExpandLessIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon
 } from '@mui/icons-material';
 
 // SCSS 모듈 스타일을 import
 import s from './ProductionGrid.module.scss';
+
+// 품목 코드 선택 모달 컴포넌트 import
+import ItemCodeModal from './ItemCodeModal';
 
 /**
  * 생산 데이터 그리드 컴포넌트
@@ -96,6 +100,8 @@ class ProductionGrid extends Component {
       },
       // 필터 확장 상태 - 추가 필터를 펼칠지 말지를 결정
       filterExpanded: false,
+      // 품목 코드 선택 모달 상태
+      itemCodeModalOpen: false,     // 품목 코드 선택 모달 열림/닫힘 상태
       // 데이터 상태
       productionData: [],           // API에서 가져온 생산 데이터 배열
       loading: false,               // 데이터 로딩 중인지 여부
@@ -282,6 +288,33 @@ class ProductionGrid extends Component {
   };
 
   /**
+   * 품목 코드 선택 모달을 여는 메서드
+   */
+  openItemCodeModal = () => {
+    this.setState({ itemCodeModalOpen: true });
+  };
+
+  /**
+   * 품목 코드 선택 모달을 닫는 메서드
+   */
+  closeItemCodeModal = () => {
+    this.setState({ itemCodeModalOpen: false });
+  };
+
+  /**
+   * 품목 코드를 선택했을 때 호출되는 메서드
+   * @param {string} itemCode - 선택된 품목 코드
+   */
+  handleItemCodeSelect = (itemCode) => {
+    this.setState(prevState => ({
+      filters: {
+        ...prevState.filters,
+        itemCode: itemCode
+      }
+    }));
+  };
+
+  /**
    * DataGrid에 표시할 컬럼 정의
    * 각 컬럼의 속성과 렌더링 방식을 설정
    */
@@ -333,14 +366,14 @@ class ProductionGrid extends Component {
     },
     { 
       field: 'worker', 
-      headerName: '작업자', 
+      headerName: '작업장', 
       width: 100,
       headerClassName: 'super-app-theme--header',
       cellClassName: 'super-app-theme--cell'
     },
     { 
       field: 'workplace', 
-      headerName: '작업장', 
+      headerName: '작업자', 
       width: 100,
       headerClassName: 'super-app-theme--header',
       cellClassName: 'super-app-theme--cell'
@@ -361,7 +394,7 @@ class ProductionGrid extends Component {
     },
     { 
       field: 'carModel', 
-      headerName: '차량모델', 
+      headerName: '차종', 
       width: 100,
       headerClassName: 'super-app-theme--header',
       cellClassName: 'super-app-theme--cell'
@@ -639,7 +672,7 @@ class ProductionGrid extends Component {
               {/* 작업자 입력 필드 */}
               <TextField
                 fullWidth
-                label="작업자"
+                label="작업장"
                 value={filters.worker}
                 onChange={(e) => this.handleFilterChange('worker', e.target.value)}
                 size="small"
@@ -651,7 +684,7 @@ class ProductionGrid extends Component {
               {/* 작업장 입력 필드 */}
               <TextField
                 fullWidth
-                label="작업장"
+                label="작업자"
                 value={filters.workplace}
                 onChange={(e) => this.handleFilterChange('workplace', e.target.value)}
                 size="small"
@@ -666,8 +699,26 @@ class ProductionGrid extends Component {
                 label="품목코드"
                 value={filters.itemCode}
                 onChange={(e) => this.handleFilterChange('itemCode', e.target.value)}
+                onClick={this.openItemCodeModal}
                 size="small"
                 variant="outlined"
+                InputProps={{
+                  readOnly: true,
+                  style: { cursor: 'pointer' },
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
+                    </InputAdornment>
+                  )
+                }}
+                sx={{
+                  '& .MuiInputBase-root': {
+                    cursor: 'pointer',
+                    '&:hover': {
+                      backgroundColor: '#f5f5f5'
+                    }
+                  }
+                }}
               />
             </Grid>
             
@@ -929,10 +980,16 @@ class ProductionGrid extends Component {
                 paginationMode="client"       // 클라이언트 사이드 페이지네이션
                 pageSizeOptions={[10, 25, 50, 100]}  // 페이지 크기 선택 옵션
                 initialState={{
-                  pagination: {
-                    paginationModel: { page: 0, pageSize: 10 },  // 초기 페이지 설정
-                  },
+                  pagination: { paginationModel: { page: 0, pageSize: 10 } },
+                  columns: {
+                    columnVisibilityModel: {
+                      creator: false,       // 기존 constructor 대체
+                      createDate: false,
+                      sheetInputCoil: false, // hide:true 대신 여기서 숨김
+                      constructor: false
+                    }}
                 }}
+
                 disableRowSelectionOnClick   // 행 클릭 시 선택 비활성화
                 density="compact"             // 컴팩트한 행 높이
                 
@@ -955,9 +1012,12 @@ class ProductionGrid extends Component {
                     quickFilterProps: { debounceMs: 500 },  // 검색 지연 500ms
                   },
                 }}
-                
+
                 // 그리드 스타일링
-                sx={{
+
+  sx={{
+    /* 스크롤 시 고정 열이 비치지 않도록 */
+                  
                   // 헤더 스타일
                   '& .super-app-theme--header': {
                     backgroundColor: '#ff8f00',    // 머스타드 오렌지 배경
@@ -996,6 +1056,14 @@ class ProductionGrid extends Component {
             )}
           </Box>
         </Paper>
+
+        {/* 품목 코드 선택 모달 */}
+        <ItemCodeModal
+          open={this.state.itemCodeModalOpen}
+          onClose={this.closeItemCodeModal}
+          onSelect={this.handleItemCodeSelect}
+          selectedItemCode={this.state.filters.itemCode}
+        />
       </Box>
     );
   }
