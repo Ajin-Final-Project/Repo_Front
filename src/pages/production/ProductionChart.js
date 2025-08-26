@@ -1,43 +1,62 @@
 import React, { Component } from 'react';
-import { connect } from "react-redux";
+import { connect } from 'react-redux';
 
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { 
-  Box, 
-  Paper, 
-  Typography, 
-  Grid, 
-  Card, 
-  CardContent, 
-  CardHeader,
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import {
+  Box,
+  Paper,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
   Select,
   MenuItem,
   FormControl,
-  InputLabel,
-  TextField
+  TextField,
+  CircularProgress
 } from '@mui/material';
-import { 
+import {
   PieChart as PieChartIcon,
   BarChart as BarChartIcon,
-  TrendingUp as TrendingUpIcon
+  TrendingUp as TrendingUpIcon,
+  Monitor as MonitorIcon
 } from '@mui/icons-material';
 import s from './ProductionChart.module.scss';
 import config from '../../config';
 
-import { selectThemeHex, selectThemeKey } from '../../reducers/layout'; // 리덕스에서 색상 상태 불러옴
+import { selectThemeHex, selectThemeKey } from '../../reducers/layout';
 
 const t = config.app.themeColors;
-const primary = '#ffb300';       // 카드 라벨 등에서 쓰는 기본 포인트 색
-const info    = t.info;
+const primary = '#ffb300';
+const info = t.info;
 const success = t.success;
 const warning = t.warning;
-const danger  = t.danger;
+const danger = t.danger;
 
+// ✅ 퍼센트 정규화 유틸(문자/숫자 안전 처리)
+const toPercent = (v) => {
+  if (v == null) return 0;
+  if (typeof v === 'number' && Number.isFinite(v)) {
+    const pctNum = v <= 1 ? v * 100 : v;
+    return Math.max(0, Math.min(100, +pctNum.toFixed(2)));
+  }
+  const s = String(v).trim();
+  const cleaned = s.replace(/,/g, '').replace(/\s+/g, '');
+  if (/%$/.test(cleaned)) {
+    const n = parseFloat(cleaned.slice(0, -1));
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.min(100, +n.toFixed(2)));
+  }
+  const n = parseFloat(cleaned);
+  if (!Number.isFinite(n)) return 0;
+  const pct = n <= 1 ? n * 100 : n;
+  return Math.max(0, Math.min(100, +pct.toFixed(2)));
+};
 
 function mapStateToProps(state) {
   return {
     themeHex: selectThemeHex(state),
-    themeKey: selectThemeKey(state), 
+    themeKey: selectThemeKey(state)
   };
 }
 
@@ -51,47 +70,40 @@ class ProductionChart extends Component {
       endDate: '2025-06-30',
       pieChartData: [],
       barChartData: [],
+      liveChartData: [],
       loading: false,
+      liveLoading: false,
+      currentDataIndex: 0,
+      displayData: [],
       itemList: [],
-      productData: {
-        product1: [
-          { month: '1월', quantity: 1200 },
-          { month: '2월', quantity: 1350 },
-          { month: '3월', quantity: 1100 },
-          { month: '4월', quantity: 1400 },
-          { month: '5월', quantity: 1250 },
-          { month: '6월', quantity: 1300 }
-        ],
-        product2: [
-          { month: '1월', quantity: 800 },
-          { month: '2월', quantity: 950 },
-          { month: '3월', quantity: 900 },
-          { month: '4월', quantity: 1000 },
-          { month: '5월', quantity: 850 },
-          { month: '6월', quantity: 920 }
-        ],
-        product3: [
-          { month: '1월', quantity: 600 },
-          { month: '2월', quantity: 750 },
-          { month: '3월', quantity: 700 },
-          { month: '4월', quantity: 800 },
-          { month: '5월', quantity: 650 },
-          { month: '6월', quantity: 720 }
-        ]
-      }
+      summaryData: { totalProduction: 0, totalDefect: 0, totalRuntime: 0 },
     };
+    this.liveChartInterval = null;
+    this.dataAnimationInterval = null;
   }
 
   componentDidMount() {
     this.fetchItemList();
     this.fetchProductionData();
+    this.fetchBarChartData();
+    this.fetchLiveChartData();
+    this.liveChartInterval = setInterval(() => {
+      if (!this.isAnimating) this.fetchLiveChartData();
+    }, 1000000000);
+  }
+
+  componentWillUnmount() {
+    if (this.liveChartInterval) clearInterval(this.liveChartInterval);
+    if (this.dataAnimationInterval) clearInterval(this.dataAnimationInterval);
   }
 
   componentDidUpdate(prevProps, prevState) {
-    if (prevState.startDate !== this.state.startDate || 
-        prevState.endDate !== this.state.endDate || 
-        prevState.selectedCapacity !== this.state.selectedCapacity ||
-        prevState.selectedProduct !== this.state.selectedProduct) {
+    if (
+      prevState.startDate !== this.state.startDate ||
+      prevState.endDate !== this.state.endDate ||
+      prevState.selectedCapacity !== this.state.selectedCapacity ||
+      prevState.selectedProduct !== this.state.selectedProduct
+    ) {
       this.fetchProductionData();
       this.fetchBarChartData();
     }
@@ -99,709 +111,446 @@ class ProductionChart extends Component {
 
   fetchItemList = async () => {
     try {
-      const response = await fetch('http://localhost:8000/smartFactory/production_chart/item_list', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-
+      const response = await fetch('http://localhost:8000/smartFactory/production_chart/item_list');
+      if (!response.ok) throw new Error('Network response was not ok');
       const result = await response.json();
-      
-      if (result.message === "production item list 조회 성공") {
-        // null이 아닌 자재명만 필터링하고 첫 번째 항목을 기본값으로 설정
-        const validItems = result.data.filter(item => item.자재명 !== null);
-        this.setState({ 
+      if (result.message === 'production item list 조회 성공') {
+        const validItems = result.data.filter((item) => item.자재명 !== null);
+        this.setState({
           itemList: validItems,
           selectedProduct: validItems.length > 0 ? validItems[0].자재명 : ''
         });
       }
     } catch (error) {
-      console.error('Error fetching item list:', error);
-      // 에러 발생 시 기본 자재 목록으로 설정
       this.setState({
-        itemList: [
-          { 자재명: '제품 A' },
-          { 자재명: '제품 B' },
-          { 자재명: '제품 C' }
-        ],
+        itemList: [{ 자재명: '제품 A' }, { 자재명: '제품 B' }, { 자재명: '제품 C' }],
         selectedProduct: '제품 A'
       });
     }
-  }
+  };
 
   fetchProductionData = async () => {
     this.setState({ loading: true });
-    
     try {
       const response = await fetch('http://localhost:8000/smartFactory/production_chart/pie', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           start_work_date: this.state.startDate,
           end_work_date: this.state.endDate,
           workplace: this.state.selectedCapacity
         })
       });
-
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-
+      if (!response.ok) throw new Error('Network response was not ok');
       const result = await response.json();
-      
-      if (result.message === "production 테이블 조회 성공") {
+      if (result.message === 'production 테이블 조회 성공' || result.data) {
         this.processChartData(result.data);
+      } else {
+        throw new Error('API 응답에 데이터가 없습니다.');
       }
     } catch (error) {
-      console.error('Error fetching production data:', error);
-      // 에러 발생 시 기본 데이터로 설정
-      this.setState({
-        pieChartData: [
-          { name: '생산 완료율', value: 0, color: primary, type: 'product_rate' },
-          { name: '품질 합격률', value: 0, color: success, type: '생산비율' },
-          { name: '완료 수량', value: 0, color: info, type: 'sum_complete_count' },
-          { name: '가동 시간', value: 0, color: warning, type: 'sum_runtime' }
-        ]
-      });
-    } finally {
-      this.setState({ loading: false });
+      const defaultData = [
+        { name: '생산 완료율', value: 0, color: primary, type: 'product_rate' },
+        { name: '품질 합격률', value: 0, color: success, type: '생산비율' },
+        { name: '완료 수량', value: 0, color: info, type: 'sum_complete_count' },
+        { name: '가동 시간', value: 0, color: warning, type: 'sum_runtime' }
+      ];
+      this.setState({ pieChartData: defaultData, loading: false });
     }
-  }
+  };
 
   fetchBarChartData = async () => {
     if (!this.state.selectedProduct) return;
-    
     try {
       const response = await fetch('http://localhost:8000/smartFactory/production_chart/bar', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           start_work_date: this.state.startDate,
           itemName: this.state.selectedProduct,
           end_work_date: this.state.endDate
         })
       });
-
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-
+      if (!response.ok) throw new Error('Network response was not ok');
       const result = await response.json();
+      if (result.message === 'production 테이블 조회 성공') this.processBarChartData(result.data);
+    } catch (error) {
+      this.setState({ barChartData: [] });
+    }
+  };
 
-      if (result.message === "production 테이블 조회 성공") {
-        this.processBarChartData(result.data);
+  // 실시간 차트 데이터 가져오기
+  fetchLiveChartData = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/smartFactory/production_chart/live-chart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ start_date: this.state.startDate, end_date: this.state.endDate })
+      });
+      if (!response.ok) throw new Error('Network response was not ok');
+      const result = await response.json();
+      if (result.message === 'productionGrid live list 조회 성공' && result.data) {
+        const chartData = result.data.map((item) => ({
+          date: item.근무일자,
+          production: parseInt(item['sum(생산수량)']) || 0
+        }));
+        this.setState({
+          liveChartData: chartData,
+          liveLoading: false,
+          currentDataIndex: 0,
+          displayData: []
+        });
+        this.startDataAnimation(chartData);
+      } else {
+        throw new Error('API 응답 형식이 올바르지 않습니다.');
       }
     } catch (error) {
-      console.error('Error fetching bar chart data:', error);
-      // 에러 발생 시 기본 데이터로 설정
+      const defaultData = [
+        { date: '2024-01-01', production: 15000 },
+        { date: '2024-01-02', production: 18000 },
+        { date: '2024-01-03', production: 22000 },
+        { date: '2024-01-04', production: 19000 },
+        { date: '2024-01-05', production: 25000 },
+        { date: '2024-01-06', production: 21000 },
+        { date: '2024-01-07', production: 28000 }
+      ];
       this.setState({
-        barChartData: []
+        liveChartData: defaultData,
+        liveLoading: false,
+        currentDataIndex: 0,
+        displayData: []
       });
+      this.startDataAnimation(defaultData);
     }
-  }
+  };
 
+  // ✅ 파이차트는 즉시 렌더(애니메이션 없음)
   processChartData = (data) => {
     const newPieChartData = [];
-    
-    // 첫 번째 파이차트: product_rate (노란색)
     if (data.pie1 && data.pie1.length > 0) {
-      const productRate = data.pie1[0].product_rate * 100;
-      newPieChartData.push({
-        name: '생산 완료율',
-        value: Math.round(productRate * 100) / 100,
-        color: primary,
-        type: 'product_rate',
-        rawValue: data.pie1[0].sum_production_count
-      });
+      const p1 = data.pie1[0] || {};
+      const productRateRaw = p1.product_rate ?? p1.productRate ?? p1['생산완료율'] ?? p1.rate ?? p1['rate'];
+      const productRate = toPercent(productRateRaw);
+      newPieChartData.push({ name: '생산 완료율', value: productRate, color: primary, type: 'product_rate' });
     }
-    
-    // 두 번째 파이차트: 생산비율 (민트색)
     if (data.pie2 && data.pie2.length > 0) {
-      const productionRate = data.pie2[0].생산비율 * 100;
-      newPieChartData.push({
-        name: '품질 합격률',
-        value: Math.round(productionRate * 100) / 100,
-        color: success,
-        type: '생산비율',
-        rawValue: data.pie2[0].sum_complete_count
-      });
+      const p2 = data.pie2[0] || {};
+      const qualityRateRaw = p2['생산비율'] ?? p2.quality_rate ?? p2.qualityRate ?? p2.pass_rate ?? p2.passRate;
+      const qualityRate = toPercent(qualityRateRaw);
+      newPieChartData.push({ name: '품질 합격률', value: qualityRate, color: success, type: '생산비율' });
     }
-    
-    // 세 번째 파이차트: sum_complete_count (빨간색)
     if (data.pie3 && data.pie3.length > 0) {
-      newPieChartData.push({
-        name: '완료 수량',
-        value: data.pie3[0].sum_complete_count,
-        color: danger,
-        type: 'sum_complete_count',
-        rawValue: data.pie3[0].sum_complete_count
-      });
+      const p3 = data.pie3[0] || {};
+      newPieChartData.push({ name: '완료 수량', value: Number(p3.sum_complete_count) || 0, color: danger, type: 'sum_complete_count' });
+      newPieChartData.push({ name: '가동 시간', value: Number(p3.sum_runtime) || 0, color: info, type: 'sum_runtime' });
     }
-    
-    // 네 번째 파이차트: sum_runtime (파란색)
-    if (data.pie3 && data.pie3.length > 0) {
-      newPieChartData.push({
-        name: '가동 시간',
-        value: data.pie3[0].sum_runtime,
-        color: info,
-        type: 'sum_runtime',
-        rawValue: data.pie3[0].sum_runtime
-      });
-    }
-
-    this.setState({ pieChartData: newPieChartData });
-  }
+    this.setState({ pieChartData: newPieChartData, loading: false });
+  };
 
   processBarChartData = (data) => {
-    // 막대그래프용 데이터 변환
-    const chartData = data.map(item => ({
-      month: `${item.월}월`,
-      quantity: item.월별_양품수량,
-      year: item.년도
-    }));
-
-    // 요약 데이터 계산
+    const chartData = data.map((item) => ({ month: `${item.월}월`, quantity: item.월별_양품수량, year: item.년도 }));
     const summaryData = {
-      totalProduction: data.length > 0 ? data[0].총_생산수량 : 0,
-      totalDefect: data.length > 0 ? data[0].총_공정불량 : 0,
-      totalRuntime: data.length > 0 ? data[0].총_가동시간 : 0
+      totalProduction: data.length > 0 ? Number(data[0].총_생산수량) || 0 : 0,
+      totalDefect: data.length > 0 ? Number(data[0].총_공정불량) || 0 : 0,
+      totalRuntime: data.length > 0 ? Number(data[0].총_가동시간) || 0 : 0
     };
+    this.setState({ barChartData: chartData, summaryData });
+  };
 
-    this.setState({ 
-      barChartData: chartData,
-      summaryData: summaryData
-    });
-  }
-
-  handleProductChange = (event) => {
-    this.setState({ selectedProduct: event.target.value });
-  }
-
-  handleCapacityChange = (event) => {
-    this.setState({ selectedCapacity: event.target.value });
-  }
-
-  handleStartDateChange = (event) => {
-    this.setState({ startDate: event.target.value });
-  }
-
-  handleEndDateChange = (event) => {
-    this.setState({ endDate: event.target.value });
-  }
+  handleProductChange = (e) => this.setState({ selectedProduct: e.target.value });
+  handleCapacityChange = (e) => this.setState({ selectedCapacity: e.target.value });
+  handleStartDateChange = (e) => this.setState({ startDate: e.target.value });
+  handleEndDateChange = (e) => this.setState({ endDate: e.target.value });
 
   renderPieCharts = (themeHex) => {
     const { pieChartData, selectedCapacity, startDate, endDate, loading } = this.state;
 
+    if (loading) {
+      return (
+        <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: themeHex, mb: 2 }}>
+            <PieChartIcon /> 생산 현황 지표
+          </Typography>
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <CircularProgress size={40} sx={{ color: themeHex }} />
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>데이터를 불러오는 중...</Typography>
+          </Box>
+        </Paper>
+      );
+    }
+
+    if (!pieChartData || pieChartData.length === 0) {
+      return (
+        <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: themeHex, mb: 2 }}>
+            <PieChartIcon /> 생산 현황 지표
+          </Typography>
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="body1" color="text.secondary">표시할 데이터가 없습니다. 기간과 프레스를 선택해주세요.</Typography>
+          </Box>
+        </Paper>
+      );
+    }
+
     return (
       <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-        <Typography variant="h6" sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 1,
-          color: themeHex,
-          mb: 2
-        }}>
-          <PieChartIcon />
-          생산 현황 지표
+        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: themeHex, mb: 2 }}>
+          <PieChartIcon /> 생산 현황 지표
         </Typography>
-        
-        {/* 필터 섹션 추가 */}
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          mb: 3,
-          p: 2,
-          backgroundColor: '#f8f9fa',
-          borderRadius: 2,
-          border: '1px solid #e0e0e0'
-        }}>
+
+        {/* 필터 섹션 */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #e0e0e0' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" sx={{ 
-              fontWeight: 500,
-              color: '#333',
-              minWidth: '80px'
-            }}>
-              프레스 선택:
-            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500, color: '#333', minWidth: '80px' }}>프레스 선택:</Typography>
             <FormControl size="small" sx={{ minWidth: 120 }}>
-              <Select
-                value={selectedCapacity}
-                onChange={this.handleCapacityChange}
-                sx={{ 
-                  backgroundColor: 'white',
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#4CAF50',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#4CAF50',
-                    },
-                  }
-                }}
-              >
+              <Select value={selectedCapacity} onChange={this.handleCapacityChange} sx={{ backgroundColor: 'white', '& .MuiOutlinedInput-root': { '&:hover fieldset': { borderColor: '#4CAF50' }, '&.Mui-focused fieldset': { borderColor: '#4CAF50' } } }}>
                 <MenuItem value="1500T">1500T</MenuItem>
+                <MenuItem value="1200T">1200T</MenuItem>
                 <MenuItem value="1000T">1000T</MenuItem>
-                <MenuItem value="2000T">2000T</MenuItem>
+                <MenuItem value="1000T PRO">1000T PRO</MenuItem>
               </Select>
             </FormControl>
           </Box>
-          
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" sx={{ 
-              fontWeight: 500,
-              color: '#333',
-              minWidth: '80px'
-            }}>
-              기간 선택:
-            </Typography>
-            <TextField
-              type="date"
-              value={startDate}
-              onChange={this.handleStartDateChange}
-              size="small"
-              sx={{ 
-                backgroundColor: 'white',
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: '#4CAF50',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#4CAF50',
-                  },
-                }
-              }}
-            />
-            <Typography variant="body2" sx={{ color: '#666' }}>
-              ~
-            </Typography>
-            <TextField
-              type="date"
-              value={endDate}
-              onChange={this.handleEndDateChange}
-              size="small"
-              sx={{ 
-                backgroundColor: 'white',
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: '#4CAF50',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#4CAF50',
-                  },
-                }
-              }}
-            />
+            <Typography variant="body2" sx={{ fontWeight: 500, color: '#333', minWidth: '80px' }}>기간 선택:</Typography>
+            <TextField type="date" value={startDate} onChange={this.handleStartDateChange} size="small" sx={{ backgroundColor: 'white', '& .MuiOutlinedInput-root': { '&:hover fieldset': { borderColor: '#4CAF50' }, '&.Mui-focused fieldset': { borderColor: '#4CAF50' } } }} />
+            <Typography variant="body2" sx={{ color: '#666' }}>~</Typography>
+            <TextField type="date" value={endDate} onChange={this.handleEndDateChange} size="small" sx={{ backgroundColor: 'white', '& .MuiOutlinedInput-root': { '&:hover fieldset': { borderColor: '#4CAF50' }, '&.Mui-focused fieldset': { borderColor: '#4CAF50' } } }} />
           </Box>
         </Box>
-        
-        {loading ? (
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="body1" color="text.secondary">
-              데이터를 불러오는 중...
-            </Typography>
-          </Box>
-        ) : (
-          <Grid container spacing={2}>
-            {pieChartData.map((data, index) => (
-              <Grid item xs={12} sm={6} md={3} key={index}>
-                <Card elevation={1} sx={{ 
-                  height: '100%',
-                  border: `1px solid ${data.color}20`,
-                  borderRadius: 2,
-                  '&:hover': {
-                    elevation: 2,
-                    transform: 'translateY(-1px)',
-                    transition: 'all 0.2s ease-in-out'
-                  }
-                }}>
-                  <CardContent sx={{ p: 2, textAlign: 'center' }}>
-                    <Typography variant="body2" sx={{ 
-                      color: data.color, 
-                      fontWeight: 600,
-                      mb: 1,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                      fontSize: '0.8rem'
-                    }}>
-                      {data.name}
-                    </Typography>
-                    
-                    {/* 파이차트는 첫 번째와 두 번째만 표시 */}
-                    {index < 2 ? (
-                      <Box sx={{ height: 120, width: '100%', mb: 1 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={[
-                                { name: data.name, value: data.value },
-                                { name: '잔여', value: index === 0 ? 100 - data.value : 100 - data.value }
-                              ]}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={25}
-                              outerRadius={45}
-                              paddingAngle={1}
-                              dataKey="value"
-                            >
-                              <Cell key={`cell-${index}`} fill={data.color} />
-                              <Cell key={`cell-remainder-${index}`} fill="#f8f9fa" />
-                            </Pie>
-                            <Tooltip 
-                              formatter={(value, name) => [name === '잔여' ? `${index === 0 ? 100 - data.value : 100 - data.value}%` : `${value}%`, name]}
-                              contentStyle={{
-                                backgroundColor: 'white',
-                                border: '1px solid #e0e0e0',
-                                borderRadius: '8px',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                              }}
-                            />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </Box>
-                    ) : (
-                      <Box sx={{ height: 120, width: '100%', mb: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Typography variant="h3" sx={{ color: data.color, fontWeight: 'bold' }}>
-                          {index === 2 ? '📊' : '⏱️'}
-                        </Typography>
-                      </Box>
-                    )}
-                    
-                    <Typography variant="h4" component="div" sx={{ 
-                      color: data.color, 
-                      fontWeight: 700,
-                      fontSize: '1.8rem'
-                    }}>
-                      {index < 2 ? `${data.value}%` : data.value.toLocaleString()}
-                    </Typography>
-                    
-                    {index >= 2 && (
-                      <Typography variant="body2" sx={{ 
-                        color: '#666', 
-                        fontSize: '0.7rem',
-                        mt: 0.5
-                      }}>
-                        {index === 2 ? '개' : '시간'}
-                      </Typography>
-                    )}
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        )}
+
+        {/* 파이 차트 그리드 */}
+        <Grid container spacing={2}>
+          {pieChartData.map((data, index) => (
+            <Grid item xs={12} sm={6} md={3} key={`${data.type}-${index}`}>
+              <Card elevation={1} sx={{ height: '100%', border: `1px solid ${data.color}20`, borderRadius: 2, '&:hover': { elevation: 2, transform: 'translateY(-1px)', transition: 'all 0.2s ease-in-out' } }}>
+                <CardContent sx={{ p: 2, textAlign: 'center' }}>
+                  <Typography variant="body2" sx={{ color: data.color, fontWeight: 600, mb: 1, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.8rem' }}>{data.name}</Typography>
+
+                  {/* 파이차트는 첫 번째와 두 번째만 표시 (애니메이션 비활성화) */}
+                  {index < 2 ? (
+                    <Box sx={{ height: 120, width: '100%', mb: 1 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          {(() => {
+                            const pct = toPercent(data.value);
+                            const remainder = Math.max(0, 100 - pct);
+                            return (
+                              <Pie
+                                isAnimationActive={false}
+                                data={[
+                                  { name: data.name, value: pct },
+                                  { name: '잔여', value: remainder }
+                                ]}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={25}
+                                outerRadius={45}
+                                paddingAngle={1}
+                                dataKey="value"
+                              >
+                                <Cell fill={data.color} />
+                                <Cell fill="#f8f9fa" />
+                              </Pie>
+                            );
+                          })()}
+                          <Tooltip formatter={(value, name) => [`${Number(value).toFixed(2)}%`, name]} contentStyle={{ backgroundColor: 'white', border: '1px solid #e0e0e0', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </Box>
+                  ) : (
+                    <Box sx={{ height: 120, width: '100%', mb: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Typography variant="h3" sx={{ color: data.color, fontWeight: 'bold' }}>{index === 2 ? '📊' : '⏱️'}</Typography>
+                    </Box>
+                  )}
+
+                  <Typography variant="h4" component="div" sx={{ color: data.color, fontWeight: 700, fontSize: '1.8rem' }}>
+                    {index < 2 ? `${toPercent(data.value)}%` : Number(data.value || 0).toLocaleString()}
+                  </Typography>
+
+                  {index >= 2 && (
+                    <Typography variant="body2" sx={{ color: '#666', fontSize: '0.7rem', mt: 0.5 }}>{index === 2 ? '개' : '시간'}</Typography>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
       </Paper>
     );
-  }
+  };
 
   renderBarChart = (themeHex) => {
     const { selectedProduct, barChartData, itemList, startDate, endDate, summaryData } = this.state;
 
     return (
       <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-        <Typography variant="h6" sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 1,
-          color: themeHex,
-          mb: 2
-        }}>
-          <BarChartIcon />
-          제품별 월간 생산량
+        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: themeHex, mb: 2 }}>
+          <BarChartIcon /> 제품별 월간 생산량
         </Typography>
-        
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          mb: 3
-        }}>
-          <Typography variant="body1" sx={{ 
-            fontWeight: 500,
-            color: '#333'
-          }}>
-            월별 생산량을 확인하려면 자재를 선택하세요
-          </Typography>
+
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="body1" sx={{ fontWeight: 500, color: '#333' }}>월별 생산량을 확인하려면 자재를 선택하세요</Typography>
         </Box>
-        
-        {/* 자재 선택 섹션 추가 */}
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          mb: 3,
-          p: 2,
-          backgroundColor: '#f8f9fa',
-          borderRadius: 2,
-          border: '1px solid #e0e0e0'
-        }}>
+
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #e0e0e0' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" sx={{ 
-              fontWeight: 500,
-              color: '#333',
-              minWidth: '80px'
-            }}>
-              자재 선택:
-            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500, color: '#333', minWidth: '80px' }}>자재 선택:</Typography>
             <FormControl size="small" sx={{ minWidth: 300 }}>
-              <Select
-                value={selectedProduct}
-                onChange={this.handleProductChange}
-                sx={{ 
-                  backgroundColor: 'white',
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#4CAF50',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#4CAF50',
-                    },
-                  }
-                }}
-              >
+              <Select value={selectedProduct} onChange={this.handleProductChange} sx={{ backgroundColor: 'white', '& .MuiOutlinedInput-root': { '&:hover fieldset': { borderColor: '#4CAF50' }, '&.Mui-focused fieldset': { borderColor: '#4CAF50' } } }}>
                 {itemList.map((item, index) => (
-                  <MenuItem key={index} value={item.자재명}>
-                    {item.자재명}
-                  </MenuItem>
+                  <MenuItem key={index} value={item.자재명}>{item.자재명}</MenuItem>
                 ))}
               </Select>
             </FormControl>
           </Box>
-          
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" sx={{ 
-              fontWeight: 500,
-              color: '#333',
-              minWidth: '80px'
-            }}>
-              기간 선택:
-            </Typography>
-            <TextField
-              type="date"
-              value={startDate}
-              onChange={this.handleStartDateChange}
-              size="small"
-              sx={{ 
-                backgroundColor: 'white',
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: '#4CAF50',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#4CAF50',
-                  },
-                }
-              }}
-            />
-            <Typography variant="body2" sx={{ color: '#666' }}>
-              ~
-            </Typography>
-            <TextField
-              type="date"
-              value={endDate}
-              onChange={this.handleEndDateChange}
-              size="small"
-              sx={{ 
-                backgroundColor: 'white',
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: '#4CAF50',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#4CAF50',
-                  },
-                }
-              }}
-            />
+            <Typography variant="body2" sx={{ fontWeight: 500, color: '#333', minWidth: '80px' }}>기간 선택:</Typography>
+            <TextField type="date" value={startDate} onChange={this.handleStartDateChange} size="small" sx={{ backgroundColor: 'white', '& .MuiOutlinedInput-root': { '&:hover fieldset': { borderColor: '#4CAF50' }, '&.Mui-focused fieldset': { borderColor: '#4CAF50' } } }} />
+            <Typography variant="body2" sx={{ color: '#666' }}>~</Typography>
+            <TextField type="date" value={endDate} onChange={this.handleEndDateChange} size="small" sx={{ backgroundColor: 'white', '& .MuiOutlinedInput-root': { '&:hover fieldset': { borderColor: '#4CAF50' }, '&.Mui-focused fieldset': { borderColor: '#4CAF50' } } }} />
           </Box>
         </Box>
-        
+
         <Box sx={{ display: 'flex', gap: 3 }}>
-          {/* 막대 그래프 */}
           <Box sx={{ flex: 1, height: 350 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={barChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis 
-                  dataKey="month" 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: '#666' }}
-                />
-                <YAxis 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: '#666' }}
-                />
-                <Tooltip 
-                  formatter={(value, name) => [value, '양품수량']}
-                  labelFormatter={(label) => `${label} 양품수량`}
-                  contentStyle={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e0e0e0',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                  }}
-                />
-                <Bar 
-                  dataKey="quantity" 
-                  fill={themeHex}
-                  radius={[4, 4, 0, 0]}
-                  name="양품수량"
-                />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#666' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#666' }} />
+                <Tooltip formatter={(value) => [value, '양품수량']} labelFormatter={(label) => `${label} 양품수량`} contentStyle={{ backgroundColor: 'white', border: '1px solid #e0e0e0', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                <Bar dataKey="quantity" fill={themeHex} radius={[4, 4, 0, 0]} name="양품수량" />
               </BarChart>
             </ResponsiveContainer>
           </Box>
-          
+
           {/* 요약 카드들 */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 160 }}>
-            <Card elevation={1} sx={{ 
-              border: '1px solid #e0e0e0',
-              borderRadius: 2,
-              '&:hover': {
-                elevation: 2,
-                transform: 'translateY(-1px)',
-                transition: 'all 0.2s ease-in-out'
-              }
-            }}>
+            <Card elevation={1} sx={{ border: '1px solid #e0e0e0', borderRadius: 2, '&:hover': { elevation: 2, transform: 'translateY(-1px)', transition: 'all 0.2s ease-in-out' } }}>
               <CardContent sx={{ textAlign: 'center', p: 1.5 }}>
-                <Typography variant="body2" sx={{ 
-                  color: '#666',
-                  mb: 0.5,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  fontSize: '0.7rem'
-                }}>
-                  총 생산수량
-                </Typography>
-                <Typography variant="h5" component="div" sx={{ 
-                  fontWeight: 300,
-                  color: '#333',
-                  mb: 0.5,
-                  fontSize: '1.2rem'
-                }}>
-                  {summaryData ? summaryData.totalProduction.toLocaleString() : '0'}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#999', fontSize: '0.65rem' }}>
-                  개
-                </Typography>
+                <Typography variant="body2" sx={{ color: '#666', mb: 0.5, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.7rem' }}>총 생산수량</Typography>
+                <Typography variant="h5" component="div" sx={{ fontWeight: 300, color: '#333', mb: 0.5, fontSize: '1.2rem' }}>{summaryData ? Number(summaryData.totalProduction || 0).toLocaleString() : '0'}</Typography>
+                <Typography variant="body2" sx={{ color: '#999', fontSize: '0.65rem' }}>개</Typography>
               </CardContent>
             </Card>
-            
-            <Card elevation={1} sx={{ 
-              border: '1px solid #e0e0e0',
-              borderRadius: 2,
-              '&:hover': {
-                elevation: 2,
-                transform: 'translateY(-1px)',
-                transition: 'all 0.2s ease-in-out'
-              }
-            }}>
+            <Card elevation={1} sx={{ border: '1px solid #e0e0e0', borderRadius: 2, '&:hover': { elevation: 2, transform: 'translateY(-1px)', transition: 'all 0.2s ease-in-out' } }}>
               <CardContent sx={{ textAlign: 'center', p: 1.5 }}>
-                <Typography variant="body2" sx={{ 
-                  color: '#666',
-                  mb: 0.5,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  fontSize: '0.7rem'
-                }}>
-                  총 공정불량
-                </Typography>
-                <Typography variant="h5" component="div" sx={{ 
-                  fontWeight: 300,
-                  color: '#333',
-                  mb: 0.5,
-                  fontSize: '1.2rem'
-                }}>
-                  {summaryData ? summaryData.totalDefect.toLocaleString() : '0'}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#999', fontSize: '0.65rem' }}>
-                  개
-                </Typography>
+                <Typography variant="body2" sx={{ color: '#666', mb: 0.5, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.7rem' }}>총 공정불량</Typography>
+                <Typography variant="h5" component="div" sx={{ fontWeight: 300, color: '#333', mb: 0.5, fontSize: '1.2rem' }}>{summaryData ? Number(summaryData.totalDefect || 0).toLocaleString() : '0'}</Typography>
+                <Typography variant="body2" sx={{ color: '#999', fontSize: '0.65rem' }}>개</Typography>
               </CardContent>
             </Card>
-            
-            <Card elevation={1} sx={{ 
-              border: '1px solid #e0e0e0',
-              borderRadius: 2,
-              '&:hover': {
-                elevation: 2,
-                transform: 'translateY(-1px)',
-                transition: 'all 0.2s ease-in-out'
-              }
-            }}>
+            <Card elevation={1} sx={{ border: '1px solid #e0e0e0', borderRadius: 2, '&:hover': { elevation: 2, transform: 'translateY(-1px)', transition: 'all 0.2s ease-in-out' } }}>
               <CardContent sx={{ textAlign: 'center', p: 1.5 }}>
-                <Typography variant="body2" sx={{ 
-                  color: '#666',
-                  mb: 0.5,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  fontSize: '0.7rem'
-                }}>
-                  총 가동시간
-                </Typography>
-                <Typography variant="h5" component="div" sx={{ 
-                  fontWeight: 300,
-                  color: '#333',
-                  mb: 0.5,
-                  fontSize: '1.2rem'
-                }}>
-                  {summaryData ? summaryData.totalRuntime.toLocaleString() : '0'}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#999', fontSize: '0.65rem' }}>
-                  시간
-                </Typography>
+                <Typography variant="body2" sx={{ color: '#666', mb: 0.5, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.7rem' }}>총 가동시간(분)</Typography>
+                <Typography variant="h5" component="div" sx={{ fontWeight: 300, color: '#333', mb: 0.5, fontSize: '1.2rem' }}>{summaryData ? Number(summaryData.totalRuntime || 0).toLocaleString() : '0'}</Typography>
+                <Typography variant="body2" sx={{ color: '#999', fontSize: '0.65rem' }}>시간</Typography>
               </CardContent>
             </Card>
           </Box>
         </Box>
       </Paper>
     );
-  }
+  };
 
-  render() {
-    const { themeHex } = this.props; 
+  renderLiveChart = (themeHex) => {
+    const { liveLoading, displayData, currentDataIndex } = this.state;
 
     return (
-      <Box className={s.root} sx={{ 
-        height: '100vh',
-        p: 3,
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: '#f5f5f5'
-      }}>
-        
-        {/* 헤더 섹션 */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h4" gutterBottom sx={{ 
-            color: themeHex,
-            fontWeight: 'bold',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1
-          }}>
-            <TrendingUpIcon />
-            생산 데이터 차트
-          </Typography>
-          
-          <Typography variant="body1" color="text.secondary">
-            생산 현황을 차트로 한눈에 파악할 수 있습니다.
-          </Typography>
+      <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2, background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)', border: `2px solid ${themeHex}20` }}>
+        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: themeHex, mb: 2, fontSize: '1.3rem', fontWeight: 'bold' }}>
+          <MonitorIcon sx={{ fontSize: '1.5rem' }} /> 실시간 생산량 모니터링
+        </Typography>
+
+        <Box sx={{ height: 400, backgroundColor: '#f8f9fa', borderRadius: 2, border: `1px solid ${themeHex}30`, position: 'relative' }}>
+          {liveLoading ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <CircularProgress size={60} sx={{ color: themeHex }} />
+              <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>실시간 데이터를 불러오는 중...</Typography>
+            </Box>
+          ) : displayData && displayData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={displayData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                <defs>
+                  <linearGradient id="colorProduction" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={themeHex} stopOpacity={0.8} />
+                    <stop offset="95%" stopColor={themeHex} stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#666' }} tickFormatter={(value) => { const date = new Date(value); return `${date.getMonth() + 1}/${date.getDate()}`; }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#666' }} tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`} />
+                <Tooltip formatter={(value) => [Number(value).toLocaleString(), '생산량']} labelFormatter={(label) => `날짜: ${label}` } contentStyle={{ backgroundColor: 'white', border: `2px solid ${themeHex}`, borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                <Area type="monotone" dataKey="production" stroke={themeHex} strokeWidth={3} fill="url(#colorProduction)" name="생산량" animationDuration={300} animationBegin={0} />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <Typography variant="body1" color="text.secondary">데이터가 없습니다.</Typography>
+            </Box>
+          )}
         </Box>
 
-        {/* 파이차트 섹션 */}
-        {this.renderPieCharts(themeHex)}
+        {/* 하단 통계 정보 */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: `1px solid ${themeHex}20` }}>
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>총 데이터 포인트</Typography>
+            <Typography variant="h6" sx={{ color: themeHex, fontWeight: 'bold' }}>{displayData ? displayData.length : 0}</Typography>
+          </Box>
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>최고 생산량</Typography>
+            <Typography variant="h6" sx={{ color: '#4CAF50', fontWeight: 'bold' }}>{displayData && displayData.length > 0 ? Math.max(...displayData.map((d) => d.production)).toLocaleString() : '0'}</Typography>
+          </Box>
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>평균 생산량</Typography>
+            <Typography variant="h6" sx={{ color: '#FF9800', fontWeight: 'bold' }}>{displayData && displayData.length > 0 ? Math.round(displayData.reduce((sum, d) => sum + d.production, 0) / displayData.length).toLocaleString() : '0'}</Typography>
+          </Box>
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>현재 인덱스</Typography>
+            <Typography variant="h6" sx={{ color: '#9C27B0', fontWeight: 'bold' }}>{currentDataIndex + 1}</Typography>
+          </Box>
+        </Box>
+      </Paper>
+    );
+  };
 
-        {/* 막대 그래프 섹션 */}
+  // 데이터 애니메이션(라이브영역만 사용)
+  startDataAnimation = (data) => {
+    if (this.dataAnimationInterval) clearInterval(this.dataAnimationInterval);
+    this.dataAnimationInterval = setInterval(() => {
+      this.setState((prevState) => {
+        if (prevState.displayData.length >= data.length) {
+          clearInterval(this.dataAnimationInterval);
+          return prevState;
+        }
+        const newIndex = prevState.currentDataIndex + 1;
+        const newDisplayData = [...prevState.displayData];
+        newDisplayData.push(data[prevState.currentDataIndex]);
+        return { currentDataIndex: newIndex, displayData: newDisplayData };
+      });
+    }, 500);
+  };
+
+  render() {
+    const { themeHex } = this.props;
+    return (
+      <Box className={s.root} sx={{ height: '100vh', p: 3, display: 'flex', flexDirection: 'column', backgroundColor: '#f5f5f5' }}>
+        {/* 헤더 섹션 */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h4" gutterBottom sx={{ color: themeHex, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TrendingUpIcon /> 생산 데이터 차트
+          </Typography>
+          <Typography variant="body1" color="text.secondary">생산 현황을 차트로 한눈에 파악할 수 있습니다.</Typography>
+        </Box>
+
+        {/* 실시간 생산량 차트 */}
+        {this.renderLiveChart(themeHex)}
+        {/* 파이차트 */}
+        {this.renderPieCharts(themeHex)}
+        {/* 막대 그래프 */}
         {this.renderBarChart(themeHex)}
       </Box>
     );

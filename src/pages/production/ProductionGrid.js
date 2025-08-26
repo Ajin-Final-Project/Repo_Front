@@ -12,9 +12,7 @@ import React, { Component } from 'react';
 // Grid: 그리드 레이아웃 시스템
 // InputAdornment: 입력 필드의 앞/뒤 장식 요소
 // Chip: 작은 라벨 형태의 컴포넌트
-// Card, CardContent, CardHeader: 카드 형태의 컨테이너
 // IconButton: 아이콘 버튼
-// Tooltip: 툴팁
 // Divider: 구분선
 // Collapse: 접을 수 있는 애니메이션 컴포넌트
 // CircularProgress: 로딩 스피너
@@ -28,11 +26,7 @@ import {
   Grid,
   InputAdornment,
   Chip,
-  Card,
-  CardContent,
-  CardHeader,
   IconButton,
-  Tooltip,
   Divider,
   Collapse,
   CircularProgress,
@@ -47,14 +41,12 @@ import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 // Material-UI 아이콘들을 import
 // Search: 검색 아이콘
 // Clear: 지우기 아이콘
-// Download: 다운로드 아이콘
 // FilterList: 필터 목록 아이콘
 // ExpandMore: 아래쪽 화살표 아이콘
 // ExpandLess: 위쪽 화살표 아이콘
 import { 
   Search as SearchIcon, 
   Clear as ClearIcon, 
-  Download as DownloadIcon,
   FilterList as FilterIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon
@@ -547,35 +539,15 @@ class ProductionGrid extends Component {
         {/* 검색 필터 섹션 */}
         <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
           {/* 필터 섹션의 헤더 */}
-          <CardHeader
-            title={
-              <Typography variant="h6" sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 1,
-                color: 'white'
-              }}>
-                <SearchIcon />
-                검색 조건
-              </Typography>
-            }
-            // 헤더 우측에 확장/축소 버튼 배치
-            action={
-              <IconButton
-                onClick={this.toggleFilterExpansion}
-                sx={{ color: 'white' }}
-              >
-                {/* 현재 상태에 따라 다른 아이콘 표시 */}
-                {filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-              </IconButton>
-            }
-            sx={{ 
-              backgroundColor: '#ff8f00',    // 머스타드 오렌지 배경
-              color: 'white',                // 흰색 텍스트
-              borderRadius: 1,               // 모서리 둥글게
-              mb: 2                          // 아래쪽 마진
-            }}
-          />
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1,
+            color: 'white'
+          }}>
+            <SearchIcon />
+            검색 조건
+          </Box>
           
           {/* 기본 필터 (8개) - 항상 보이는 주요 검색 필드들 */}
           <Grid container spacing={2}>
