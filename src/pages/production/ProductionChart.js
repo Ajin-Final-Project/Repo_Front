@@ -32,6 +32,7 @@ const info = t.info;
 const success = t.success;
 const warning = t.warning;
 const danger = t.danger;
+const API_BASE = process.env.REACT_APP_API_BASE;
 
 // ✅ 퍼센트 정규화 유틸(문자/숫자 안전 처리)
 const toPercent = (v) => {
@@ -111,7 +112,7 @@ class ProductionChart extends Component {
 
   fetchItemList = async () => {
     try {
-      const response = await fetch('http://localhost:8000/smartFactory/production_chart/item_list');
+      const response = await fetch(`${API_BASE}/smartFactory/production_chart/item_list`);
       if (!response.ok) throw new Error('Network response was not ok');
       const result = await response.json();
       if (result.message === 'production item list 조회 성공') {
@@ -132,7 +133,7 @@ class ProductionChart extends Component {
   fetchProductionData = async () => {
     this.setState({ loading: true });
     try {
-      const response = await fetch('http://localhost:8000/smartFactory/production_chart/pie', {
+      const response = await fetch(`${API_BASE}/smartFactory/production_chart/pie`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -162,7 +163,7 @@ class ProductionChart extends Component {
   fetchBarChartData = async () => {
     if (!this.state.selectedProduct) return;
     try {
-      const response = await fetch('http://localhost:8000/smartFactory/production_chart/bar', {
+      const response = await fetch(`${API_BASE}/smartFactory/production_chart/bar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -182,7 +183,7 @@ class ProductionChart extends Component {
   // 실시간 차트 데이터 가져오기
   fetchLiveChartData = async () => {
     try {
-      const response = await fetch('http://localhost:8000/smartFactory/production_chart/live-chart', {
+      const response = await fetch(`${API_BASE}/smartFactory/production_chart/live-chart`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ start_date: this.state.startDate, end_date: this.state.endDate })
@@ -467,9 +468,8 @@ class ProductionChart extends Component {
 
         <Box sx={{ height: 400, backgroundColor: '#f8f9fa', borderRadius: 2, border: `1px solid ${themeHex}30`, position: 'relative' }}>
           {liveLoading ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <CircularProgress size={60} sx={{ color: themeHex }} />
-              <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>실시간 데이터를 불러오는 중...</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
+              <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
             </Box>
           ) : displayData && displayData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
@@ -488,8 +488,8 @@ class ProductionChart extends Component {
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <Typography variant="body1" color="text.secondary">데이터가 없습니다.</Typography>
+             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
+              <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
             </Box>
           )}
         </Box>

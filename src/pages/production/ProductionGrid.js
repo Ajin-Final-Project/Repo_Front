@@ -30,7 +30,8 @@ import {
   Divider,
   Collapse,
   CircularProgress,
-  Alert
+  Alert,
+  CardHeader
 } from '@mui/material';
 
 // MUI DataGrid 컴포넌트들을 import
@@ -539,15 +540,36 @@ class ProductionGrid extends Component {
         {/* 검색 필터 섹션 */}
         <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
           {/* 필터 섹션의 헤더 */}
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 1,
-            color: 'white'
-          }}>
-            <SearchIcon />
-            검색 조건
-          </Box>
+           {/* 필터 섹션의 헤더 */}
+          <CardHeader
+            title={
+              <Typography variant="h6" sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1,
+                color: 'white'
+              }}>
+                <SearchIcon />
+                검색 조건
+              </Typography>
+            }
+            // 헤더 우측에 확장/축소 버튼 배치
+            action={
+              <IconButton
+                onClick={this.toggleFilterExpansion}
+                sx={{ color: 'white' }}
+              >
+                {/* 현재 상태에 따라 다른 아이콘 표시 */}
+                {filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              </IconButton>
+            }
+            sx={{ 
+              backgroundColor: '#ff8f00',    // 머스타드 오렌지 배경
+              color: 'white',                // 흰색 텍스트
+              borderRadius: 1,               // 모서리 둥글게
+              mb: 2                          // 아래쪽 마진
+            }}
+          />
           
           {/* 기본 필터 (8개) - 항상 보이는 주요 검색 필드들 */}
           <Grid container spacing={2}>
