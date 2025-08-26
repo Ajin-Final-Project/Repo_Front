@@ -29,6 +29,8 @@ function mapStateToProps(state) {
   };
 }
 
+const API_BASE = process.env.REACT_APP_API_BASE;
+
 class DowntimeChart extends Component {
   constructor(props) {
     super(props);
@@ -39,7 +41,7 @@ class DowntimeChart extends Component {
     this.DEFAULT_END = DEFAULT_END;
     this.PIE_TOP_N = 5;          // 총 5개로 제한
     this.PIE_WITH_OTHERS = true; // 기타 포함
-    this.API = (path) => `http://localhost:8000/smartFactory${path}`;
+    this.API = (path) => `${API_BASE}/smartFactory${path}`;
 
     this.ctrl = { summary:null, monthly:null, pie:null, notes:null, codes:null };
 
