@@ -176,8 +176,6 @@ class ProductionGrid extends Component {
     // API 응답 구조에 따라 적절히 변환
     // 만약 API 응답이 배열이 아니라면 적절히 처리
     if (Array.isArray(apiData)) {
-      console.log("00")
-      console.log(apiData)
       return apiData.map((item, index) => ({
         id: item.id || index + 1,  // 고유 ID가 없으면 인덱스 기반으로 생성
         // API 응답의 한국어 필드명을 그리드 필드명에 매핑
@@ -974,22 +972,22 @@ class ProductionGrid extends Component {
             {/* 데이터 그리드 - 로딩과 에러가 없을 때 표시 */}
             {!loading && !error && (
               <DataGrid
-                rows={this.state.productionData}     // 직접 productionData 사용
-                columns={this.columns}        // 위에서 정의한 컬럼 설정 사용
-                pagination                    // 페이지네이션 기능 활성화
-                paginationMode="client"       // 클라이언트 사이드 페이지네이션
+                rows={this.state.productionData}   
+                columns={this.columns}       
+                pagination                    
+                paginationMode="client"       
                 pageSizeOptions={[10, 25, 50, 100]}  // 페이지 크기 선택 옵션
                 initialState={{
                   pagination: { paginationModel: { page: 0, pageSize: 10 } },
                   columns: {
-                    columnVisibilityModel: {
-                      creator: false,       // 기존 constructor 대체
-                      createDate: false,
-                      sheetInputCoil: false, // hide:true 대신 여기서 숨김
-                      constructor: false
-                    }}
+                      columnVisibilityModel: {
+                        creator: false,       
+                        createDate: false,
+                        sheetInputCoil: false, // hide:true 대신 여기서 숨김
+                        constructor: false
+                      }}
                 }}
-
+                
                 disableRowSelectionOnClick   // 행 클릭 시 선택 비활성화
                 density="compact"             // 컴팩트한 행 높이
                 
@@ -1015,9 +1013,9 @@ class ProductionGrid extends Component {
 
                 // 그리드 스타일링
 
-  sx={{
+            sx={{
     /* 스크롤 시 고정 열이 비치지 않도록 */
-                  
+                  height: '600px',
                   // 헤더 스타일
                   '& .super-app-theme--header': {
                     backgroundColor: '#ff8f00',    // 머스타드 오렌지 배경
