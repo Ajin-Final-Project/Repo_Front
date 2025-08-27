@@ -48,7 +48,7 @@ const API_ENDPOINTS = {
   RUNTIME: `${config.baseURLApi}/smartFactory/mold-chart/runtime`,
   SUMMARIZE: `${config.baseURLApi}/smartFactory/mold-chart/summarize`,
   BREAKDOWN: `${config.baseURLApi}/smartFactory/mold-chart/breakdown`,
-  BREAKDOWN_PIE_TOP10: `${config.baseURLApi}/smartFactory/mold-chart/breakdown-pie-top10'`,
+  BREAKDOWN_PIE_TOP10: `${config.baseURLApi}/smartFactory/mold-chart/breakdown-pie-top10`,
   EQUIPMENT_LIST: `${config.baseURLApi}/smartFactory/mold-chart/equipment-list`
 };
 
