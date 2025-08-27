@@ -26,8 +26,9 @@ import {
 } from '@mui/icons-material';
 
 import s from './MoldCleaningData.module.scss'; 
+import config from '../../config';
 
-const API_URL = 'http://localhost:8000/smartFactory/mold_breakDown/list';
+const API_URL = `${config.baseURLApi}/smartFactory/mold_breakDown/list`;
 
 class MoldBreakdownGrid extends Component {
   constructor(props) {

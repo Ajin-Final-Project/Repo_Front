@@ -27,8 +27,9 @@ import {
 } from '@mui/icons-material';
 
 import s from './MoldCleaningData.module.scss'; // 스타일 재사용(원하면 파일명 변경)
+import config from '../../config';
 
-const API_URL = 'http://localhost:8000/smartFactory/mold_shotCount/list'; 
+const API_URL = `${config.baseURLApi}/smartFactory/mold_shotCount/list`; 
 // ↑ 백엔드 경로가 다르면 여기만 수정하세요.
 
 class MoldShotCountData extends Component {

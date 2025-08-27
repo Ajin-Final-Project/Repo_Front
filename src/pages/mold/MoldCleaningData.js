@@ -26,7 +26,7 @@ import {
 } from '@mui/icons-material';
 
 import s from './MoldCleaningData.module.scss';
-
+import config from '../../config';
 class MoldCleaningData extends Component {
   constructor(props) {
     super(props);
@@ -59,7 +59,7 @@ class MoldCleaningData extends Component {
   fetchData = async () => {
     this.setState({ loading: true, error: null });
     try {
-      const response = await fetch('http://localhost:8000/smartFactory/mold_cleaning/list', {
+      const response = await fetch(`${config.baseURLApi}/smartFactory/mold_cleaning/list`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(this.state.filters),
