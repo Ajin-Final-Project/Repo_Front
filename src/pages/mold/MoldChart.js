@@ -39,13 +39,17 @@ import {
 import s from './MoldCleaningChart.module.scss';
 
 // API 엔드포인트들
+
+
+
+const API_BASE = process.env.REACT_APP_API_BASE;
 const API_ENDPOINTS = {
-  WORK_COUNT: 'http://localhost:8000/smartFactory/mold-chart/work-count',
-  RUNTIME: 'http://localhost:8000/smartFactory/mold-chart/runtime',
-  SUMMARIZE: 'http://localhost:8000/smartFactory/mold-chart/summarize',
-  BREAKDOWN: 'http://localhost:8000/smartFactory/mold-chart/breakdown',
-  BREAKDOWN_PIE_TOP10: 'http://localhost:8000/smartFactory/mold-chart/breakdown-pie-top10',
-  EQUIPMENT_LIST: 'http://localhost:8000/smartFactory/mold-chart/equipment-list'
+  WORK_COUNT: `${API_BASE}/smartFactory/mold-chart/work-count`,
+  RUNTIME: `${API_BASE}/smartFactory/mold-chart/runtime`,
+  SUMMARIZE: `${API_BASE}/smartFactory/mold-chart/summarize`,
+  BREAKDOWN: `${API_BASE}/smartFactory/mold-chart/breakdown`,
+  BREAKDOWN_PIE_TOP10: `${API_BASE}/smartFactory/mold-chart/breakdown-pie-top10'`,
+  EQUIPMENT_LIST: `${API_BASE}/smartFactory/mold-chart/equipment-list`
 };
 
 class MoldChart extends Component {
