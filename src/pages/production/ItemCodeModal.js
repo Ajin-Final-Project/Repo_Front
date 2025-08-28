@@ -20,7 +20,7 @@ import {
 } from '@mui/material';
 import { Search as SearchIcon, Clear as ClearIcon, Inventory as InventoryIcon } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
-
+import config from '../../config';
 /**
  * 품목 코드 선택 모달 (클래스형 컴포넌트)
  * - 백엔드 응답 키: { 자재번호, 자재명 }
@@ -42,16 +42,31 @@ class ItemCodeModal extends Component {
     if (this.props.open && this.props.open !== prevProps.open) {
       this.fetchItems();
     }
+    
+    // 필터 값이 변경되었을 때도 데이터를 다시 로드
+    if (this.props.open && (
+      prevProps.plant !== this.props.plant ||
+      prevProps.worker !== this.props.worker ||
+      prevProps.workplace !== this.props.workplace
+    )) {
+      this.fetchItems();
+    }
   }
 
   fetchItems = async (search = '') => {
-
+    const { plant, worker, workplace } = this.props;
+    
     this.setState({ loading: true, error: null });
     try {
-      const res = await fetch("http://127.0.0.1:8000/smartFactory/modal/item_list", {
+      const res = await fetch(`${config.baseURLApi}/smartFactory/modal/item_list`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ item: search }),
+        body: JSON.stringify({ 
+          item: search,
+          plant: plant || '',
+          worker: worker || '',
+          workplace: workplace || ''
+        }),
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -93,12 +108,14 @@ class ItemCodeModal extends Component {
   handleItemSelect = (row) => {
     // 부모에 품목번호만 넘길지, 둘 다 넘길지 필요에 맞게 조정
     const { onSelect, onClose } = this.props;
+    
+
     onSelect?.({ 품목번호: row.품목번호, 품목명: row.품목명 });
     onClose?.();
   };
 
   render() {
-    const { open, onClose, selectedItemCode } = this.props;
+    const { open, onClose, selectedItemCode, plant, worker, workplace } = this.props;
     const { searchTerm, items, loading, error } = this.state;
 
     const columns = [
@@ -174,7 +191,7 @@ class ItemCodeModal extends Component {
         onClose={onClose}
         maxWidth="md"
         fullWidth
-                 PaperProps={{ 
+        PaperProps={{ 
            sx: { 
              height: '85vh',
              maxHeight: '700px',
@@ -213,6 +230,51 @@ class ItemCodeModal extends Component {
             <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 300 }}>
               검색하여 원하는 품목을 선택하세요
             </Typography>
+            
+            {/* 현재 필터 정보 표시 */}
+            {(plant || worker || workplace) && (
+              <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                {plant && (
+                  <Chip 
+                    label={`공장: ${plant}`} 
+                    size="small" 
+                    variant="outlined"
+                    sx={{ 
+                      backgroundColor: 'rgba(255,255,255,0.2)', 
+                      borderColor: 'rgba(255,255,255,0.3)',
+                      color: 'white',
+                      fontSize: '0.75rem'
+                    }}
+                  />
+                )}
+                {worker && (
+                  <Chip 
+                    label={`작업자: ${worker}`} 
+                    size="small" 
+                    variant="outlined"
+                    sx={{ 
+                      backgroundColor: 'rgba(255,255,255,0.2)', 
+                      borderColor: 'rgba(255,255,255,0.3)',
+                      color: 'white',
+                      fontSize: '0.75rem'
+                    }}
+                  />
+                )}
+                {workplace && (
+                  <Chip 
+                    label={`작업장: ${workplace}`} 
+                    size="small" 
+                    variant="outlined"
+                    sx={{ 
+                      backgroundColor: 'rgba(255,255,255,0.2)', 
+                      borderColor: 'rgba(255,255,255,0.3)',
+                      color: 'white',
+                      fontSize: '0.75rem'
+                    }}
+                  />
+                )}
+              </Box>
+            )}
           </Box>
         </DialogTitle>
 
@@ -448,6 +510,9 @@ ItemCodeModal.propTypes = {
   onSelect: PropTypes.func, // (선택된 {품목번호, 품목명}) 반환
   selectedItemCode: PropTypes.string, // 선택 표시용
   apiUrl: PropTypes.string, // 기본값: 'http://127.0.0.1:8000/smartFactory/modal/item_list'
+  plant: PropTypes.string, // 공장 정보
+  worker: PropTypes.string, // 작업자 정보
+  workplace: PropTypes.string, // 작업장 정보
 };
 
 export default ItemCodeModal;

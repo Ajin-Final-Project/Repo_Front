@@ -31,7 +31,8 @@ import {
   Collapse,
   CircularProgress,
   Alert,
-  CardHeader
+  CardHeader,
+  MenuItem 
 } from '@mui/material';
 
 // MUI DataGrid 컴포넌트들을 import
@@ -80,9 +81,9 @@ class ProductionGrid extends Component {
         start_work_date: new Date(new Date().getFullYear(), 0, 1).toLocaleDateString('sv-SE'),       // 작업시작일
         end_work_date: new Date().toLocaleDateString('sv-SE'),          // 작업종료일
         productionNumber: '',       // 생산번호
-        plant: '',                  // 공장
-        worker: '',                 // 작업자
-        workplace: '',              // 작업장
+        plant: "아진산업-본사(경산)",                  // 공장
+        worker: "프레스",                 // 작업자
+        workplace: "1500T",              // 작업장
         itemCode: '',               // 품목코드
         itemName: '',               // 품목명
         carModel: '',               // 차량모델
@@ -130,7 +131,6 @@ class ProductionGrid extends Component {
       const requestBody = {
         ...this.state.filters
       }
-      console.log(requestBody)
       // fetch API를 사용하여 서버에 POST 요청 전송
       const response = await fetch(`${config.baseURLApi}/smartFactory/production_grid/list`, {
         method: 'POST',               // HTTP 메서드: POST
@@ -287,6 +287,7 @@ class ProductionGrid extends Component {
 
   /**
    * 품목 코드 선택 모달을 여는 메서드
+   * 현재 필터 상태의 plant, worker, workplace 값을 모달에 전달
    */
   openItemCodeModal = () => {
     this.setState({ itemCodeModalOpen: true });
@@ -297,19 +298,6 @@ class ProductionGrid extends Component {
    */
   closeItemCodeModal = () => {
     this.setState({ itemCodeModalOpen: false });
-  };
-
-  /**
-   * 품목 코드를 선택했을 때 호출되는 메서드
-   * @param {string} itemCode - 선택된 품목 코드
-   */
-  handleItemCodeSelect = (itemCode) => {
-    this.setState(prevState => ({
-      filters: {
-        ...prevState.filters,
-        itemCode: itemCode
-      }
-    }));
   };
 
   /**
@@ -529,6 +517,61 @@ class ProductionGrid extends Component {
     }
   ];
 
+  handleItemCodeSelect = ({ 품목번호, 품목명 }) => {
+            this.setState(prev => ({
+              filters: {
+                ...prev.filters,
+                itemCode: 품목번호 || '',
+                itemName: 품목명   || '',
+              },
+              itemCodeModalOpen: false, // 선택 후 모달 닫기
+            }));
+          };
+
+  toYMD = (d) => d.toLocaleDateString('sv-SE'); // YYYY-MM-DD
+
+setQuickRange = (type) => {
+  const now = new Date();
+  const today = this.toYMD(now);
+
+  let start = today;
+  let end = today;
+
+  if (type === 'today') {
+    // 금일: 오늘~오늘
+    start = today;
+    end = today;
+  } else if (type === 'week') {
+    // 주간: 월요일~오늘 (한국/ISO 기준 월요일 시작)
+    const d = new Date(now);
+    const day = d.getDay();           // 0(일)~6(토)
+    const diffToMonday = (day + 6) % 7; // 월=1 -> 0, 일=0 -> 6
+    d.setDate(d.getDate() - diffToMonday);
+    start = this.toYMD(d);
+    end = today;
+  } else if (type === 'month') {
+    // 월간: 1일~오늘
+    const d = new Date(now.getFullYear(), now.getMonth(), 1);
+    start = this.toYMD(d);
+    end = today;
+  } else if (type === 'year') {
+    // 년간: 1월1일~오늘
+    const d = new Date(now.getFullYear(), 0, 1);
+    start = this.toYMD(d);
+    end = today;
+  }
+
+  this.setState(prev => ({
+    quickRange: type,
+    filters: {
+      ...prev.filters,
+      start_work_date: start,
+      end_work_date: end,
+    },
+    productionData: [], // 선택 시 기존 데이터 초기화(선택)
+  }));
+};
+
   /**
    * 컴포넌트를 렌더링하는 메서드
    * @returns {JSX.Element} 렌더링될 JSX 요소
@@ -574,68 +617,227 @@ class ProductionGrid extends Component {
            {/* 필터 섹션의 헤더 */}
           <CardHeader
             title={
-              <Typography variant="h6" sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 1,
-                color: 'white'
-              }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  color: 'white',
+                }}
+              >
                 <SearchIcon />
                 검색 조건
               </Typography>
             }
-            // 헤더 우측에 확장/축소 버튼 배치
-            action={
-              <IconButton
-                onClick={this.toggleFilterExpansion}
-                sx={{ color: 'white' }}
-              >
-                {/* 현재 상태에 따라 다른 아이콘 표시 */}
-                {filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-              </IconButton>
-            }
-            sx={{ 
-              backgroundColor: '#ff8f00',    // 머스타드 오렌지 배경
-              color: 'white',                // 흰색 텍스트
-              borderRadius: 1,               // 모서리 둥글게
-              mb: 2                          // 아래쪽 마진
-            }}
-          />
+             action={
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      {/* 빠른 기간 버튼 */}
+      <Box sx={{ display: 'flex', gap: 1 }}>
+        <Button
+          size="small"
+          variant={this.state.quickRange === 'today' ? 'contained' : 'outlined'}
+          onClick={() => this.setQuickRange('today')}
+          sx={{
+            borderColor: 'white',
+            color: 'white',
+            '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+          }}
+        >
+          금일
+        </Button>
+        <Button
+          size="small"
+          variant={this.state.quickRange === 'week' ? 'contained' : 'outlined'}
+          onClick={() => this.setQuickRange('week')}
+          sx={{
+            borderColor: 'white',
+            color: 'white',
+            '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+          }}
+        >
+          주간
+        </Button>
+        <Button
+          size="small"
+          variant={this.state.quickRange === 'month' ? 'contained' : 'outlined'}
+          onClick={() => this.setQuickRange('month')}
+          sx={{
+            borderColor: 'white',
+            color: 'white',
+            '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+          }}
+        >
+          월간
+        </Button>
+        <Button
+          size="small"
+          variant={this.state.quickRange === 'year' ? 'contained' : 'outlined'}
+          onClick={() => this.setQuickRange('year')}
+          sx={{
+            borderColor: 'white',
+            color: 'white',
+            '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+          }}
+        >
+          년간
+        </Button>
+      </Box>
+
+      {/* 구분자 파이프(옵션) */}
+      <Typography sx={{ color: 'white', opacity: 0.8, mx: 0.5 }}>|</Typography>
+
+      {/* 기간선택 + 날짜 필드 */}
+        <Typography sx={{ color: 'white' }}>기간선택</Typography>
+        <TextField
+          type="date"
+          value={filters.start_work_date}
+          onChange={(e) => this.handleFilterChange('start_work_date', e.target.value)}
+          size="small"
+          variant="outlined"
+          sx={{ backgroundColor: 'white', borderRadius: 1, minWidth: 150 }}
+        />
+        <Typography sx={{ color: 'white' }}>~</Typography>
+        <TextField
+          type="date"
+          value={filters.end_work_date}
+          onChange={(e) => this.handleFilterChange('end_work_date', e.target.value)}
+          size="small"
+          variant="outlined"
+          sx={{ backgroundColor: 'white', borderRadius: 1, minWidth: 150 }}
+        />
+
+        {/* 확장/축소 버튼 */}
+        <IconButton onClick={this.toggleFilterExpansion} sx={{ color: 'white' }}>
+          {filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+        </IconButton>
+      </Box>
+    }
+    sx={{
+      backgroundColor: '#ff8f00',
+      color: 'white',
+      borderRadius: 1,
+      mb: 2,
+    }}
+  />
+          
           
           {/* 기본 필터 (8개) - 항상 보이는 주요 검색 필드들 */}
-          <Grid container spacing={2}>
-            {/* 첫 번째 행 - 4개 필드 */}
+         <Grid container spacing={2}>
+          {/* 공장 */}
+          <Grid item xs={12} sm={6} md={2}>
+            <TextField
+              select                     
+              fullWidth
+              label="공장"
+              value={filters.plant ?? ''}
+              onChange={(e) => this.handleFilterChange('plant', e.target.value)}
+              size="small"
+              variant="outlined"
+              SelectProps={{ MenuProps: { PaperProps: { sx: { maxHeight: 280 } } } }}
+            >
+            <MenuItem value="아진산업-본사(경산)">아진산업-본사(경산)</MenuItem>
+            <MenuItem value="아진산업-1공장(경산)">아진산업-1공장(경산)</MenuItem>
+            <MenuItem value="아진산업-구어공장(경주)">아진산업-구어공장(경주)</MenuItem>
+            <MenuItem value="아진산업-하양공장(예정)">아진산업-하양공장(예정)</MenuItem>
+            </TextField>
+          </Grid>
+
+          {/* 작업장 */}
+          <Grid item xs={12} sm={6} md={2}>
+            <TextField
+              select
+              fullWidth
+              label="작업장"
+              value={filters.worker}
+              onChange={(e) => this.handleFilterChange('worker', e.target.value)}
+              size="small"
+              variant="outlined"
+             >
+            <MenuItem value="프레스">프레스</MenuItem>
+            <MenuItem value="금형">금형</MenuItem>
+            <MenuItem value="블랭크">블랭크</MenuItem>
+
+            </TextField>
+          </Grid>
+
+          {/* 작업자 */}
+          <Grid item x-s={12} sm={6} md={3}>
+            <TextField
+              select
+              fullWidth
+              label="작업자"
+              value={filters.workplace}
+              onChange={(e) => this.handleFilterChange('workplace', e.target.value)}
+              size="small"
+              variant="outlined"
+            >
+            <MenuItem value="1500T">1500T(E라인) </MenuItem>
+            <MenuItem value="1200T">1200T(D라인)</MenuItem>
+            <MenuItem value="1000T">1000T(F라인)</MenuItem>
+            <MenuItem value="1000T-PRO">1000T-PRO(G라인)</MenuItem>
+            </TextField>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={2}>
+            <TextField
+              fullWidth
+              label="품목코드"
+              value={filters.itemCode}
+              onClick={this.openItemCodeModal}
+              onSelect={this.handleItemCodeSelect}
+              size="small"
+              variant="outlined"
+              InputProps={{
+                readOnly: true,
+                style: { cursor: 'pointer' },
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                )
+              }}
+              sx={{
+                '& .MuiInputBase-root': {
+                  cursor: 'pointer',
+                  '&:hover': { backgroundColor: '#f5f5f5' }
+                }
+              }}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              fullWidth
+              label="품목명"
+              value={filters.itemName}
+              onClick={this.openItemCodeModal}
+              onSelect={this.handleItemCodeSelect}
+              onChange={(e) => this.handleFilterChange('itemName', e.target.value)}
+              size="small"
+              variant="outlined"
+               InputProps={{
+                readOnly: true,
+                style: { cursor: 'pointer' },
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                )
+              }}
+              sx={{
+                '& .MuiInputBase-root': {
+                  cursor: 'pointer',
+                  '&:hover': { backgroundColor: '#f5f5f5' }
+                }
+              }}
+            />
+          </Grid>
+        </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              {/* 작업시작일 입력 필드 */}
-              <TextField
-                fullWidth                    // 전체 너비 사용
-                label="작업시작일"           // 라벨 텍스트
-                type="date"                  // 날짜 선택 타입
-                value={filters.start_work_date}  // 현재 필터 값
-                onChange={(e) => this.handleFilterChange('start_work_date', e.target.value)}  // 값 변경 시 호출
-                InputLabelProps={{ shrink: true }}  // 라벨을 항상 축소된 상태로 표시
-                size="small"                 // 작은 크기
-                variant="outlined"           // 테두리가 있는 스타일
-              />
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
-              {/* 작업종료일 입력 필드 */}
-              <TextField
-                fullWidth
-                label="작업종료일"
-                type="date"
-                value={filters.end_work_date}
-                onChange={(e) => this.handleFilterChange('end_work_date', e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                size="small"
-                variant="outlined"
-              />
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
+
               {/* 생산번호 입력 필드 */}
-              <TextField
+              {/* <TextField
                 fullWidth
                 label="생산번호"
                 value={filters.productionNumber}
@@ -650,88 +852,9 @@ class ProductionGrid extends Component {
                     </InputAdornment>
                   ),
                 }}
-              />
+              /> */}
             </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
-              {/* 공장 입력 필드 */}
-              <TextField
-                fullWidth
-                label="공장"
-                value={filters.plant}
-                onChange={(e) => this.handleFilterChange('plant', e.target.value)}
-                size="small"
-                variant="outlined"
-              />
-            </Grid>
-
-            {/* 두 번째 행 - 4개 필드 */}
-            <Grid item xs={12} sm={6} md={3}>
-              {/* 작업자 입력 필드 */}
-              <TextField
-                fullWidth
-                label="작업장"
-                value={filters.worker}
-                onChange={(e) => this.handleFilterChange('worker', e.target.value)}
-                size="small"
-                variant="outlined"
-              />
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
-              {/* 작업장 입력 필드 */}
-              <TextField
-                fullWidth
-                label="작업자"
-                value={filters.workplace}
-                onChange={(e) => this.handleFilterChange('workplace', e.target.value)}
-                size="small"
-                variant="outlined"
-              />
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
-              {/* 품목코드 입력 필드 */}
-              <TextField
-                fullWidth
-                label="품목코드"
-                value={filters.itemCode}
-                onChange={(e) => this.handleFilterChange('itemCode', e.target.value)}
-                onClick={this.openItemCodeModal}
-                size="small"
-                variant="outlined"
-                InputProps={{
-                  readOnly: true,
-                  style: { cursor: 'pointer' },
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
-                  )
-                }}
-                sx={{
-                  '& .MuiInputBase-root': {
-                    cursor: 'pointer',
-                    '&:hover': {
-                      backgroundColor: '#f5f5f5'
-                    }
-                  }
-                }}
-              />
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
-              {/* 품목명 입력 필드 */}
-              <TextField
-                fullWidth
-                label="품목명"
-                value={filters.itemName}
-                onChange={(e) => this.handleFilterChange('itemName', e.target.value)}
-                size="small"
-                variant="outlined"
-              />
-            </Grid>
-          </Grid>
+        
 
           {/* 확장된 필터 - 화살표 클릭 시 펼쳐지는 추가 검색 필드들 */}
           <Collapse in={filterExpanded} timeout="auto" unmountOnExit>
@@ -1061,6 +1184,9 @@ class ProductionGrid extends Component {
           onClose={this.closeItemCodeModal}
           onSelect={this.handleItemCodeSelect}
           selectedItemCode={this.state.filters.itemCode}
+          plant={this.state.filters.plant}
+          worker={this.state.filters.worker}
+          workplace={this.state.filters.workplace}
         />
       </Box>
     );
