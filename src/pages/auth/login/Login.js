@@ -95,15 +95,15 @@ class Login extends React.Component {
               )}
 
               <div className="form-group">
-                <Label htmlFor="login-username">Username</Label>
+                <Label htmlFor="login-username">ID</Label>
                 <input
                   id="login-username"
                   className="form-control"
-                  defaultValue={"admin"}
+                  // defaultValue={"admin"}
                   onChange={this.changeEmail}
                   required
                   name="email"
-                  placeholder="Enter your username"
+                  placeholder="아이디"
                 />
               </div>
 
@@ -112,12 +112,12 @@ class Login extends React.Component {
                 <input
                   id="login-password"
                   className="form-control"
-                  defaultValue={"123123"}
+                  // defaultValue={"123123"}
                   onChange={this.changePassword}
                   type="password"
                   required
                   name="password"
-                  placeholder="Enter your password"
+                  placeholder="비밀번호"
                 />
               </div>
 
@@ -133,24 +133,27 @@ class Login extends React.Component {
                 {this.props.isFetching ? "Loading..." : "LOGIN"}
               </Button>
 
-              <p className="widget-auth-info text-center">Or</p>
+              {/* <p className="widget-auth-info text-center">Or</p>
               <div className={"d-flex mb-4 mt-3 align-items-center"}>
                 <p className={"mb-0"}>Login with</p>
                 <a href={"/"}><img src={img1} alt="facebook" className={"ml-3"} /></a>
                 <a href={"/"}><img src={img2} alt="github" className={"ml-3"} /></a>
                 <a href={"/"}><img src={img3} alt="linkedin" className={"ml-3"} /></a>
                 <a href={"/"}><img src={img4} alt="google_plus" className={"ml-3"} /></a>
-              </div>
+              </div> */}
 
-              <div className={"d-flex align-items-center"}>
-                Don’t have an account?{" "}
-                <Link to="register" className={"ml-1"}>Sign Up here</Link>
-              </div>
+              
+                {/* <div className={"d-flex align-items-center"}>
+                  Don’t have an account?{" "}
+                  <Link to="register" className={"ml-1"}>Sign Up here</Link>
+                </div>
 
-              <footer className={s.footer}>
-                {new Date().getFullYear()} © One React - React Admin Dashboard Template Made by{" "}
-                {/* <a href="https://flatlogic.com" rel="noopener noreferrer" target="_blank">Flatlogic LLC</a> */}
-              </footer>
+                <footer className={s.footer}>
+                  {new Date().getFullYear()} © One React - React Admin Dashboard Template Made by{" "}
+                  <a href="https://flatlogic.com" rel="noopener noreferrer" target="_blank">Flatlogic LLC</a>
+                </footer> */}
+                
+
             </form>
           </Widget>
         </div>

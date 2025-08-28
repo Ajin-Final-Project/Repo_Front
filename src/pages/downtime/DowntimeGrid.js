@@ -26,6 +26,8 @@ import {
 } from '@mui/icons-material';
 import s from './DowntimeGrid.module.scss';
 
+const API_BASE = process.env.REACT_APP_API_BASE;
+
 class DowntimeGrid extends Component {
   constructor(props) {
     super(props);
@@ -59,7 +61,7 @@ class DowntimeGrid extends Component {
     this.setState({ loading: true, error: null });
     try {
       const requestBody = { ...this.state.filters };
-      const response = await fetch('http://localhost:8000/smartFactory/downtime_grid/list', {
+      const response = await fetch(`${API_BASE}/smartFactory/downtime_grid/list`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),

@@ -644,7 +644,7 @@ import Header from "../Header";
 import Sidebar from "../Sidebar";
 import s from "./Layout.module.scss";
 import { DashboardThemes } from "../../reducers/layout";
-import BreadcrumbHistory from "../BreadcrumbHistory";
+// import BreadcrumbHistory from "../BreadcrumbHistory";
 import Helper from "../Helper";
 
 // pages
@@ -718,7 +718,7 @@ class Layout extends React.Component {
 
           {/* 클릭으로만 열고 닫도록 Hammer/onSwipe 제거 */}
           <main className={s.content}>
-            <BreadcrumbHistory url={this.props.location.pathname} />
+            {/* <BreadcrumbHistory url={this.props.location.pathname} /> */}
             <TransitionGroup>
               <CSSTransition
                 key={this.props.location.key}

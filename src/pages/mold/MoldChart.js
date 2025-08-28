@@ -37,15 +37,19 @@ import {
   PieChart as PieChartIcon
 } from '@mui/icons-material';
 import s from './MoldCleaningChart.module.scss';
-
+import config from '../../config';
 // API 엔드포인트들
+
+
+
+
 const API_ENDPOINTS = {
-  WORK_COUNT: 'http://localhost:8000/smartFactory/mold-chart/work-count',
-  RUNTIME: 'http://localhost:8000/smartFactory/mold-chart/runtime',
-  SUMMARIZE: 'http://localhost:8000/smartFactory/mold-chart/summarize',
-  BREAKDOWN: 'http://localhost:8000/smartFactory/mold-chart/breakdown',
-  BREAKDOWN_PIE_TOP10: 'http://localhost:8000/smartFactory/mold-chart/breakdown-pie-top10',
-  EQUIPMENT_LIST: 'http://localhost:8000/smartFactory/mold-chart/equipment-list'
+  WORK_COUNT: `${config.baseURLApi}/smartFactory/mold-chart/work-count`,
+  RUNTIME: `${config.baseURLApi}/smartFactory/mold-chart/runtime`,
+  SUMMARIZE: `${config.baseURLApi}/smartFactory/mold-chart/summarize`,
+  BREAKDOWN: `${config.baseURLApi}/smartFactory/mold-chart/breakdown`,
+  BREAKDOWN_PIE_TOP10: `${config.baseURLApi}/smartFactory/mold-chart/breakdown-pie-top10`,
+  EQUIPMENT_LIST: `${config.baseURLApi}/smartFactory/mold-chart/equipment-list`
 };
 
 class MoldChart extends Component {
@@ -84,7 +88,7 @@ class MoldChart extends Component {
     this.generateYearOptions();
     this.generateDateRange();
     this.fetchAllData();
-    this.fetchEquipmentList(); // 설비 목록 데이터 가져오기
+    this.fetchEquipmentList();
   }
 
   componentDidUpdate(prevProps, prevState) {
