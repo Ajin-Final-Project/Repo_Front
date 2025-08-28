@@ -59,7 +59,7 @@ import {
 import s from './ProductionGrid.module.scss';
 
 // 품목 코드 선택 모달 컴포넌트 import
-import ItemCodeModal from './ItemCodeModal';
+import ItemCodeModal from '../common/ItemCodeModal';
 
 /**
  * 생산 데이터 그리드 컴포넌트
@@ -81,9 +81,9 @@ class ProductionGrid extends Component {
         start_work_date: new Date(new Date().getFullYear(), 0, 1).toLocaleDateString('sv-SE'),       // 작업시작일
         end_work_date: new Date().toLocaleDateString('sv-SE'),          // 작업종료일
         productionNumber: '',       // 생산번호
-        plant: "아진산업-본사(경산)",                  // 공장
+        plant: "아진산업-경산(본사)",                  // 공장
         worker: "프레스",                 // 작업자
-        workplace: "1500T",              // 작업장
+        line: "1500T",              // 작업장
         itemCode: '',               // 품목코드
         itemName: '',               // 품목명
         carModel: '',               // 차량모델
@@ -131,7 +131,6 @@ class ProductionGrid extends Component {
       const requestBody = {
         ...this.state.filters
       }
-      // fetch API를 사용하여 서버에 POST 요청 전송
       const response = await fetch(`${config.baseURLApi}/smartFactory/production_grid/list`, {
         method: 'POST',               // HTTP 메서드: POST
         headers: {
@@ -185,7 +184,7 @@ class ProductionGrid extends Component {
         productionNumber: item.실적번호 || item.productionNumber || '',
         plant: item.플랜트 || item.plant || '',
         worker: item.책임자 || item.worker || '',
-        workplace: item.작업장 || item.workplace || '',
+        line: item.작업장 || item.line || '',
         itemCode: item.자재번호 || item.itemCode || '',
         itemName: item.자재명 || item.itemName || '',
         carModel: item.차종 || item.carModel || '',
@@ -222,7 +221,7 @@ class ProductionGrid extends Component {
         productionNumber: '',
         plant: '',
         worker: '',
-        workplace: '',
+        line: '',
         itemCode: '',
         itemName: '',
         carModel: '',
@@ -358,7 +357,7 @@ class ProductionGrid extends Component {
       cellClassName: 'super-app-theme--cell'
     },
     { 
-      field: 'workplace', 
+      field: 'line', 
       headerName: '작업자', 
       width: 100,
       headerClassName: 'super-app-theme--header',
@@ -736,7 +735,7 @@ setQuickRange = (type) => {
               variant="outlined"
               SelectProps={{ MenuProps: { PaperProps: { sx: { maxHeight: 280 } } } }}
             >
-            <MenuItem value="아진산업-본사(경산)">아진산업-본사(경산)</MenuItem>
+            <MenuItem value="아진산업-경산(본사)">아진산업-본사(경산)</MenuItem>
             <MenuItem value="아진산업-1공장(경산)">아진산업-1공장(경산)</MenuItem>
             <MenuItem value="아진산업-구어공장(경주)">아진산업-구어공장(경주)</MenuItem>
             <MenuItem value="아진산업-하양공장(예정)">아진산업-하양공장(예정)</MenuItem>
@@ -767,8 +766,8 @@ setQuickRange = (type) => {
               select
               fullWidth
               label="작업자"
-              value={filters.workplace}
-              onChange={(e) => this.handleFilterChange('workplace', e.target.value)}
+              value={filters.line}
+              onChange={(e) => this.handleFilterChange('line', e.target.value)}
               size="small"
               variant="outlined"
             >
@@ -1186,7 +1185,7 @@ setQuickRange = (type) => {
           selectedItemCode={this.state.filters.itemCode}
           plant={this.state.filters.plant}
           worker={this.state.filters.worker}
-          workplace={this.state.filters.workplace}
+          line={this.state.filters.line}
         />
       </Box>
     );

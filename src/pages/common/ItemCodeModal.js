@@ -21,11 +21,7 @@ import {
 import { Search as SearchIcon, Clear as ClearIcon, Inventory as InventoryIcon } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
 import config from '../../config';
-/**
- * 품목 코드 선택 모달 (클래스형 컴포넌트)
- * - 백엔드 응답 키: { 자재번호, 자재명 }
- * - 프론트 표시/사용 키: { 품목번호, 품목명 }
- */
+
 class ItemCodeModal extends Component {
   constructor(props) {
     super(props);
@@ -47,14 +43,14 @@ class ItemCodeModal extends Component {
     if (this.props.open && (
       prevProps.plant !== this.props.plant ||
       prevProps.worker !== this.props.worker ||
-      prevProps.workplace !== this.props.workplace
+      prevProps.line !== this.props.line
     )) {
       this.fetchItems();
     }
   }
 
   fetchItems = async (search = '') => {
-    const { plant, worker, workplace } = this.props;
+    const { plant, worker, line } = this.props;
     
     this.setState({ loading: true, error: null });
     try {
@@ -65,7 +61,7 @@ class ItemCodeModal extends Component {
           item: search,
           plant: plant || '',
           worker: worker || '',
-          workplace: workplace || ''
+          line: line || ''
         }),
       });
 
@@ -115,7 +111,7 @@ class ItemCodeModal extends Component {
   };
 
   render() {
-    const { open, onClose, selectedItemCode, plant, worker, workplace } = this.props;
+    const { open, onClose, selectedItemCode, plant, worker, line } = this.props;
     const { searchTerm, items, loading, error } = this.state;
 
     const columns = [
@@ -232,7 +228,7 @@ class ItemCodeModal extends Component {
             </Typography>
             
             {/* 현재 필터 정보 표시 */}
-            {(plant || worker || workplace) && (
+            {(plant || worker || line) && (
               <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 {plant && (
                   <Chip 
@@ -260,9 +256,9 @@ class ItemCodeModal extends Component {
                     }}
                   />
                 )}
-                {workplace && (
+                {line && (
                   <Chip 
-                    label={`작업장: ${workplace}`} 
+                    label={`작업장: ${line}`} 
                     size="small" 
                     variant="outlined"
                     sx={{ 
@@ -299,7 +295,7 @@ class ItemCodeModal extends Component {
                   placeholder="품목번호 또는 품목명으로 검색"
                   size="small"
                   sx={{
-                                         '& .MuiOutlinedInput-root': {
+                       '& .MuiOutlinedInput-root': {
                        borderRadius: '8px',
                        backgroundColor: 'white',
                        '&:hover': {
@@ -509,10 +505,10 @@ ItemCodeModal.propTypes = {
   onClose: PropTypes.func,
   onSelect: PropTypes.func, // (선택된 {품목번호, 품목명}) 반환
   selectedItemCode: PropTypes.string, // 선택 표시용
-  apiUrl: PropTypes.string, // 기본값: 'http://127.0.0.1:8000/smartFactory/modal/item_list'
+  apiUrl: PropTypes.string, // 기본값: 
   plant: PropTypes.string, // 공장 정보
   worker: PropTypes.string, // 작업자 정보
-  workplace: PropTypes.string, // 작업장 정보
+  line: PropTypes.string, // 작업장 정보
 };
 
 export default ItemCodeModal;
