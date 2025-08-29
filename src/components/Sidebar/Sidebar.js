@@ -1806,10 +1806,18 @@ class Sidebar extends React.Component {
     // light(기본) 사이드바 맵
     const lightSets = {
       warning: {
-        dashboard: { filled: darkDashboardIcon, outlined: lightDashboardIcon },
-        ecommerce: { filled: eCommerceFilled, outlined: eCommerceOutlined },
-        package: { filled: packageFilled, outlined: packageOutlined },
-        profile: { filled: profileFilled, outlined: profileOutlined },
+        // dashboard: { filled: darkDashboardIcon, outlined: lightDashboardIcon },
+        // ecommerce: { filled: eCommerceFilled, outlined: eCommerceOutlined },
+        // package: { filled: packageFilled, outlined: packageOutlined },
+        // profile: { filled: profileFilled, outlined: profileOutlined },
+        dashboard:  { filled: dashboardFilledYellow,  outlined: dashboardOutlinedYellow },
+        production: { filled: productionFilledYellow, outlined: productionOutlinedYellow },
+        mold:       { filled: moldFilledYellow,       outlined: moldOutlinedYellow },
+        defect:     { filled: defectFilledYellow,     outlined: defectOutlinedYellow },
+        downtime:   { filled: downtimeFilledYellow,   outlined: downtimeOutlinedYellow },
+        inspection: { filled: inspectionFilledYellow, outlined: inspectionOutlinedYellow },
+        admin:      { filled: adminFilledYellow,      outlined: adminOutlinedYellow },
+
         settings: { filled: settingsFilled, outlined: settingsOutlined },
         logout: { filled: logoutIcon, outlined: logoutIcon },
         email: { filled: emailFilled, outlined: emailOutlined },
@@ -1824,10 +1832,18 @@ class Sidebar extends React.Component {
         extra: { filled: extraFilled, outlined: extraOutlined },
       },
       danger: {
-        dashboard: { filled: darkDashboardIconDanger, outlined: lightDashboardIconDanger },
-        ecommerce: { filled: eCommerceFilledDanger, outlined: eCommerceOutlinedDanger },
-        package: { filled: packageFilledDanger, outlined: packageOutlinedDanger },
-        profile: { filled: profileFilledDanger, outlined: profileOutlinedDanger },
+        // dashboard: { filled: darkDashboardIconDanger, outlined: lightDashboardIconDanger },
+        // ecommerce: { filled: eCommerceFilledDanger, outlined: eCommerceOutlinedDanger },
+        // package: { filled: packageFilledDanger, outlined: packageOutlinedDanger },
+        // profile: { filled: profileFilledDanger, outlined: profileOutlinedDanger },
+        dashboard:  { filled: dashboardFilledRed,  outlined: dashboardOutlinedRed },
+        production: { filled: productionFilledRed, outlined: productionOutlinedRed },
+        mold:       { filled: moldFilledRed,       outlined: moldOutlinedRed },
+        defect:     { filled: defectFilledRed,     outlined: defectOutlinedRed },
+        downtime:   { filled: downtimeFilledRed,   outlined: downtimeOutlinedRed },
+        inspection: { filled: inspectionFilledRed, outlined: inspectionOutlinedRed },
+        admin:      { filled: adminFilledRed,      outlined: adminOutlinedRed },
+        
         settings: { filled: settingsFilledDanger, outlined: settingsOutlinedDanger },
         logout: { filled: logoutIconDanger, outlined: logoutIconDanger },
         email: { filled: emailFilledDanger, outlined: emailOutlinedDanger },
@@ -1842,10 +1858,18 @@ class Sidebar extends React.Component {
         extra: { filled: extraFilledDanger, outlined: extraOutlinedDanger },
       },
       success: {
-        dashboard: { filled: darkDashboardIconSuccess, outlined: lightDashboardIconSuccess },
-        ecommerce: { filled: eCommerceFilledSuccess, outlined: eCommerceOutlinedSuccess },
-        package: { filled: packageFilledSuccess, outlined: packageOutlinedSuccess },
-        profile: { filled: profileFilledSuccess, outlined: profileOutlinedSuccess },
+        // dashboard: { filled: darkDashboardIconSuccess, outlined: lightDashboardIconSuccess },
+        // ecommerce: { filled: eCommerceFilledSuccess, outlined: eCommerceOutlinedSuccess },
+        // package: { filled: packageFilledSuccess, outlined: packageOutlinedSuccess },
+        // profile: { filled: profileFilledSuccess, outlined: profileOutlinedSuccess },
+        dashboard:  { filled: dashboardFilledGreen,  outlined: dashboardOutlinedGreen },
+        production: { filled: productionFilledGreen, outlined: productionOutlinedGreen },
+        mold:       { filled: moldFilledGreen,       outlined: moldOutlinedGreen },
+        defect:     { filled: defectFilledGreen,     outlined: defectOutlinedGreen },
+        downtime:   { filled: downtimeFilledGreen,   outlined: downtimeOutlinedGreen },
+        inspection: { filled: inspectionFilledGreen, outlined: inspectionOutlinedGreen },
+        admin:      { filled: adminFilledGreen,      outlined: adminOutlinedGreen },
+
         settings: { filled: settingsFilledSuccess, outlined: settingsOutlinedSuccess },
         logout: { filled: logoutIconSuccess, outlined: logoutIconSuccess },
         email: { filled: emailFilledSuccess, outlined: emailOutlinedSuccess },
@@ -1860,10 +1884,18 @@ class Sidebar extends React.Component {
         extra: { filled: extraFilledSuccess, outlined: extraOutlinedSuccess },
       },
       info: {
-        dashboard: { filled: darkDashboardIconBlue, outlined: lightDashboardIconBlue },
-        ecommerce: { filled: eCommerceFilledBlue, outlined: eCommerceOutlinedBlue },
-        package: { filled: packageFilledBlue, outlined: packageOutlinedBlue },
-        profile: { filled: profileFilledBlue, outlined: profileOutlinedBlue },
+        // dashboard: { filled: darkDashboardIconBlue, outlined: lightDashboardIconBlue },
+        // ecommerce: { filled: eCommerceFilledBlue, outlined: eCommerceOutlinedBlue },
+        // package: { filled: packageFilledBlue, outlined: packageOutlinedBlue },
+        // profile: { filled: profileFilledBlue, outlined: profileOutlinedBlue },
+        dashboard:  { filled: dashboardFilledBlue,  outlined: dashboardOutlinedBlue },
+        production: { filled: productionFilledBlue, outlined: productionOutlinedBlue },
+        mold:       { filled: moldFilledBlue,       outlined: moldOutlinedBlue },
+        defect:     { filled: defectFilledBlue,     outlined: defectOutlinedBlue },
+        downtime:   { filled: downtimeFilledBlue,   outlined: downtimeOutlinedBlue },
+        inspection: { filled: inspectionFilledBlue, outlined: inspectionOutlinedBlue },
+        admin:      { filled: adminFilledBlue,      outlined: adminOutlinedBlue },
+
         settings: { filled: settingsFilledBlue, outlined: settingsOutlinedBlue },
         logout: { filled: logoutIconBlue, outlined: logoutIconBlue },
         email: { filled: emailFilledBlue, outlined: emailOutlinedBlue },
@@ -1890,12 +1922,12 @@ class Sidebar extends React.Component {
     // 아이콘 전용 항목(접힘일 때만 사용)
     const items = [
       { key: "dashboard", label: "Dashboard", link: "/app/dashboard", iconKey: "dashboard" },
-      { key: "production", label: "생산관리 시스템", link: "/app/production/chart", iconKey: "ecommerce" },
-      { key: "mold", label: "금형관리 시스템", link: "/app/mold/chart", iconKey: "package" },
-      { key: "defect", label: "불량공정 시스템", link: "/app/defect/chart", iconKey: "profile" },
-      { key: "downtime", label: "비가동 통계 시스템", link: "/app/downtime/chart", iconKey: "package" },
-      { key: "inspection", label: "초/중/종품 검사 시스템", link: "/app/inspection/chart", iconKey: "package" },
-      { key: "admin", label: "관리자 시스템", link: "/admin/users", iconKey: "package" },
+      { key: "production", label: "생산관리 시스템", link: "/app/production/chart", iconKey: "production" },
+      { key: "mold", label: "금형관리 시스템", link: "/app/mold/chart", iconKey: "mold" },
+      { key: "defect", label: "불량공정 시스템", link: "/app/defect/chart", iconKey: "defect" },
+      { key: "downtime", label: "비가동 통계 시스템", link: "/app/downtime/chart", iconKey: "downtime" },
+      { key: "inspection", label: "초/중/종품 검사 시스템", link: "/app/inspection/chart", iconKey: "inspection" },
+      { key: "admin", label: "관리자 시스템", link: "/admin/users", iconKey: "admin" },
       { key: "email", label: "Email", link: "/app/email", iconKey: "email", badge: 9 },
       { key: "documentation", label: "Documentation", link: "/documentation", iconKey: "documentation", target: "_blank" },
     ];
@@ -1993,7 +2025,7 @@ class Sidebar extends React.Component {
               { header: "생산 데이터 그리드", link: "/app/production/grid" },
             ]}
           >
-            <img src={this.themeIcons("ecommerce")} alt="ecommerce" width="24" height="24" />
+            <img src={this.themeIcons("production")} alt="production" width="24" height="24" />
           </LinksGroup>
 
           <LinksGroup
@@ -2011,7 +2043,7 @@ class Sidebar extends React.Component {
               { header: "금형고장 데이터", link: "/app/mold/moldBreakDown" },
             ]}
           >
-            <img src={this.themeIcons("package")} alt="package" width="24" height="24" />
+            <img src={this.themeIcons("mold")} alt="mold" width="24" height="24" />
           </LinksGroup>
 
           <LinksGroup
@@ -2027,7 +2059,7 @@ class Sidebar extends React.Component {
               { header: "불량공정 그리드", link: "/app/defect/grid" },
             ]}
           >
-            <img src={this.themeIcons("profile")} alt="profile" width="24" height="24" />
+            <img src={this.themeIcons("defect")} alt="defect" width="24" height="24" />
           </LinksGroup>
 
           <LinksGroup
@@ -2042,7 +2074,7 @@ class Sidebar extends React.Component {
               { header: "비가동 통계 데이터", link: "/app/downtime/data" },
             ]}
           >
-            <img src={this.themeIcons("package")} alt="package" width="24" height="24" />
+            <img src={this.themeIcons("downtime")} alt="downtime" width="24" height="24" />
           </LinksGroup>
 
           <LinksGroup
@@ -2057,7 +2089,7 @@ class Sidebar extends React.Component {
               { header: "검사 시스템 데이터", link: "/app/inspection/data" },
             ]}
           >
-            <img src={this.themeIcons("package")} alt="package" width="24" height="24" />
+            <img src={this.themeIcons("inspection")} alt="inspection" width="24" height="24" />
           </LinksGroup>
 
           <LinksGroup
@@ -2074,7 +2106,7 @@ class Sidebar extends React.Component {
               { header: "사원 관리 데이터", link: "/app/admin/users" },
             ]}
           >
-            <img src={this.themeIcons("package")} alt="package" width="24" height="24" />
+            <img src={this.themeIcons("admin")} alt="admin" width="24" height="24" />
           </LinksGroup>
 
           <LinksGroup
