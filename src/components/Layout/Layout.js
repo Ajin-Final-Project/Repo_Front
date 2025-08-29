@@ -668,7 +668,7 @@ import DowntimeGrid from "../../pages/downtime/DowntimeGrid";
 import InspectionSystemChart from "../../pages/inspection/InspectionSystemChart";
 import InspectionGrid from "../../pages/inspection/InspectionSystemData";
 import AdminUserGrid from "../../pages/admin/UserGrid";
-import MoldShotCountGrid from "../../pages/mold/MoldShotCountData";
+import MoldShotCheck from "../../pages/mold/MoldShotCheck";
 import MoldBreakDownGrid from "../../pages/mold/MoldBreakDownGrid";
 
 class Layout extends React.Component {
@@ -796,7 +796,12 @@ class Layout extends React.Component {
                     exact
                     component={MoldChart}
                   />
-                  <Route
+                   <Route
+                    path={"/app/mold/shot-check"}
+                    exact
+                    component={MoldShotCheck}
+                  />
+                  {/* <Route
                     path={"/app/mold/data"}
                     exact
                     component={MoldCleaningData}
@@ -805,7 +810,7 @@ class Layout extends React.Component {
                     path={"/app/mold/shotCountData"}
                     exact
                     component={MoldShotCountGrid}
-                  />
+                  /> */}
                   <Route
                     path={"/app/mold/moldBreakDown"}
                     exact
