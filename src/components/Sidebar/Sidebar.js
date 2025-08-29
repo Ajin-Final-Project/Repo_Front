@@ -1344,27 +1344,27 @@ import dashboardOutlinedRed from "../../images/theme-icons/red/dashboard-svgrepo
 
 // 생산관리 시스템
 import productionFilledRed from "../../images/theme-icons/red/factory-svgrepo-com_r.svg";
-import productionOutlinedRed from "../../images/theme-icons/red/factory-svgrepo-com_black.svg";
+import productionOutlinedRed from "../../images/theme-icons/yellow/factory-svgrepo-com_black.svg";
 
 // 금형관리 시스템
 import moldFilledRed from "../../images/theme-icons/red/tool-svgrepo-com_rf.svg";
-import moldOutlinedRed from "../../images/theme-icons/red/tool-svgrepo-com_black.svg";
+import moldOutlinedRed from "../../images/theme-icons/yellow/tool-svgrepo-com_black.svg";
 
 // 불량공정 시스템
 import defectFilledRed from "../../images/theme-icons/red/alert-triangle-svgrepo-com_rf.svg";
-import defectOutlinedRed from "../../images/theme-icons/red/alert-triangle-svgrepo-com_black.svg";
+import defectOutlinedRed from "../../images/theme-icons/yellow/alert-triangle-svgrepo-com_black.svg";
 
 // 비가동 통계 시스템
 import downtimeFilledRed from "../../images/theme-icons/red/clock-svgrepo-com_rf.svg";
-import downtimeOutlinedRed from "../../images/theme-icons/red/clock-svgrepo-com_black.svg";
+import downtimeOutlinedRed from "../../images/theme-icons/yellow/clock-svgrepo-com_black.svg";
 
 // 검사 시스템
 import inspectionFilledRed from "../../images/theme-icons/red/check-lists-svgrepo-com_r.svg";
-import inspectionOutlinedRed from "../../images/theme-icons/red/check-lists-svgrepo-com_black.svg";
+import inspectionOutlinedRed from "../../images/theme-icons/yellow/check-lists-svgrepo-com_black.svg";
 
 // 관리자 시스템
 import adminFilledRed from "../../images/theme-icons/red/user-svgrepo-com_rf.svg";
-import adminOutlinedRed from "../../images/theme-icons/red/user-svgrepo-com_black.svg";
+import adminOutlinedRed from "../../images/theme-icons/yellow/user-svgrepo-com_black.svg";
 
 /* =========================
  * success(초록)
@@ -1411,27 +1411,27 @@ import dashboardOutlinedGreen from "../../images/theme-icons/green/dashboard-svg
 
 // 생산관리 시스템
 import productionFilledGreen from "../../images/theme-icons/green/factory-svgrepo-com_g.svg";
-import productionOutlinedGreen from "../../images/theme-icons/green/factory-svgrepo-com_black.svg";
+import productionOutlinedGreen from "../../images/theme-icons/yellow/factory-svgrepo-com_black.svg";
 
 // 금형관리 시스템
 import moldFilledGreen from "../../images/theme-icons/green/tool-svgrepo-com_gf.svg";
-import moldOutlinedGreen from "../../images/theme-icons/green/tool-svgrepo-com_black.svg";
+import moldOutlinedGreen from "../../images/theme-icons/yellow/tool-svgrepo-com_black.svg";
 
 // 불량공정 시스템
 import defectFilledGreen from "../../images/theme-icons/green/alert-triangle-svgrepo-com_gf.svg";
-import defectOutlinedGreen from "../../images/theme-icons/green/alert-triangle-svgrepo-com_black.svg";
+import defectOutlinedGreen from "../../images/theme-icons/yellow/alert-triangle-svgrepo-com_black.svg";
 
 // 비가동 통계 시스템
 import downtimeFilledGreen from "../../images/theme-icons/green/clock-svgrepo-com_gf.svg";
-import downtimeOutlinedGreen from "../../images/theme-icons/green/clock-svgrepo-com_black.svg";
+import downtimeOutlinedGreen from "../../images/theme-icons/yellow/clock-svgrepo-com_black.svg";
 
 // 검사 시스템
 import inspectionFilledGreen from "../../images/theme-icons/green/check-lists-svgrepo-com_g.svg";
-import inspectionOutlinedGreen from "../../images/theme-icons/green/check-lists-svgrepo-com_black.svg";
+import inspectionOutlinedGreen from "../../images/theme-icons/yellow/check-lists-svgrepo-com_black.svg";
 
 // 관리자 시스템
 import adminFilledGreen from "../../images/theme-icons/green/user-svgrepo-com_gf.svg";
-import adminOutlinedGreen from "../../images/theme-icons/green/user-svgrepo-com_black.svg";
+import adminOutlinedGreen from "../../images/theme-icons/yellow/user-svgrepo-com_black.svg";
 
 /* =========================
  * info(파랑)
@@ -1478,27 +1478,27 @@ import dashboardOutlinedBlue from "../../images/theme-icons/blue/dashboard-svgre
 
 // 생산관리 시스템
 import productionFilledBlue from "../../images/theme-icons/blue/factory-svgrepo-com_b.svg";
-import productionOutlinedBlue from "../../images/theme-icons/blue/factory-svgrepo-com_black.svg";
+import productionOutlinedBlue from "../../images/theme-icons/yellow/factory-svgrepo-com_black.svg";
 
 // 금형관리 시스템
 import moldFilledBlue from "../../images/theme-icons/blue/tool-svgrepo-com_bf.svg";
-import moldOutlinedBlue from "../../images/theme-icons/blue/tool-svgrepo-com_black.svg";
+import moldOutlinedBlue from "../../images/theme-icons/yellow/tool-svgrepo-com_black.svg";
 
 // 불량공정 시스템
 import defectFilledBlue from "../../images/theme-icons/blue/alert-triangle-svgrepo-com_bf.svg";
-import defectOutlinedBlue from "../../images/theme-icons/blue/alert-triangle-svgrepo-com_black.svg";
+import defectOutlinedBlue from "../../images/theme-icons/yellow/alert-triangle-svgrepo-com_black.svg";
 
 // 비가동 통계 시스템
 import downtimeFilledBlue from "../../images/theme-icons/blue/clock-svgrepo-com_bf.svg";
-import downtimeOutlinedBlue from "../../images/theme-icons/blue/clock-svgrepo-com_black.svg";
+import downtimeOutlinedBlue from "../../images/theme-icons/yellow/clock-svgrepo-com_black.svg";
 
 // 검사 시스템
 import inspectionFilledBlue from "../../images/theme-icons/blue/check-lists-svgrepo-com_b.svg";
-import inspectionOutlinedBlue from "../../images/theme-icons/blue/check-lists-svgrepo-com_black.svg";
+import inspectionOutlinedBlue from "../../images/theme-icons/yellow/check-lists-svgrepo-com_black.svg";
 
 // 관리자 시스템
 import adminFilledBlue from "../../images/theme-icons/blue/user-svgrepo-com_bf.svg";
-import adminOutlinedBlue from "../../images/theme-icons/blue/user-svgrepo-com_black.svg";
+import adminOutlinedBlue from "../../images/theme-icons/yellow/user-svgrepo-com_black.svg";
 
 /* =========================
  * dark sidebar 전용 아이콘 세트
