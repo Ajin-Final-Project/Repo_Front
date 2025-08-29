@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800px" height="800px" viewBox="0 0 16 16">
+  <defs>
+    <!-- 마스크 정의 (흰색 = 보이게, 검정 = 투명 구멍) -->
+    <mask id="cutout2">
+      <rect width="16" height="16" fill="white"/>
+      <!-- 창문/도어 부분을 구멍처리 -->
+      <path d="M9 8H7V12H9V8Z" fill="#323232"/>
+      <path d="M5 8H3V12H5V8Z" fill="#323232"/>
+    </mask>
+  </defs>
+
+  <!-- 집 모양 외곽 (주황색, 내부는 구멍 처리됨) -->
+  <path d="M15 2V15H13V10H11V15H1V5L7 2H8V5L14 2H15Z" 
+        fill="#FEBE69" mask="url(#cutout2)"/>
+
+  <!-- 외곽선 강조 (검정 라인) -->
+  <path d="M15 2V15H13V10H11V15H1V5L7 2H8V5L14 2H15Z" 
+        fill="none" stroke="#323232" stroke-width="1"/>
+</svg>

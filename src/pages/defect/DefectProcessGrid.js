@@ -67,7 +67,7 @@ class DefectProcessGrid extends Component {
         id: it.id || idx + 1,
         workDate: it.근무일자 || it.workDate || '',
         workplace: it.작업장 || it.workplace || '',
-        itemInfo: it.자재정보 || it.itemInfo || '',
+        itemInfo: it.자재번호 || it.itemInfo || '',
         carModel: it.차종 || it.carModel || '',
         orderType: it.수주유형 || it.orderType || '',
         goodItemCount: it.양품수량 ?? it.goodItemCount ?? 0,
@@ -130,7 +130,7 @@ class DefectProcessGrid extends Component {
       valueGetter: (p) => (p.value ? new Date(p.value) : null) },
     { field: 'workplace', headerName: '작업장', width: 120,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'itemInfo', headerName: '자재정보', width: 180,
+    { field: 'itemInfo', headerName: '자재번호', width: 180,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
     { field: 'carModel', headerName: '차종', width: 100,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
@@ -216,7 +216,7 @@ class DefectProcessGrid extends Component {
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <TextField
-                fullWidth label="자재정보(부분검색)" value={filters.itemInfo}
+                fullWidth label="자재번호(부분검색)" value={filters.itemInfo}
                 onChange={(e) => this.handleFilterChange('itemInfo', e.target.value)}
                 size="small"
                 InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> }}

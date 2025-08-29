@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800px" height="800px" viewBox="0 0 24 24" fill="none">
+  <!-- 시계 바늘 (주황) -->
+  <path d="M16 14L12 12V7" stroke="#FEBE69" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- 주황 원 -->
+  <circle cx="12" cy="12" r="9" stroke="#FEBE69" stroke-width="2"/>
+  
+  <!-- 완전히 바깥쪽 검정 테두리 -->
+  <circle cx="12" cy="12" r="10" fill="none" stroke="black" stroke-width="1"/>
+</svg>

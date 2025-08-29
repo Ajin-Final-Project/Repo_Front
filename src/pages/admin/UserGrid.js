@@ -326,8 +326,14 @@ class UserGrid extends Component {
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'
     },
     {
-      field: '나이', headerName: '나이', width: 90, type: 'number',
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'
+      field: '나이',
+      headerName: '나이',
+      width: 90,
+      type: 'number',
+      headerAlign: 'left',   // 헤더 왼쪽 정렬
+      align: 'left',         // 셀 왼쪽 정렬
+      headerClassName: 'super-app-theme--header',
+      cellClassName: 'super-app-theme--cell',
     },
     {
       field: '부서', headerName: '부서', width: 140,
