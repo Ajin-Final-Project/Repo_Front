@@ -170,14 +170,19 @@ class UserGrid extends Component {
         pw: '',
         name: '',
         age: '',        // ← 숫자 문자열로 입력받고, 전송 직전에 숫자로 변환
+        age_min: '',               // 추가: 나이 최소
+        age_max: '',               // 추가: 나이 최대
+        hq: '',                    // 추가: 본부
         dept: '',
+        rank: '',                  // 추가: 직급
+        role: '',                  // 추가: 권한(시스템관리자/임원/관리자/직원/열람전용)
         email: '',
         phone: '',
         address: '',
       },
       // UI 상태
       filterExpanded: false, // 추가 필터 접기/펼치기
-      showPw: false,         // PW 마스킹 토글
+      // showPw: false,         // PW 마스킹 토글 , 제거: PW 컬럼 자체를 없앰
       // 데이터 상태
       rows: [],
       loading: false,
@@ -209,17 +214,43 @@ class UserGrid extends Component {
   buildPayload = () => {
     const p = { ...this.state.filters };
 
-    // age: 값 없으면 제거, 값 있으면 숫자 변환(실패 시 제거)
-    if (p.age === '' || p.age === null || p.age === undefined) {
-      delete p.age;
+    // // age: 값 없으면 제거, 값 있으면 숫자 변환(실패 시 제거)
+    // if (p.age === '' || p.age === null || p.age === undefined) {
+    //   delete p.age;
+    // } else {
+    //   const n = Number(p.age);
+    //   if (Number.isNaN(n)) delete p.age;
+    //   else p.age = n; // Pydantic의 Optional[int]에 맞춤
+    // }
+
+        // 숫자 변환: age / age_min / age_max
+    const toNum = (v) => {
+      if (v === '' || v === null || v === undefined) return undefined;
+      const n = Number(v);
+      return Number.isNaN(n) ? undefined : n;
+    };
+
+    const age = toNum(p.age);
+    const age_min = toNum(p.age_min);
+    const age_max = toNum(p.age_max);
+
+    // 단일 age가 있으면 age_min/max 무시(백엔드 정책과 동일)
+    if (age !== undefined) {
+      p.age = age;
+      delete p.age_min;
+      delete p.age_max;
     } else {
-      const n = Number(p.age);
-      if (Number.isNaN(n)) delete p.age;
-      else p.age = n; // Pydantic의 Optional[int]에 맞춤
+      if (age_min !== undefined) p.age_min = age_min; else delete p.age_min;  // 추가
+      if (age_max !== undefined) p.age_max = age_max; else delete p.age_max;  // 추가
+      delete p.age; // 빈 문자열이면 제거
     }
 
+
     // 문자열 필드: 트림 후 빈 값이면 키 삭제
-    ['user_id', 'pw', 'name', 'dept', 'email', 'phone', 'address'].forEach((k) => {
+    [ 'user_id', 'name', 'hq', 'dept', 'rank', 'role',
+      'email', 'phone', 'address',
+      // 'pw', // 제거
+    ].forEach((k) => {
       if (typeof p[k] === 'string') {
         const t = p[k].trim();
         if (t === '') delete p[k];
@@ -239,7 +270,7 @@ class UserGrid extends Component {
     // --------------------------------------
       // [CHANGE] 기존 filters 그대로 X → buildPayload로 정리해서 전송
       // --------------------------------------
-      const body = this.buildPayload();
+      const body = this.buildPayload();  //  변경: 정리된 페이로드 사용
 
 
       const res = await fetch(`${config.baseURLApi}/smartFactory/user_grid/list`, {
@@ -283,10 +314,15 @@ class UserGrid extends Component {
     this.setState({
       filters: {
         user_id: '',
-        pw: '',
+        // pw: '',           // 제거
         name: '',
         age: '',
+        age_min: '',        // 추가
+        age_max: '',        // 추가
+        hq: '',             // 추가
         dept: '',
+        rank: '',           // 추가
+        role: '',           // 추가
         email: '',
         phone: '',
         address: '',
@@ -313,14 +349,14 @@ class UserGrid extends Component {
       field: 'ID', headerName: 'ID', width: 140,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'
     },
-    {
-      field: 'PW', headerName: 'PW', width: 160,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
-      renderCell: (params) => {
-        const val = params.value || '';
-        return this.state.showPw ? val : (val ? '•'.repeat(6) : '');
-      }
-    },
+    // {
+    //   field: 'PW', headerName: 'PW', width: 160,
+    //   headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
+    //   renderCell: (params) => {
+    //     const val = params.value || '';
+    //     return this.state.showPw ? val : (val ? '•'.repeat(6) : '');
+    //   }
+    // },  // 제거
     {
       field: '이름', headerName: '이름', width: 120,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'
@@ -335,10 +371,16 @@ class UserGrid extends Component {
       headerClassName: 'super-app-theme--header',
       cellClassName: 'super-app-theme--cell',
     },
+    { field: '본부', headerName: '본부', width: 140,    // 추가
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
     {
       field: '부서', headerName: '부서', width: 140,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'
     },
+    { field: '직급', headerName: '직급', width: 120,    // 추가
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: '권한', headerName: '권한', width: 140,    // 추가
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
     {
       field: '메일', headerName: '메일', width: 220,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'
@@ -364,7 +406,7 @@ class UserGrid extends Component {
             사원 관리 데이터
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            회원정보를 조건별로 조회하고 데이터 그리드로 확인합니다.
+            사원 정보를 조건별로 조회하고 데이터 그리드로 확인합니다.
           </Typography>
         </Box>
 
@@ -391,11 +433,12 @@ class UserGrid extends Component {
                          onChange={(e) => this.handleFilterChange('user_id', e.target.value)}
                          size="small" variant="outlined" />
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            {/* <Grid item xs={12} sm={6} md={3}>
               <TextField fullWidth label="PW" value={filters.pw}
                          onChange={(e) => this.handleFilterChange('pw', e.target.value)}
                          size="small" variant="outlined" />
-            </Grid>
+            </Grid> */}
+             {/* PW 입력창 제거 */}
             <Grid item xs={12} sm={6} md={3}>
               <TextField fullWidth label="이름" value={filters.name}
                          onChange={(e) => this.handleFilterChange('name', e.target.value)}
@@ -406,6 +449,17 @@ class UserGrid extends Component {
                          onChange={(e) => this.handleFilterChange('age', e.target.value)}
                          size="small" variant="outlined" />
             </Grid>
+            {/* ✅ 나이 범위 추가 */}
+            <Grid item xs={12} sm={6} md={3}>
+              <TextField fullWidth label="나이(최소)" type="number" value={filters.age_min}
+                         onChange={(e) => this.handleFilterChange('age_min', e.target.value)}
+                         size="small" variant="outlined" />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <TextField fullWidth label="나이(최대)" type="number" value={filters.age_max}
+                         onChange={(e) => this.handleFilterChange('age_max', e.target.value)}
+                         size="small" variant="outlined" />
+            </Grid>
           </Grid>
 
           {/* 확장 필터 */}
@@ -413,8 +467,23 @@ class UserGrid extends Component {
             <Divider sx={{ my: 2 }} />
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6} md={3}>
+                <TextField fullWidth label="본부" value={filters.hq}   // 추가
+                           onChange={(e) => this.handleFilterChange('hq', e.target.value)}
+                           size="small" variant="outlined" />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
                 <TextField fullWidth label="부서" value={filters.dept}
                            onChange={(e) => this.handleFilterChange('dept', e.target.value)}
+                           size="small" variant="outlined" />
+              </Grid>
+               <Grid item xs={12} sm={6} md={3}>
+                <TextField fullWidth label="직급" value={filters.rank} // 추가
+                           onChange={(e) => this.handleFilterChange('rank', e.target.value)}
+                           size="small" variant="outlined" />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField fullWidth label="권한" value={filters.role} // 추가
+                           onChange={(e) => this.handleFilterChange('role', e.target.value)}
                            size="small" variant="outlined" />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
@@ -437,10 +506,11 @@ class UserGrid extends Component {
 
           {/* 옵션 & 버튼 */}
           <Grid item xs={12} sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <FormControlLabel
+            {/* <FormControlLabel
               control={<Switch checked={showPw} onChange={this.toggleShowPw} />}
               label="PW 보기 (운영권장 X)"
-            />
+            /> */}
+            {/* PW 보기 토글 제거 */}
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Button variant="outlined" startIcon={<ClearIcon />} onClick={this.clearFilters} size="large" color="secondary">
                 필터 초기화
@@ -523,3 +593,5 @@ class UserGrid extends Component {
 }
 
 export default UserGrid;
+
+// 권한(role)을 Select로 바꿔서 ENUM 값(시스템관리자/임원/관리자/직원/열람전용)만 선택하도록 UI 수정 가능..
