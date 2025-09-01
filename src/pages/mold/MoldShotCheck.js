@@ -312,7 +312,7 @@ class MoldShotCheck extends Component {
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
     { field: 'order_type', headerName: '오더유형', width: 100,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'action_content', headerName: '조치내용', width: 150,
+    { field: 'action_content', headerName: '조치내용', width: 220,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
     { field: 'basic_start_date', headerName: '기본시작일', width: 120, type: 'date',
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
@@ -385,10 +385,10 @@ closeItemCodeModal = () => {
             gap: 1
           }}>
             <FilterIcon />
-            금형타발수 점검 데이터 그리드
+            금형세척/점검 데이터 그리드
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            금형타발수 점검 데이터(생산내역, 금형세척주기, 금형타발수관리) 통합 조회.
+            금형세척 점검 데이터(생산내역, 금형세척주기, 금형타발수관리) 통합 조회.
           </Typography>
         </Box>
 
