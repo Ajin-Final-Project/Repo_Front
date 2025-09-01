@@ -1265,6 +1265,43 @@ import mapsFilled from "../../images/theme-icons/yellow/Maps_filled.svg";
 import extraOutlined from "../../images/light-extra.svg";
 import extraFilled from "../../images/dark-extra.svg";
 
+/* =======================
+   아이콘 import (새로운 파일들)
+   ======================= */
+
+// Dashboard
+import dashboardFilledYellow from "../../images/theme-icons/yellow/dashboard-svgrepo-com_yf.svg";
+import dashboardOutlinedYellow from "../../images/theme-icons/yellow/dashboard-svgrepo-com_y.svg";
+
+// 생산관리 시스템
+import productionFilledYellow from "../../images/theme-icons/yellow/factory-svgrepo-com_y.svg";
+import productionOutlinedYellow  from "../../images/theme-icons/yellow/factory-svgrepo-com_black.svg";
+
+// 금형관리 시스템
+import moldFilledYellow  from "../../images/theme-icons/yellow/tool-svgrepo-com_yf.svg";
+import moldOutlinedYellow  from "../../images/theme-icons/yellow/tool-svgrepo-com_black.svg";
+
+// 불량공정 시스템
+import defectFilledYellow  from "../../images/theme-icons/yellow/alert-triangle-svgrepo-com_yf.svg";
+import defectOutlinedYellow  from "../../images/theme-icons/yellow/alert-triangle-svgrepo-com_black.svg";
+
+// 비가동 통계 시스템
+import downtimeFilledYellow  from "../../images/theme-icons/yellow/clock-svgrepo-com_yf.svg";
+import downtimeOutlinedYellow  from "../../images/theme-icons/yellow/clock-svgrepo-com_black.svg";
+
+// 검사 시스템
+import inspectionFilledYellow  from "../../images/theme-icons/yellow/check-lists-svgrepo-com_y.svg";
+import inspectionOutlinedYellow  from "../../images/theme-icons/yellow/check-lists-svgrepo-com_black.svg";
+
+// 관리자 시스템
+import adminFilledYellow  from "../../images/theme-icons/yellow/user-svgrepo-com_yf.svg";
+import adminOutlinedYellow  from "../../images/theme-icons/yellow/user-svgrepo-com_black.svg";
+
+// AI 분석 시스템
+import aiFilledYellow  from "../../images/theme-icons/yellow/Charts_filled.svg";
+import aiOutlinedYellow  from "../../images/theme-icons/yellow/Charts_outlined.svg";
+
+
 /* =========================
  * danger(빨강)
  * ========================= */
@@ -1299,6 +1336,42 @@ import mapsOutlinedDanger from "../../images/theme-icons/red/Maps_outlined.svg";
 import mapsFilledDanger from "../../images/theme-icons/red/Maps_filled.svg";
 import extraOutlinedDanger from "../../images/theme-icons/red/Extra_outlined.svg";
 import extraFilledDanger from "../../images/theme-icons/red/Extra_filled.svg";
+
+/* =======================
+   아이콘 import (새로운 파일들)
+   ======================= */
+
+// Dashboard
+import dashboardFilledRed from "../../images/theme-icons/red/dashboard-svgrepo-com_rf.svg";
+import dashboardOutlinedRed from "../../images/theme-icons/red/dashboard-svgrepo-com_r.svg";
+
+// 생산관리 시스템
+import productionFilledRed from "../../images/theme-icons/red/factory-svgrepo-com_r.svg";
+import productionOutlinedRed from "../../images/theme-icons/yellow/factory-svgrepo-com_black.svg";
+
+// 금형관리 시스템
+import moldFilledRed from "../../images/theme-icons/red/tool-svgrepo-com_rf.svg";
+import moldOutlinedRed from "../../images/theme-icons/yellow/tool-svgrepo-com_black.svg";
+
+// 불량공정 시스템
+import defectFilledRed from "../../images/theme-icons/red/alert-triangle-svgrepo-com_rf.svg";
+import defectOutlinedRed from "../../images/theme-icons/yellow/alert-triangle-svgrepo-com_black.svg";
+
+// 비가동 통계 시스템
+import downtimeFilledRed from "../../images/theme-icons/red/clock-svgrepo-com_rf.svg";
+import downtimeOutlinedRed from "../../images/theme-icons/yellow/clock-svgrepo-com_black.svg";
+
+// 검사 시스템
+import inspectionFilledRed from "../../images/theme-icons/red/check-lists-svgrepo-com_r.svg";
+import inspectionOutlinedRed from "../../images/theme-icons/yellow/check-lists-svgrepo-com_black.svg";
+
+// 관리자 시스템
+import adminFilledRed from "../../images/theme-icons/red/user-svgrepo-com_rf.svg";
+import adminOutlinedRed from "../../images/theme-icons/yellow/user-svgrepo-com_black.svg";
+
+// AI 분석 시스템
+import aiFilledRed  from "../../images/theme-icons/red/Charts_filled.svg";
+import aiOutlinedRed  from "../../images/theme-icons/red/Charts_outlined.svg";
 
 /* =========================
  * success(초록)
@@ -1335,6 +1408,42 @@ import mapsFilledSuccess from "../../images/theme-icons/green/Maps_filled.svg";
 import extraOutlinedSuccess from "../../images/theme-icons/green/Extra_outlined.svg";
 import extraFilledSuccess from "../../images/theme-icons/green/Extra_filled.svg";
 
+/* =======================
+   아이콘 import (새로운 파일들)
+   ======================= */
+
+// Dashboard
+import dashboardFilledGreen from "../../images/theme-icons/green/dashboard-svgrepo-com_gf.svg";
+import dashboardOutlinedGreen from "../../images/theme-icons/green/dashboard-svgrepo-com_g.svg";
+
+// 생산관리 시스템
+import productionFilledGreen from "../../images/theme-icons/green/factory-svgrepo-com_g.svg";
+import productionOutlinedGreen from "../../images/theme-icons/yellow/factory-svgrepo-com_black.svg";
+
+// 금형관리 시스템
+import moldFilledGreen from "../../images/theme-icons/green/tool-svgrepo-com_gf.svg";
+import moldOutlinedGreen from "../../images/theme-icons/yellow/tool-svgrepo-com_black.svg";
+
+// 불량공정 시스템
+import defectFilledGreen from "../../images/theme-icons/green/alert-triangle-svgrepo-com_gf.svg";
+import defectOutlinedGreen from "../../images/theme-icons/yellow/alert-triangle-svgrepo-com_black.svg";
+
+// 비가동 통계 시스템
+import downtimeFilledGreen from "../../images/theme-icons/green/clock-svgrepo-com_gf.svg";
+import downtimeOutlinedGreen from "../../images/theme-icons/yellow/clock-svgrepo-com_black.svg";
+
+// 검사 시스템
+import inspectionFilledGreen from "../../images/theme-icons/green/check-lists-svgrepo-com_g.svg";
+import inspectionOutlinedGreen from "../../images/theme-icons/yellow/check-lists-svgrepo-com_black.svg";
+
+// 관리자 시스템
+import adminFilledGreen from "../../images/theme-icons/green/user-svgrepo-com_gf.svg";
+import adminOutlinedGreen from "../../images/theme-icons/yellow/user-svgrepo-com_black.svg";
+
+// AI 분석 시스템
+import aiFilledGreen  from "../../images/theme-icons/green/Charts_filled.svg";
+import aiOutlinedGreen  from "../../images/theme-icons/green/Charts_outlined.svg";
+
 /* =========================
  * info(파랑)
  * ========================= */
@@ -1369,6 +1478,42 @@ import mapsOutlinedBlue from "../../images/theme-icons/blue/Maps_outlined.svg";
 import mapsFilledBlue from "../../images/theme-icons/blue/Maps_filled.svg";
 import extraOutlinedBlue from "../../images/theme-icons/blue/Extra_outlined.svg";
 import extraFilledBlue from "../../images/theme-icons/blue/Extra_filled.svg";
+
+/* =======================
+   아이콘 import (새로운 파일들)
+   ======================= */
+
+// Dashboard
+import dashboardFilledBlue from "../../images/theme-icons/blue/dashboard-svgrepo-com_bf.svg";
+import dashboardOutlinedBlue from "../../images/theme-icons/blue/dashboard-svgrepo-com_b.svg";
+
+// 생산관리 시스템
+import productionFilledBlue from "../../images/theme-icons/blue/factory-svgrepo-com_b.svg";
+import productionOutlinedBlue from "../../images/theme-icons/yellow/factory-svgrepo-com_black.svg";
+
+// 금형관리 시스템
+import moldFilledBlue from "../../images/theme-icons/blue/tool-svgrepo-com_bf.svg";
+import moldOutlinedBlue from "../../images/theme-icons/yellow/tool-svgrepo-com_black.svg";
+
+// 불량공정 시스템
+import defectFilledBlue from "../../images/theme-icons/blue/alert-triangle-svgrepo-com_bf.svg";
+import defectOutlinedBlue from "../../images/theme-icons/yellow/alert-triangle-svgrepo-com_black.svg";
+
+// 비가동 통계 시스템
+import downtimeFilledBlue from "../../images/theme-icons/blue/clock-svgrepo-com_bf.svg";
+import downtimeOutlinedBlue from "../../images/theme-icons/yellow/clock-svgrepo-com_black.svg";
+
+// 검사 시스템
+import inspectionFilledBlue from "../../images/theme-icons/blue/check-lists-svgrepo-com_b.svg";
+import inspectionOutlinedBlue from "../../images/theme-icons/yellow/check-lists-svgrepo-com_black.svg";
+
+// 관리자 시스템
+import adminFilledBlue from "../../images/theme-icons/blue/user-svgrepo-com_bf.svg";
+import adminOutlinedBlue from "../../images/theme-icons/yellow/user-svgrepo-com_black.svg";
+
+// AI 분석 시스템
+import aiFilledBlue  from "../../images/theme-icons/blue/Charts_filled.svg";
+import aiOutlinedBlue  from "../../images/theme-icons/blue/Charts_outlined.svg";
 
 /* =========================
  * dark sidebar 전용 아이콘 세트
@@ -1550,6 +1695,12 @@ import Account_icon_red from "../../images/theme-icons/red/Account_icon_red.svg"
 import Account_icon_green from "../../images/theme-icons/green/Account_icon_green.svg"
 import Account_icon_blue from "../../images/theme-icons/blue/Account_icon_blue.svg"
 
+// AI 분석 시스템
+import Ai_icon_yellow from "../../images/theme-icons/yellow/Charts_outlined.svg";
+import Ai_icon_red from "../../images/theme-icons/red/Charts_outlined.svg";
+import Ai_icon_green from "../../images/theme-icons/green/Charts_outlined.svg";
+import Ai_icon_blue  from "../../images/theme-icons/blue/Charts_outlined.svg";
+
 
 class Sidebar extends React.Component {
   static propTypes = {
@@ -1677,10 +1828,19 @@ class Sidebar extends React.Component {
     // light(기본) 사이드바 맵
     const lightSets = {
       warning: {
-        dashboard: { filled: darkDashboardIcon, outlined: lightDashboardIcon },
-        ecommerce: { filled: eCommerceFilled, outlined: eCommerceOutlined },
-        package: { filled: packageFilled, outlined: packageOutlined },
-        profile: { filled: profileFilled, outlined: profileOutlined },
+        // dashboard: { filled: darkDashboardIcon, outlined: lightDashboardIcon },
+        // ecommerce: { filled: eCommerceFilled, outlined: eCommerceOutlined },
+        // package: { filled: packageFilled, outlined: packageOutlined },
+        // profile: { filled: profileFilled, outlined: profileOutlined },
+        dashboard:  { filled: dashboardFilledYellow,  outlined: dashboardOutlinedYellow },
+        production: { filled: productionFilledYellow, outlined: productionOutlinedYellow },
+        mold:       { filled: moldFilledYellow,       outlined: moldOutlinedYellow },
+        defect:     { filled: defectFilledYellow,     outlined: defectOutlinedYellow },
+        downtime:   { filled: downtimeFilledYellow,   outlined: downtimeOutlinedYellow },
+        inspection: { filled: inspectionFilledYellow, outlined: inspectionOutlinedYellow },
+        ai:         { filled: aiFilledYellow, outlined: aiOutlinedYellow },
+        admin:      { filled: adminFilledYellow,      outlined: adminOutlinedYellow },
+
         settings: { filled: settingsFilled, outlined: settingsOutlined },
         logout: { filled: logoutIcon, outlined: logoutIcon },
         email: { filled: emailFilled, outlined: emailOutlined },
@@ -1695,10 +1855,19 @@ class Sidebar extends React.Component {
         extra: { filled: extraFilled, outlined: extraOutlined },
       },
       danger: {
-        dashboard: { filled: darkDashboardIconDanger, outlined: lightDashboardIconDanger },
-        ecommerce: { filled: eCommerceFilledDanger, outlined: eCommerceOutlinedDanger },
-        package: { filled: packageFilledDanger, outlined: packageOutlinedDanger },
-        profile: { filled: profileFilledDanger, outlined: profileOutlinedDanger },
+        // dashboard: { filled: darkDashboardIconDanger, outlined: lightDashboardIconDanger },
+        // ecommerce: { filled: eCommerceFilledDanger, outlined: eCommerceOutlinedDanger },
+        // package: { filled: packageFilledDanger, outlined: packageOutlinedDanger },
+        // profile: { filled: profileFilledDanger, outlined: profileOutlinedDanger },
+        dashboard:  { filled: dashboardFilledRed,  outlined: dashboardOutlinedRed },
+        production: { filled: productionFilledRed, outlined: productionOutlinedRed },
+        mold:       { filled: moldFilledRed,       outlined: moldOutlinedRed },
+        defect:     { filled: defectFilledRed,     outlined: defectOutlinedRed },
+        downtime:   { filled: downtimeFilledRed,   outlined: downtimeOutlinedRed },
+        inspection: { filled: inspectionFilledRed, outlined: inspectionOutlinedRed },
+        ai:         { filled: aiFilledRed, outlined: aiOutlinedRed },
+        admin:      { filled: adminFilledRed,      outlined: adminOutlinedRed },
+        
         settings: { filled: settingsFilledDanger, outlined: settingsOutlinedDanger },
         logout: { filled: logoutIconDanger, outlined: logoutIconDanger },
         email: { filled: emailFilledDanger, outlined: emailOutlinedDanger },
@@ -1713,10 +1882,19 @@ class Sidebar extends React.Component {
         extra: { filled: extraFilledDanger, outlined: extraOutlinedDanger },
       },
       success: {
-        dashboard: { filled: darkDashboardIconSuccess, outlined: lightDashboardIconSuccess },
-        ecommerce: { filled: eCommerceFilledSuccess, outlined: eCommerceOutlinedSuccess },
-        package: { filled: packageFilledSuccess, outlined: packageOutlinedSuccess },
-        profile: { filled: profileFilledSuccess, outlined: profileOutlinedSuccess },
+        // dashboard: { filled: darkDashboardIconSuccess, outlined: lightDashboardIconSuccess },
+        // ecommerce: { filled: eCommerceFilledSuccess, outlined: eCommerceOutlinedSuccess },
+        // package: { filled: packageFilledSuccess, outlined: packageOutlinedSuccess },
+        // profile: { filled: profileFilledSuccess, outlined: profileOutlinedSuccess },
+        dashboard:  { filled: dashboardFilledGreen,  outlined: dashboardOutlinedGreen },
+        production: { filled: productionFilledGreen, outlined: productionOutlinedGreen },
+        mold:       { filled: moldFilledGreen,       outlined: moldOutlinedGreen },
+        defect:     { filled: defectFilledGreen,     outlined: defectOutlinedGreen },
+        downtime:   { filled: downtimeFilledGreen,   outlined: downtimeOutlinedGreen },
+        inspection: { filled: inspectionFilledGreen, outlined: inspectionOutlinedGreen },
+        ai:         { filled: aiFilledGreen, outlined: aiOutlinedGreen },
+        admin:      { filled: adminFilledGreen,      outlined: adminOutlinedGreen },
+
         settings: { filled: settingsFilledSuccess, outlined: settingsOutlinedSuccess },
         logout: { filled: logoutIconSuccess, outlined: logoutIconSuccess },
         email: { filled: emailFilledSuccess, outlined: emailOutlinedSuccess },
@@ -1731,10 +1909,19 @@ class Sidebar extends React.Component {
         extra: { filled: extraFilledSuccess, outlined: extraOutlinedSuccess },
       },
       info: {
-        dashboard: { filled: darkDashboardIconBlue, outlined: lightDashboardIconBlue },
-        ecommerce: { filled: eCommerceFilledBlue, outlined: eCommerceOutlinedBlue },
-        package: { filled: packageFilledBlue, outlined: packageOutlinedBlue },
-        profile: { filled: profileFilledBlue, outlined: profileOutlinedBlue },
+        // dashboard: { filled: darkDashboardIconBlue, outlined: lightDashboardIconBlue },
+        // ecommerce: { filled: eCommerceFilledBlue, outlined: eCommerceOutlinedBlue },
+        // package: { filled: packageFilledBlue, outlined: packageOutlinedBlue },
+        // profile: { filled: profileFilledBlue, outlined: profileOutlinedBlue },
+        dashboard:  { filled: dashboardFilledBlue,  outlined: dashboardOutlinedBlue },
+        production: { filled: productionFilledBlue, outlined: productionOutlinedBlue },
+        mold:       { filled: moldFilledBlue,       outlined: moldOutlinedBlue },
+        defect:     { filled: defectFilledBlue,     outlined: defectOutlinedBlue },
+        downtime:   { filled: downtimeFilledBlue,   outlined: downtimeOutlinedBlue },
+        inspection: { filled: inspectionFilledBlue, outlined: inspectionOutlinedBlue },
+        ai:         { filled: aiFilledBlue, outlined: aiOutlinedBlue },
+        admin:      { filled: adminFilledBlue,      outlined: adminOutlinedBlue },
+
         settings: { filled: settingsFilledBlue, outlined: settingsOutlinedBlue },
         logout: { filled: logoutIconBlue, outlined: logoutIconBlue },
         email: { filled: emailFilledBlue, outlined: emailOutlinedBlue },
@@ -1761,12 +1948,13 @@ class Sidebar extends React.Component {
     // 아이콘 전용 항목(접힘일 때만 사용)
     const items = [
       { key: "dashboard", label: "Dashboard", link: "/app/dashboard", iconKey: "dashboard" },
-      { key: "production", label: "생산관리 시스템", link: "/app/production/chart", iconKey: "ecommerce" },
-      { key: "mold", label: "금형관리 시스템", link: "/app/mold/chart", iconKey: "package" },
-      { key: "defect", label: "불량공정 시스템", link: "/app/defect/chart", iconKey: "profile" },
-      { key: "downtime", label: "비가동 통계 시스템", link: "/app/downtime/chart", iconKey: "package" },
-      { key: "inspection", label: "초/중/종품 검사 시스템", link: "/app/inspection/chart", iconKey: "package" },
-      { key: "admin", label: "관리자 시스템", link: "/admin/users", iconKey: "package" },
+      { key: "production", label: "생산관리 시스템", link: "/app/production/chart", iconKey: "production" },
+      { key: "mold", label: "금형관리 시스템", link: "/app/mold/chart", iconKey: "mold" },
+      { key: "defect", label: "불량공정 시스템", link: "/app/defect/chart", iconKey: "defect" },
+      { key: "downtime", label: "비가동 통계 시스템", link: "/app/downtime/chart", iconKey: "downtime" },
+      { key: "inspection", label: "초/중/종품 검사 시스템", link: "/app/inspection/chart", iconKey: "inspection" },
+      { key: "admin", label: "관리자 시스템", link: "/admin/users", iconKey: "admin" },
+      { key: "ai", label: "AI 분석 시스템", link: "/app/ai/chart", iconKey: "ai" },
       { key: "email", label: "Email", link: "/app/email", iconKey: "email", badge: 9 },
       { key: "documentation", label: "Documentation", link: "/documentation", iconKey: "documentation", target: "_blank" },
     ];
@@ -1864,7 +2052,7 @@ class Sidebar extends React.Component {
               { header: "생산 데이터 그리드", link: "/app/production/grid" },
             ]}
           >
-            <img src={this.themeIcons("ecommerce")} alt="ecommerce" width="24" height="24" />
+            <img src={this.themeIcons("production")} alt="production" width="24" height="24" />
           </LinksGroup>
 
           <LinksGroup
@@ -1876,12 +2064,13 @@ class Sidebar extends React.Component {
             index="mold"
             childrenLinks={[
               { header: "금형데이터 차트", link: "/app/mold/chart" },
-              { header: "금형세척 데이터", link: "/app/mold/data" },
-              { header: "금형타수 데이터", link: "/app/mold/shotCountData" },
+              { header : "금형-세척/점검 내역" , link: "/app/mold/shot-check"},
+              // { header: "금형세척 데이터", link: "/app/mold/data" },
+              // { header: "금형타수 데이터", link: "/app/mold/shotCountData" },
               { header: "금형고장 데이터", link: "/app/mold/moldBreakDown" },
             ]}
           >
-            <img src={this.themeIcons("package")} alt="package" width="24" height="24" />
+            <img src={this.themeIcons("mold")} alt="mold" width="24" height="24" />
           </LinksGroup>
 
           <LinksGroup
@@ -1897,7 +2086,7 @@ class Sidebar extends React.Component {
               { header: "불량공정 그리드", link: "/app/defect/grid" },
             ]}
           >
-            <img src={this.themeIcons("profile")} alt="profile" width="24" height="24" />
+            <img src={this.themeIcons("defect")} alt="defect" width="24" height="24" />
           </LinksGroup>
 
           <LinksGroup
@@ -1912,7 +2101,7 @@ class Sidebar extends React.Component {
               { header: "비가동 통계 데이터", link: "/app/downtime/data" },
             ]}
           >
-            <img src={this.themeIcons("package")} alt="package" width="24" height="24" />
+            <img src={this.themeIcons("downtime")} alt="downtime" width="24" height="24" />
           </LinksGroup>
 
           <LinksGroup
@@ -1927,7 +2116,7 @@ class Sidebar extends React.Component {
               { header: "검사 시스템 데이터", link: "/app/inspection/data" },
             ]}
           >
-            <img src={this.themeIcons("package")} alt="package" width="24" height="24" />
+            <img src={this.themeIcons("inspection")} alt="inspection" width="24" height="24" />
           </LinksGroup>
 
           <LinksGroup
@@ -1944,7 +2133,22 @@ class Sidebar extends React.Component {
               { header: "사원 관리 데이터", link: "/app/admin/users" },
             ]}
           >
-            <img src={this.themeIcons("package")} alt="package" width="24" height="24" />
+            <img src={this.themeIcons("admin")} alt="admin" width="24" height="24" />
+          </LinksGroup>
+
+          <LinksGroup
+            onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
+            activeItem={this.props.activeItem}
+            header="AI 예측 시뮬레이션"
+            isHeader
+            link="/app/ai/chart"
+            index="ai"
+            childrenLinks={[
+              { header: "생산량 예측", link: "/app/ai/product-forecast" },
+              { header: "병목 공정 예측", link: "/app/ai/bottleneck" },
+            ]}
+          >
+            <img src={this.themeIcons("ai")} alt="ai" width="24" height="24" />
           </LinksGroup>
 
           <LinksGroup

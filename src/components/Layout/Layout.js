@@ -668,8 +668,10 @@ import DowntimeGrid from "../../pages/downtime/DowntimeGrid";
 import InspectionSystemChart from "../../pages/inspection/InspectionSystemChart";
 import InspectionGrid from "../../pages/inspection/InspectionSystemData";
 import AdminUserGrid from "../../pages/admin/UserGrid";
-import MoldShotCountGrid from "../../pages/mold/MoldShotCountData";
+import MoldShotCheck from "../../pages/mold/MoldShotCheck";
 import MoldBreakDownGrid from "../../pages/mold/MoldBreakDownGrid";
+import ProductForecast from "../../pages/ai/ProductForecast";
+import Bottleneck from "../../pages/ai/Bottleneck";
 
 class Layout extends React.Component {
   static propTypes = {
@@ -796,7 +798,12 @@ class Layout extends React.Component {
                     exact
                     component={MoldChart}
                   />
-                  <Route
+                   <Route
+                    path={"/app/mold/shot-check"}
+                    exact
+                    component={MoldShotCheck}
+                  />
+                  {/* <Route
                     path={"/app/mold/data"}
                     exact
                     component={MoldCleaningData}
@@ -805,7 +812,7 @@ class Layout extends React.Component {
                     path={"/app/mold/shotCountData"}
                     exact
                     component={MoldShotCountGrid}
-                  />
+                  /> */}
                   <Route
                     path={"/app/mold/moldBreakDown"}
                     exact
@@ -873,6 +880,23 @@ class Layout extends React.Component {
                     path="/app/admin/users"
                     exact
                     component={AdminUserGrid}
+                  />
+
+                  {/* AI 분석 시스템 */}
+                  <Route
+                    path={"/app/ai"}
+                    exact
+                    render={() => <Redirect to="/app/ai/product-forecast" />}
+                  />
+                  <Route
+                    path={"/app/ai/product-forecast"}
+                    exact
+                    component={ProductForecast}
+                  />
+                  <Route
+                    path={"/app/ai/bottleneck"}
+                    exact
+                    component={Bottleneck}
                   />
 
                   <Route path={"/app/profile"} component={Profile} />

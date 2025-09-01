@@ -9,22 +9,32 @@ import {
   Grid,
   Card,
   CardContent,
+  CardHeader,
   Select,
   MenuItem,
   FormControl,
   TextField,
-  CircularProgress
+  CircularProgress,
+  Button,
+  IconButton,
+  InputAdornment
 } from '@mui/material';
 import {
   PieChart as PieChartIcon,
   BarChart as BarChartIcon,
   TrendingUp as TrendingUpIcon,
-  Monitor as MonitorIcon
+  Monitor as MonitorIcon,
+  Search as SearchIcon,
+  ExpandLess as ExpandLessIcon,
+  ExpandMore as ExpandMoreIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon
 } from '@mui/icons-material';
 import s from './ProductionChart.module.scss';
 import config from '../../config';
 
 import { selectThemeHex, selectThemeKey } from '../../reducers/layout';
+// 품목 코드 선택 모달 컴포넌트 import
+import ItemCodeModal from '../common/ItemCodeModal';
 
 const t = config.app.themeColors;
 const primary = '#ffb300';
@@ -78,13 +88,26 @@ class ProductionChart extends Component {
       displayData: [],
       itemList: [],
       summaryData: { totalProduction: 0, totalDefect: 0, totalRuntime: 0 },
+      // 추가된 상태들
+      filters: {
+        plant: '아진산업-경산(본사)',
+        worker: '프레스',
+        line: '1500T',
+        itemCode: '',
+        itemName: '',
+        start_work_date: '2024-01-01',
+        end_work_date: '2025-06-30'
+      },
+      filterExpanded: false,
+      quickRange: 'month',
+      itemCodeModalOpen: false     // 품목 코드 선택 모달 열림/닫힘 상태
     };
     this.liveChartInterval = null;
     this.dataAnimationInterval = null;
   }
 
   componentDidMount() {
-    this.fetchItemList();
+    this.fetchItemList(); 
     this.fetchProductionData();
     this.fetchBarChartData();
     this.fetchLiveChartData();
@@ -100,13 +123,14 @@ class ProductionChart extends Component {
 
   componentDidUpdate(prevProps, prevState) {
     if (
-      prevState.startDate !== this.state.startDate ||
-      prevState.endDate !== this.state.endDate ||
-      prevState.selectedCapacity !== this.state.selectedCapacity ||
-      prevState.selectedProduct !== this.state.selectedProduct
+      prevState.filters.start_work_date !== this.state.filters.start_work_date ||
+      prevState.filters.end_work_date !== this.state.filters.end_work_date ||
+      prevState.filters.line !== this.state.filters.line ||
+      prevState.filters.itemName !== this.state.filters.itemName
     ) {
       this.fetchProductionData();
       this.fetchBarChartData();
+      this.fetchLiveChartData();
     }
   }
 
@@ -137,9 +161,9 @@ class ProductionChart extends Component {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          start_work_date: this.state.startDate,
-          end_work_date: this.state.endDate,
-          workplace: this.state.selectedCapacity
+          start_work_date: this.state.filters.start_work_date,
+          end_work_date: this.state.filters.end_work_date,
+          workplace: this.state.filters.line || this.state.selectedCapacity
         })
       });
       if (!response.ok) throw new Error('Network response was not ok');
@@ -161,15 +185,15 @@ class ProductionChart extends Component {
   };
 
   fetchBarChartData = async () => {
-    if (!this.state.selectedProduct) return;
+    if (!this.state.filters.itemName) return;
     try {
       const response = await fetch(`${API_BASE}/smartFactory/production_chart/bar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          start_work_date: this.state.startDate,
-          itemName: this.state.selectedProduct,
-          end_work_date: this.state.endDate
+          start_work_date: this.state.filters.start_work_date,
+          itemName: this.state.filters.itemName,
+          end_work_date: this.state.filters.end_work_date
         })
       });
       if (!response.ok) throw new Error('Network response was not ok');
@@ -186,7 +210,10 @@ class ProductionChart extends Component {
       const response = await fetch(`${API_BASE}/smartFactory/production_chart/live-chart`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ start_date: this.state.startDate, end_date: this.state.endDate })
+        body: JSON.stringify({ 
+          start_date: this.state.filters.start_work_date, 
+          end_date: this.state.filters.end_work_date 
+        })
       });
       if (!response.ok) throw new Error('Network response was not ok');
       const result = await response.json();
@@ -263,8 +290,90 @@ class ProductionChart extends Component {
   handleStartDateChange = (e) => this.setState({ startDate: e.target.value });
   handleEndDateChange = (e) => this.setState({ endDate: e.target.value });
 
+  // 추가된 메서드들
+  setQuickRange = (range) => {
+    const today = new Date();
+    let startDate = new Date();
+    
+    switch (range) {
+      case 'today':
+        startDate = today;
+        break;
+      case 'week':
+        startDate.setDate(today.getDate() - 7);
+        break;
+      case 'month':
+        startDate.setMonth(today.getMonth() - 1);
+        break;
+      case 'year':
+        startDate.setFullYear(today.getFullYear() - 1);
+        break;
+      default:
+        startDate = new Date('2024-01-01');
+    }
+    
+    const endDate = new Date();
+    
+    this.setState({
+      quickRange: range,
+      filters: {
+        ...this.state.filters,
+        start_work_date: startDate.toISOString().split('T')[0],
+        end_work_date: endDate.toISOString().split('T')[0]
+      },
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0]
+    });
+  };
+
+  toggleFilterExpansion = () => {
+    this.setState(prevState => ({
+      filterExpanded: !prevState.filterExpanded
+    }));
+  };
+
+  handleFilterChange = (field, value) => {
+    this.setState(prevState => {
+      const newFilters = {
+        ...prevState.filters,
+        [field]: value
+      };
+      
+      // line 필드가 변경되면 selectedCapacity도 업데이트
+      if (field === 'line') {
+        return {
+          filters: newFilters,
+          selectedCapacity: value
+        };
+      }
+      
+      return { filters: newFilters };
+    });
+  };
+
+  openItemCodeModal = () => {
+    // 품목코드 모달 열기 로직
+    this.setState({ itemCodeModalOpen: true });
+  };
+
+  closeItemCodeModal = () => {
+    // 품목코드 모달 닫기
+    this.setState({ itemCodeModalOpen: false });
+  };
+
+  handleItemCodeSelect = ({ 품목번호, 품목명 }) => {
+    this.setState(prevState => ({
+      filters: {
+        ...prevState.filters,
+        itemCode: 품목번호 || '',
+        itemName: 품목명 || ''
+      },
+      itemCodeModalOpen: false // 선택 후 모달 닫기
+    }));
+  };
+
   renderPieCharts = (themeHex) => {
-    const { pieChartData, selectedCapacity, startDate, endDate, loading } = this.state;
+    const { pieChartData, loading } = this.state;
 
     if (loading) {
       return (
@@ -299,27 +408,7 @@ class ProductionChart extends Component {
           <PieChartIcon /> 생산 현황 지표
         </Typography>
 
-        {/* 필터 섹션 */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #e0e0e0' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" sx={{ fontWeight: 500, color: '#333', minWidth: '80px' }}>프레스 선택:</Typography>
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <Select value={selectedCapacity} onChange={this.handleCapacityChange} sx={{ backgroundColor: 'white', '& .MuiOutlinedInput-root': { '&:hover fieldset': { borderColor: '#4CAF50' }, '&.Mui-focused fieldset': { borderColor: '#4CAF50' } } }}>
-                <MenuItem value="1500T">1500T</MenuItem>
-                <MenuItem value="1200T">1200T</MenuItem>
-                <MenuItem value="1000T">1000T</MenuItem>
-                <MenuItem value="1000T PRO">1000T PRO</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" sx={{ fontWeight: 500, color: '#333', minWidth: '80px' }}>기간 선택:</Typography>
-            <TextField type="date" value={startDate} onChange={this.handleStartDateChange} size="small" sx={{ backgroundColor: 'white', '& .MuiOutlinedInput-root': { '&:hover fieldset': { borderColor: '#4CAF50' }, '&.Mui-focused fieldset': { borderColor: '#4CAF50' } } }} />
-            <Typography variant="body2" sx={{ color: '#666' }}>~</Typography>
-            <TextField type="date" value={endDate} onChange={this.handleEndDateChange} size="small" sx={{ backgroundColor: 'white', '& .MuiOutlinedInput-root': { '&:hover fieldset': { borderColor: '#4CAF50' }, '&.Mui-focused fieldset': { borderColor: '#4CAF50' } } }} />
-          </Box>
-        </Box>
 
         {/* 파이 차트 그리드 */}
         <Grid container spacing={2}>
@@ -383,7 +472,7 @@ class ProductionChart extends Component {
   };
 
   renderBarChart = (themeHex) => {
-    const { selectedProduct, barChartData, itemList, startDate, endDate, summaryData } = this.state;
+    const { barChartData, itemList, summaryData } = this.state;
 
     return (
       <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
@@ -391,29 +480,7 @@ class ProductionChart extends Component {
           <BarChartIcon /> 제품별 월간 생산량
         </Typography>
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="body1" sx={{ fontWeight: 500, color: '#333' }}>월별 생산량을 확인하려면 자재를 선택하세요</Typography>
-        </Box>
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #e0e0e0' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" sx={{ fontWeight: 500, color: '#333', minWidth: '80px' }}>자재 선택:</Typography>
-            <FormControl size="small" sx={{ minWidth: 300 }}>
-              <Select value={selectedProduct} onChange={this.handleProductChange} sx={{ backgroundColor: 'white', '& .MuiOutlinedInput-root': { '&:hover fieldset': { borderColor: '#4CAF50' }, '&.Mui-focused fieldset': { borderColor: '#4CAF50' } } }}>
-                {itemList.map((item, index) => (
-                  <MenuItem key={index} value={item.자재명}>{item.자재명}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" sx={{ fontWeight: 500, color: '#333', minWidth: '80px' }}>기간 선택:</Typography>
-            <TextField type="date" value={startDate} onChange={this.handleStartDateChange} size="small" sx={{ backgroundColor: 'white', '& .MuiOutlinedInput-root': { '&:hover fieldset': { borderColor: '#4CAF50' }, '&.Mui-focused fieldset': { borderColor: '#4CAF50' } } }} />
-            <Typography variant="body2" sx={{ color: '#666' }}>~</Typography>
-            <TextField type="date" value={endDate} onChange={this.handleEndDateChange} size="small" sx={{ backgroundColor: 'white', '& .MuiOutlinedInput-root': { '&:hover fieldset': { borderColor: '#4CAF50' }, '&.Mui-focused fieldset': { borderColor: '#4CAF50' } } }} />
-          </Box>
-        </Box>
 
         <Box sx={{ display: 'flex', gap: 3 }}>
           <Box sx={{ flex: 1, height: 350 }}>
@@ -545,6 +612,229 @@ class ProductionChart extends Component {
           </Typography>
           <Typography variant="body1" color="text.secondary">생산 현황을 차트로 한눈에 파악할 수 있습니다.</Typography>
         </Box>
+        <Box sx= {{mb: 3}} >
+        {/* 검색 필터 섹션 */}
+                <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+                  {/* 필터 섹션의 헤더 */}
+                   {/* 필터 섹션의 헤더 */}
+                  <CardHeader
+                    title={
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                          color: 'white',
+                        }}
+                      >
+                        <SearchIcon />
+                        검색 조건
+                      </Typography>
+                    }
+                     action={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              {/* 빠른 기간 버튼 */}
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  size="small"
+                  variant={this.state.quickRange === 'today' ? 'contained' : 'outlined'}
+                  onClick={() => this.setQuickRange('today')}
+                  sx={{
+                    borderColor: 'white',
+                    color: 'white',
+                    '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+                  }}
+                >
+                  금일
+                </Button>
+                <Button
+                  size="small"
+                  variant={this.state.quickRange === 'week' ? 'contained' : 'outlined'}
+                  onClick={() => this.setQuickRange('week')}
+                  sx={{
+                    borderColor: 'white',
+                    color: 'white',
+                    '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+                  }}
+                >
+                  주간
+                </Button>
+                <Button
+                  size="small"
+                  variant={this.state.quickRange === 'month' ? 'contained' : 'outlined'}
+                  onClick={() => this.setQuickRange('month')}
+                  sx={{
+                    borderColor: 'white',
+                    color: 'white',
+                    '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+                  }}
+                >
+                  월간
+                </Button>
+                <Button
+                  size="small"
+                  variant={this.state.quickRange === 'year' ? 'contained' : 'outlined'}
+                  onClick={() => this.setQuickRange('year')}
+                  sx={{
+                    borderColor: 'white',
+                    color: 'white',
+                    '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+                  }}
+                >
+                  년간
+                </Button>
+              </Box>
+        
+              {/* 구분자 파이프(옵션) */}
+              <Typography sx={{ color: 'white', opacity: 0.8, mx: 0.5 }}>|</Typography>
+        
+              {/* 기간선택 + 날짜 필드 */}
+                <Typography sx={{ color: 'white' }}>기간선택</Typography>
+                <TextField
+                  type="date"
+                  value={this.state.filters.start_work_date}
+                  onChange={(e) => this.handleFilterChange('start_work_date', e.target.value)}
+                  size="small"
+                  variant="outlined"
+                  sx={{ backgroundColor: 'white', borderRadius: 1, minWidth: 150 }}
+                />
+                <Typography sx={{ color: 'white' }}>~</Typography>
+                <TextField
+                  type="date"
+                  value={this.state.filters.end_work_date}
+                  onChange={(e) => this.handleFilterChange('end_work_date', e.target.value)}
+                  size="small"
+                  variant="outlined"
+                  sx={{ backgroundColor: 'white', borderRadius: 1, minWidth: 150 }}
+                />
+        
+                {/* 확장/축소 버튼 */}
+                <IconButton onClick={this.toggleFilterExpansion} sx={{ color: 'white' }}>
+                  {this.state.filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                </IconButton>
+              </Box>
+            }
+            sx={{
+              backgroundColor: '#ff8f00',
+              color: 'white',
+              borderRadius: 1,
+              mb: 2,
+            }}
+          />
+                  
+                  
+                  {/* 기본 필터 (8개) - 항상 보이는 주요 검색 필드들 */}
+                 <Grid container spacing={2}>
+                  {/* 공장 */}
+                  <Grid item xs={12} sm={6} md={2}>
+                    <TextField
+                      select                     
+                      fullWidth
+                      label="공장"
+                      value={this.state.filters.plant ?? ''}
+                      onChange={(e) => this.handleFilterChange('plant', e.target.value)}
+                      size="small"
+                      variant="outlined"
+                      SelectProps={{ MenuProps: { PaperProps: { sx: { maxHeight: 280 } } } }}
+                    >
+                    <MenuItem value="아진산업-경산(본사)">아진산업-본사(경산)</MenuItem>
+                    <MenuItem value="아진산업-1공장(경산)">아진산업-1공장(경산)</MenuItem>
+                    <MenuItem value="아진산업-구어공장(경주)">아진산업-구어공장(경주)</MenuItem>
+                    <MenuItem value="아진산업-하양공장(예정)">아진산업-하양공장(예정)</MenuItem>
+                    </TextField>
+                  </Grid>
+        
+                  {/* 작업장 */}
+                  <Grid item xs={12} sm={6} md={2}>
+                    <TextField
+                      select
+                      fullWidth
+                      label="작업장"
+                      value={this.state.filters.worker}
+                      onChange={(e) => this.handleFilterChange('worker', e.target.value)}
+                      size="small"
+                      variant="outlined"
+                     >
+                    <MenuItem value="프레스">프레스</MenuItem>
+                    <MenuItem value="금형">금형</MenuItem>
+                    <MenuItem value="블랭크">블랭크</MenuItem>
+        
+                    </TextField>
+                  </Grid>
+        
+                  {/* 작업자 */}
+                  <Grid item x-s={12} sm={6} md={3}>
+                    <TextField
+                      select
+                      fullWidth
+                      label="작업자"
+                      value={this.state.filters.line}
+                      onChange={(e) => this.handleFilterChange('line', e.target.value)}
+                      size="small"
+                      variant="outlined"
+                    >
+                    <MenuItem value="1500T">1500T(E라인) </MenuItem>
+                    <MenuItem value="1200T">1200T(D라인)</MenuItem>
+                    <MenuItem value="1000T">1000T(F라인)</MenuItem>
+                    <MenuItem value="1000T-PRO">1000T-PRO(G라인)</MenuItem>
+                    </TextField>
+                  </Grid>
+        
+                  <Grid item xs={12} sm={6} md={2}>
+                    <TextField
+                      fullWidth
+                      label="품목코드"
+                      value={this.state.filters.itemCode}
+                      onClick={this.openItemCodeModal}
+                      size="small"
+                      variant="outlined"
+                      InputProps={{
+                        readOnly: true,
+                        style: { cursor: 'pointer' },
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
+                          </InputAdornment>
+                        )
+                      }}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          cursor: 'pointer',
+                          '&:hover': { backgroundColor: '#f5f5f5' }
+                        }
+                      }}
+                    />
+                  </Grid>
+        
+                  <Grid item xs={12} sm={6} md={3}>
+                    <TextField
+                      fullWidth
+                      label="품목명"
+                      value={this.state.filters.itemName}
+                      onClick={this.openItemCodeModal}
+                      size="small"
+                      variant="outlined"
+                       InputProps={{
+                        readOnly: true,
+                        style: { cursor: 'pointer' },
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
+                        </InputAdornment>
+                        )
+                      }}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          cursor: 'pointer',
+                          '&:hover': { backgroundColor: '#f5f5f5' }
+                        }
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+                </Paper>
+        </Box>
 
         {/* 실시간 생산량 차트 */}
         {this.renderLiveChart(themeHex)}
@@ -552,6 +842,16 @@ class ProductionChart extends Component {
         {this.renderPieCharts(themeHex)}
         {/* 막대 그래프 */}
         {this.renderBarChart(themeHex)}
+
+                 {/* 품목 코드 선택 모달 */}
+         <ItemCodeModal
+           open={this.state.itemCodeModalOpen}
+           onClose={this.closeItemCodeModal}
+           onSelect={this.handleItemCodeSelect}
+           plant={this.state.filters.plant}
+           worker={this.state.filters.worker}
+           line={this.state.filters.line}
+         />
       </Box>
     );
   }

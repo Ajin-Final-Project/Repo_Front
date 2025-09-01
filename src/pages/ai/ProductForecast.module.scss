@@ -1,0 +1,120 @@
+.pageWrapper {
+  padding: 16px;
+}
+
+.sectionCard {
+  background: #fff;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.infoBox {
+  background: #f3f4f6;
+  padding: 16px;
+  border-radius: 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.infoCard {
+  background: #f9fafb;
+  padding: 12px;
+  border-radius: 8px;
+  height: 100%;
+}
+
+.fullHeightCard {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.fullHeightGrid {
+  height: 100%;
+}
+
+.fullHeightContent {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.centeredGrid {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.centeredContent {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.kpiCard {
+  text-align: center;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  .MuiTypography-body1 {
+    margin: 4px 0;
+  }
+
+  .MuiTypography-h4 {
+    margin-top: 12px;
+  }
+}
+
+.kpiContent {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  text-align: center;
+  line-height: 1.8;
+}
+
+.kpiBox {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  h4, h5 {
+    margin: 4px 0;
+  }
+}
+
+.kpiInnerCard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* ✅ 추가: 내부 카드도 부모 높이 꽉 채우기 */
+}
+
+.kpiInnerContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%; /* ✅ 추가: CardContent도 꽉 채우기 */
+}

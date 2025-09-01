@@ -216,12 +216,8 @@ class ProductionGrid extends Component {
   clearFilters = () => {
     this.setState({
       filters: {
-        start_work_date: '',
-        end_work_date: '',
+        ...this.state.filters,
         productionNumber: '',
-        plant: '',
-        worker: '',
-        line: '',
         itemCode: '',
         itemName: '',
         carModel: '',
