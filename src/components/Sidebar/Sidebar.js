@@ -1272,34 +1272,52 @@ import extraFilled from "../../images/dark-extra.svg";
 // Dashboard
 import dashboardFilledYellow from "../../images/theme-icons/yellow/dashboard-svgrepo-com_yf.svg";
 import dashboardOutlinedYellow from "../../images/theme-icons/yellow/dashboard-svgrepo-com_y.svg";
+import dashboardFilledYellowDark from "../../images/theme-icons/yellow/dashboard-svgrepo-com_yf_dark.svg";
+import dashboardOutlinedYellowDark from "../../images/theme-icons/yellow/dashboard-svgrepo-com_y_dark.svg";
 
 // 생산관리 시스템
 import productionFilledYellow from "../../images/theme-icons/yellow/factory-svgrepo-com_y.svg";
 import productionOutlinedYellow  from "../../images/theme-icons/yellow/factory-svgrepo-com_black.svg";
+import productionFilledYellowDark from "../../images/theme-icons/yellow/factory-svgrepo-com_y_dark.svg";
+import productionOutlinedYellowDark  from "../../images/theme-icons/yellow/factory-svgrepo-com_white.svg";
+
 
 // 금형관리 시스템
 import moldFilledYellow  from "../../images/theme-icons/yellow/tool-svgrepo-com_yf.svg";
 import moldOutlinedYellow  from "../../images/theme-icons/yellow/tool-svgrepo-com_black.svg";
+import moldFilledYellowDark  from "../../images/theme-icons/yellow/tool-svgrepo-com_yf_dark.svg";
+import moldOutlinedYellowDark  from "../../images/theme-icons/yellow/tool-svgrepo-com_white.svg";
 
 // 불량공정 시스템
 import defectFilledYellow  from "../../images/theme-icons/yellow/alert-triangle-svgrepo-com_yf.svg";
 import defectOutlinedYellow  from "../../images/theme-icons/yellow/alert-triangle-svgrepo-com_black.svg";
+import defectFilledYellowDark  from "../../images/theme-icons/yellow/alert-triangle-svgrepo-com_yf_dark.svg";
+import defectOutlinedYellowDark  from "../../images/theme-icons/yellow/alert-triangle-svgrepo-com_white.svg";
+
 
 // 비가동 통계 시스템
 import downtimeFilledYellow  from "../../images/theme-icons/yellow/clock-svgrepo-com_yf.svg";
 import downtimeOutlinedYellow  from "../../images/theme-icons/yellow/clock-svgrepo-com_black.svg";
+import downtimeFilledYellowDark  from "../../images/theme-icons/yellow/clock-svgrepo-com_yf_dark.svg";
+import downtimeOutlinedYellowDark  from "../../images/theme-icons/yellow/clock-svgrepo-com_white.svg";
 
 // 검사 시스템
 import inspectionFilledYellow  from "../../images/theme-icons/yellow/check-lists-svgrepo-com_y.svg";
 import inspectionOutlinedYellow  from "../../images/theme-icons/yellow/check-lists-svgrepo-com_black.svg";
+import inspectionFilledYellowDark  from "../../images/theme-icons/yellow/check-lists-svgrepo-com_y_dark.svg";
+import inspectionOutlinedYellowDark  from "../../images/theme-icons/yellow/check-lists-svgrepo-com_white.svg";
 
 // 관리자 시스템
 import adminFilledYellow  from "../../images/theme-icons/yellow/user-svgrepo-com_yf.svg";
 import adminOutlinedYellow  from "../../images/theme-icons/yellow/user-svgrepo-com_black.svg";
+import adminFilledYellowDark  from "../../images/theme-icons/yellow/user-svgrepo-com_yf_dark.svg";
+import adminOutlinedYellowDark  from "../../images/theme-icons/yellow/user-svgrepo-com_white.svg";
 
 // AI 분석 시스템
 import aiFilledYellow  from "../../images/theme-icons/yellow/Charts_filled.svg";
 import aiOutlinedYellow  from "../../images/theme-icons/yellow/Charts_outlined.svg";
+import aiFilledYellowDark from "../../images/theme-icons/dark sidebar/yellow/Charts_filled.svg";
+import aiOutlinedYellowDark from "../../images/theme-icons/dark sidebar/yellow/Charts_outlined.svg";
 
 
 /* =========================
@@ -1344,34 +1362,51 @@ import extraFilledDanger from "../../images/theme-icons/red/Extra_filled.svg";
 // Dashboard
 import dashboardFilledRed from "../../images/theme-icons/red/dashboard-svgrepo-com_rf.svg";
 import dashboardOutlinedRed from "../../images/theme-icons/red/dashboard-svgrepo-com_r.svg";
+import dashboardFilledRedDark from "../../images/theme-icons/red/dashboard-svgrepo-com_rf_dark.svg";
+import dashboardOutlinedRedDark from "../../images/theme-icons/red/dashboard-svgrepo-com_r_dark.svg";
 
 // 생산관리 시스템
 import productionFilledRed from "../../images/theme-icons/red/factory-svgrepo-com_r.svg";
 import productionOutlinedRed from "../../images/theme-icons/yellow/factory-svgrepo-com_black.svg";
+import productionFilledRedDark from "../../images/theme-icons/red/factory-svgrepo-com_r.svg";
+import productionOutlinedRedDark from "../../images/theme-icons/yellow/factory-svgrepo-com_white.svg";
+
 
 // 금형관리 시스템
 import moldFilledRed from "../../images/theme-icons/red/tool-svgrepo-com_rf.svg";
 import moldOutlinedRed from "../../images/theme-icons/yellow/tool-svgrepo-com_black.svg";
+import moldFilledRedDark from "../../images/theme-icons/red/tool-svgrepo-com_rf_dark.svg";
+import moldOutlinedRedDark from "../../images/theme-icons/yellow/tool-svgrepo-com_white.svg";
 
 // 불량공정 시스템
 import defectFilledRed from "../../images/theme-icons/red/alert-triangle-svgrepo-com_rf.svg";
 import defectOutlinedRed from "../../images/theme-icons/yellow/alert-triangle-svgrepo-com_black.svg";
+import defectFilledRedDark from "../../images/theme-icons/red/alert-triangle-svgrepo-com_rf.svg";
+import defectOutlinedRedDark from "../../images/theme-icons/yellow/alert-triangle-svgrepo-com_white.svg";
 
 // 비가동 통계 시스템
 import downtimeFilledRed from "../../images/theme-icons/red/clock-svgrepo-com_rf.svg";
 import downtimeOutlinedRed from "../../images/theme-icons/yellow/clock-svgrepo-com_black.svg";
+import downtimeFilledRedDark from "../../images/theme-icons/red/clock-svgrepo-com_rf.svg";
+import downtimeOutlinedRedDark from "../../images/theme-icons/yellow/clock-svgrepo-com_white.svg";
 
 // 검사 시스템
 import inspectionFilledRed from "../../images/theme-icons/red/check-lists-svgrepo-com_r.svg";
 import inspectionOutlinedRed from "../../images/theme-icons/yellow/check-lists-svgrepo-com_black.svg";
+import inspectionFilledRedDark from "../../images/theme-icons/red/check-lists-svgrepo-com_r_dark.svg";
+import inspectionOutlinedRedDark from "../../images/theme-icons/yellow/check-lists-svgrepo-com_white.svg";
 
 // 관리자 시스템
 import adminFilledRed from "../../images/theme-icons/red/user-svgrepo-com_rf.svg";
 import adminOutlinedRed from "../../images/theme-icons/yellow/user-svgrepo-com_black.svg";
+import adminFilledRedDark from "../../images/theme-icons/red/user-svgrepo-com_rf.svg";
+import adminOutlinedRedDark from "../../images/theme-icons/yellow/user-svgrepo-com_white.svg";
 
 // AI 분석 시스템
 import aiFilledRed  from "../../images/theme-icons/red/Charts_filled.svg";
 import aiOutlinedRed  from "../../images/theme-icons/red/Charts_outlined.svg";
+import aiFilledRedDark from "../../images/theme-icons/dark sidebar/red/Charts_filled.svg";
+import aiOutlinedRedDark from "../../images/theme-icons/dark sidebar/red/Charts_outlined.svg";
 
 /* =========================
  * success(초록)
@@ -1415,34 +1450,50 @@ import extraFilledSuccess from "../../images/theme-icons/green/Extra_filled.svg"
 // Dashboard
 import dashboardFilledGreen from "../../images/theme-icons/green/dashboard-svgrepo-com_gf.svg";
 import dashboardOutlinedGreen from "../../images/theme-icons/green/dashboard-svgrepo-com_g.svg";
+import dashboardFilledGreenDark from "../../images/theme-icons/green/dashboard-svgrepo-com_gf_dark.svg";
+import dashboardOutlinedGreenDark from "../../images/theme-icons/green/dashboard-svgrepo-com_g_dark.svg";
 
 // 생산관리 시스템
 import productionFilledGreen from "../../images/theme-icons/green/factory-svgrepo-com_g.svg";
 import productionOutlinedGreen from "../../images/theme-icons/yellow/factory-svgrepo-com_black.svg";
+import productionFilledGreenDark from "../../images/theme-icons/green/factory-svgrepo-com_g.svg";
+import productionOutlinedGreenDark from "../../images/theme-icons/yellow/factory-svgrepo-com_white.svg";
 
 // 금형관리 시스템
 import moldFilledGreen from "../../images/theme-icons/green/tool-svgrepo-com_gf.svg";
 import moldOutlinedGreen from "../../images/theme-icons/yellow/tool-svgrepo-com_black.svg";
+import moldFilledGreenDark from "../../images/theme-icons/green/tool-svgrepo-com_gf_dark.svg";
+import moldOutlinedGreenDark from "../../images/theme-icons/yellow/tool-svgrepo-com_white.svg";
 
 // 불량공정 시스템
 import defectFilledGreen from "../../images/theme-icons/green/alert-triangle-svgrepo-com_gf.svg";
 import defectOutlinedGreen from "../../images/theme-icons/yellow/alert-triangle-svgrepo-com_black.svg";
+import defectFilledGreenDark from "../../images/theme-icons/green/alert-triangle-svgrepo-com_gf.svg";
+import defectOutlinedGreenDark from "../../images/theme-icons/yellow/alert-triangle-svgrepo-com_white.svg";
 
 // 비가동 통계 시스템
 import downtimeFilledGreen from "../../images/theme-icons/green/clock-svgrepo-com_gf.svg";
 import downtimeOutlinedGreen from "../../images/theme-icons/yellow/clock-svgrepo-com_black.svg";
+import downtimeFilledGreenDark from "../../images/theme-icons/green/clock-svgrepo-com_gf.svg";
+import downtimeOutlinedGreenDark from "../../images/theme-icons/yellow/clock-svgrepo-com_white.svg";
 
 // 검사 시스템
 import inspectionFilledGreen from "../../images/theme-icons/green/check-lists-svgrepo-com_g.svg";
 import inspectionOutlinedGreen from "../../images/theme-icons/yellow/check-lists-svgrepo-com_black.svg";
+import inspectionFilledGreenDark from "../../images/theme-icons/green/check-lists-svgrepo-com_g_dark.svg";
+import inspectionOutlinedGreenDark from "../../images/theme-icons/yellow/check-lists-svgrepo-com_white.svg";
 
 // 관리자 시스템
 import adminFilledGreen from "../../images/theme-icons/green/user-svgrepo-com_gf.svg";
 import adminOutlinedGreen from "../../images/theme-icons/yellow/user-svgrepo-com_black.svg";
+import adminFilledGreenDark from "../../images/theme-icons/green/user-svgrepo-com_gf.svg";
+import adminOutlinedGreenDark from "../../images/theme-icons/yellow/user-svgrepo-com_white.svg";
 
 // AI 분석 시스템
 import aiFilledGreen  from "../../images/theme-icons/green/Charts_filled.svg";
 import aiOutlinedGreen  from "../../images/theme-icons/green/Charts_outlined.svg";
+import aiFilledGreenDark from "../../images/theme-icons/dark sidebar/green/Charts_filled.svg";
+import aiOutlinedGreenDark from "../../images/theme-icons/dark sidebar/green/Charts_outlined.svg";
 
 /* =========================
  * info(파랑)
@@ -1486,34 +1537,50 @@ import extraFilledBlue from "../../images/theme-icons/blue/Extra_filled.svg";
 // Dashboard
 import dashboardFilledBlue from "../../images/theme-icons/blue/dashboard-svgrepo-com_bf.svg";
 import dashboardOutlinedBlue from "../../images/theme-icons/blue/dashboard-svgrepo-com_b.svg";
+import dashboardFilledBlueDark from "../../images/theme-icons/blue/dashboard-svgrepo-com_bf_dark.svg";
+import dashboardOutlinedBlueDark from "../../images/theme-icons/blue/dashboard-svgrepo-com_b_dark.svg";
 
 // 생산관리 시스템
 import productionFilledBlue from "../../images/theme-icons/blue/factory-svgrepo-com_b.svg";
 import productionOutlinedBlue from "../../images/theme-icons/yellow/factory-svgrepo-com_black.svg";
+import productionFilledBlueDark from "../../images/theme-icons/blue/factory-svgrepo-com_b.svg";
+import productionOutlinedBlueDark from "../../images/theme-icons/yellow/factory-svgrepo-com_white.svg";
 
 // 금형관리 시스템
 import moldFilledBlue from "../../images/theme-icons/blue/tool-svgrepo-com_bf.svg";
 import moldOutlinedBlue from "../../images/theme-icons/yellow/tool-svgrepo-com_black.svg";
+import moldFilledBlueDark from "../../images/theme-icons/blue/tool-svgrepo-com_bf_dark.svg";
+import moldOutlinedBlueDark from "../../images/theme-icons/yellow/tool-svgrepo-com_white.svg";
 
 // 불량공정 시스템
 import defectFilledBlue from "../../images/theme-icons/blue/alert-triangle-svgrepo-com_bf.svg";
 import defectOutlinedBlue from "../../images/theme-icons/yellow/alert-triangle-svgrepo-com_black.svg";
+import defectFilledBlueDark from "../../images/theme-icons/blue/alert-triangle-svgrepo-com_bf.svg";
+import defectOutlinedBlueDark from "../../images/theme-icons/yellow/alert-triangle-svgrepo-com_white.svg";
 
 // 비가동 통계 시스템
 import downtimeFilledBlue from "../../images/theme-icons/blue/clock-svgrepo-com_bf.svg";
 import downtimeOutlinedBlue from "../../images/theme-icons/yellow/clock-svgrepo-com_black.svg";
+import downtimeFilledBlueDark from "../../images/theme-icons/blue/clock-svgrepo-com_bf.svg";
+import downtimeOutlinedBlueDark from "../../images/theme-icons/yellow/clock-svgrepo-com_white.svg";
 
 // 검사 시스템
 import inspectionFilledBlue from "../../images/theme-icons/blue/check-lists-svgrepo-com_b.svg";
 import inspectionOutlinedBlue from "../../images/theme-icons/yellow/check-lists-svgrepo-com_black.svg";
+import inspectionFilledBlueDark from "../../images/theme-icons/blue/check-lists-svgrepo-com_b_dark.svg";
+import inspectionOutlinedBlueDark from "../../images/theme-icons/yellow/check-lists-svgrepo-com_white.svg";
 
 // 관리자 시스템
 import adminFilledBlue from "../../images/theme-icons/blue/user-svgrepo-com_bf.svg";
 import adminOutlinedBlue from "../../images/theme-icons/yellow/user-svgrepo-com_black.svg";
+import adminFilledBlueDark from "../../images/theme-icons/blue/user-svgrepo-com_bf.svg";
+import adminOutlinedBlueDark from "../../images/theme-icons/yellow/user-svgrepo-com_white.svg";
 
 // AI 분석 시스템
 import aiFilledBlue  from "../../images/theme-icons/blue/Charts_filled.svg";
 import aiOutlinedBlue  from "../../images/theme-icons/blue/Charts_outlined.svg";
+import aiFilledBlueDark from "../../images/theme-icons/dark sidebar/blue/Charts_filled.svg";
+import aiOutlinedBlueDark from "../../images/theme-icons/dark sidebar/blue/Charts_outlined.svg";
 
 /* =========================
  * dark sidebar 전용 아이콘 세트
@@ -1752,10 +1819,20 @@ class Sidebar extends React.Component {
     // dark 사이드바 전용 맵
     const darkSets = {
       warning: {
-        dashboard: { filled: darkSidebarDashboardFilled, outlined: darkSidebarDashboardOutlined },
-        ecommerce: { filled: darkSidebarEcommerceFilled, outlined: darkSidebarEcommerceOutlined },
-        package: { filled: darkSidebarPackageFilled, outlined: darkSidebarPackageOutlined },
+        // dashboard: { filled: darkSidebarDashboardFilled, outlined: darkSidebarDashboardOutlined },
+        // ecommerce: { filled: darkSidebarEcommerceFilled, outlined: darkSidebarEcommerceOutlined },
+        // package: { filled: darkSidebarPackageFilled, outlined: darkSidebarPackageOutlined },
         profile: { filled: darkSidebarAccountFilled, outlined: darkSidebarAccountOutlined },
+
+        dashboard:  { filled: dashboardFilledYellowDark,  outlined: dashboardOutlinedYellowDark },
+        production: { filled: productionFilledYellowDark, outlined: productionOutlinedYellowDark },
+        mold:       { filled: moldFilledYellowDark,       outlined: moldOutlinedYellowDark },
+        defect:     { filled: defectFilledYellowDark,     outlined: defectOutlinedYellowDark },
+        downtime:   { filled: downtimeFilledYellowDark,   outlined: downtimeOutlinedYellowDark },
+        inspection: { filled: inspectionFilledYellowDark, outlined: inspectionOutlinedYellowDark },
+        ai:         { filled: aiFilledYellowDark,         outlined: aiOutlinedYellowDark },
+        admin:      { filled: adminFilledYellowDark,      outlined: adminOutlinedYellowDark },
+      
         settings: { filled: darkSidebarSettingsFilled, outlined: darkSidebarSettingsOutlined },
         logout: { filled: darkSidebarLogout, outlined: darkSidebarLogout },
         email: { filled: darkSidebarEmailFilled, outlined: darkSidebarEmailOutlined },
@@ -1770,10 +1847,20 @@ class Sidebar extends React.Component {
         extra: { filled: darkSidebarExtraFilled, outlined: darkSidebarExtraOutlined },
       },
       danger: {
-        dashboard: { filled: darkSidebarDashboardFilledDanger, outlined: darkSidebarDashboardOutlinedDanger },
-        ecommerce: { filled: darkSidebarEcommerceFilledDanger, outlined: darkSidebarEcommerceOutlinedDanger },
-        package: { filled: darkSidebarPackageFilledDanger, outlined: darkSidebarPackageOutlinedDanger },
+        // dashboard: { filled: darkSidebarDashboardFilledDanger, outlined: darkSidebarDashboardOutlinedDanger },
+        // ecommerce: { filled: darkSidebarEcommerceFilledDanger, outlined: darkSidebarEcommerceOutlinedDanger },
+        // package: { filled: darkSidebarPackageFilledDanger, outlined: darkSidebarPackageOutlinedDanger },
         profile: { filled: darkSidebarAccountFilledDanger, outlined: darkSidebarAccountOutlinedDanger },
+
+        dashboard:  { filled: dashboardFilledRedDark,  outlined: dashboardOutlinedRedDark },
+        production: { filled: productionFilledRedDark, outlined: productionOutlinedRedDark },
+        mold:       { filled: moldFilledRedDark,       outlined: moldOutlinedRedDark },
+        defect:     { filled: defectFilledRedDark,     outlined: defectOutlinedRedDark },
+        downtime:   { filled: downtimeFilledRedDark,   outlined: downtimeOutlinedRedDark },
+        inspection: { filled: inspectionFilledRedDark, outlined: inspectionOutlinedRedDark },
+        ai:         { filled: aiFilledRedDark,         outlined: aiOutlinedRedDark },
+        admin:      { filled: adminFilledRedDark,      outlined: adminOutlinedRedDark },
+
         settings: { filled: darkSidebarSettingsFilledDanger, outlined: darkSidebarSettingsOutlinedDanger },
         logout: { filled: darkSidebarLogoutDanger, outlined: darkSidebarLogoutDanger },
         email: { filled: darkSidebarEmailFilledDanger, outlined: darkSidebarEmailOutlinedDanger },
@@ -1788,10 +1875,20 @@ class Sidebar extends React.Component {
         extra: { filled: darkSidebarExtraFilledDanger, outlined: darkSidebarExtraOutlinedDanger },
       },
       success: {
-        dashboard: { filled: darkSidebarDashboardFilledSuccess, outlined: darkSidebarDashboardOutlinedSuccess },
-        ecommerce: { filled: darkSidebarEcommerceFilledSuccess, outlined: darkSidebarEcommerceOutlinedSuccess },
-        package: { filled: darkSidebarPackageFilledSuccess, outlined: darkSidebarPackageOutlinedSuccess },
+        // dashboard: { filled: darkSidebarDashboardFilledSuccess, outlined: darkSidebarDashboardOutlinedSuccess },
+        // ecommerce: { filled: darkSidebarEcommerceFilledSuccess, outlined: darkSidebarEcommerceOutlinedSuccess },
+        // package: { filled: darkSidebarPackageFilledSuccess, outlined: darkSidebarPackageOutlinedSuccess },
         profile: { filled: darkSidebarAccountFilledSuccess, outlined: darkSidebarAccountOutlinedSuccess },
+
+        dashboard:  { filled: dashboardFilledGreenDark,  outlined: dashboardOutlinedGreenDark },
+        production: { filled: productionFilledGreenDark, outlined: productionOutlinedGreenDark },
+        mold:       { filled: moldFilledGreenDark,       outlined: moldOutlinedGreenDark },
+        defect:     { filled: defectFilledGreenDark,     outlined: defectOutlinedGreenDark },
+        downtime:   { filled: downtimeFilledGreenDark,   outlined: downtimeOutlinedGreenDark },
+        inspection: { filled: inspectionFilledGreenDark, outlined: inspectionOutlinedGreenDark },
+        ai:         { filled: aiFilledGreenDark,         outlined: aiOutlinedGreenDark },
+        admin:      { filled: adminFilledGreenDark,      outlined: adminOutlinedGreenDark },
+
         settings: { filled: darkSidebarSettingsFilledSuccess, outlined: darkSidebarSettingsOutlinedSuccess },
         logout: { filled: darkSidebarLogoutSuccess, outlined: darkSidebarLogoutSuccess },
         email: { filled: darkSidebarEmailFilledSuccess, outlined: darkSidebarEmailOutlinedSuccess },
@@ -1806,10 +1903,20 @@ class Sidebar extends React.Component {
         extra: { filled: darkSidebarExtraFilledSuccess, outlined: darkSidebarExtraOutlinedSuccess },
       },
       info: {
-        dashboard: { filled: darkSidebarDashboardFilledBlue, outlined: darkSidebarDashboardOutlinedBlue },
-        ecommerce: { filled: darkSidebarEcommerceFilledBlue, outlined: darkSidebarEcommerceOutlinedBlue },
-        package: { filled: darkSidebarPackageFilledBlue, outlined: darkSidebarPackageOutlinedBlue },
+        // dashboard: { filled: darkSidebarDashboardFilledBlue, outlined: darkSidebarDashboardOutlinedBlue },
+        // ecommerce: { filled: darkSidebarEcommerceFilledBlue, outlined: darkSidebarEcommerceOutlinedBlue },
+        // package: { filled: darkSidebarPackageFilledBlue, outlined: darkSidebarPackageOutlinedBlue },
         profile: { filled: darkSidebarAccountFilledBlue, outlined: darkSidebarAccountOutlinedBlue },
+
+        dashboard:  { filled: dashboardFilledBlueDark,  outlined: dashboardOutlinedBlueDark },
+        production: { filled: productionFilledBlueDark, outlined: productionOutlinedBlueDark },
+        mold:       { filled: moldFilledBlueDark,       outlined: moldOutlinedBlueDark },
+        defect:     { filled: defectFilledBlueDark,     outlined: defectOutlinedBlueDark },
+        downtime:   { filled: downtimeFilledBlueDark,   outlined: downtimeOutlinedBlueDark },
+        inspection: { filled: inspectionFilledBlueDark, outlined: inspectionOutlinedBlueDark },
+        ai:         { filled: aiFilledBlueDark,         outlined: aiOutlinedBlueDark },
+        admin:      { filled: adminFilledBlueDark,      outlined: adminOutlinedBlueDark },
+
         settings: { filled: darkSidebarSettingsFilledBlue, outlined: darkSidebarSettingsOutlinedBlue },
         logout: { filled: darkSidebarLogoutBlue, outlined: darkSidebarLogoutBlue },
         email: { filled: darkSidebarEmailFilledBlue, outlined: darkSidebarEmailOutlinedBlue },
@@ -1831,7 +1938,8 @@ class Sidebar extends React.Component {
         // dashboard: { filled: darkDashboardIcon, outlined: lightDashboardIcon },
         // ecommerce: { filled: eCommerceFilled, outlined: eCommerceOutlined },
         // package: { filled: packageFilled, outlined: packageOutlined },
-        // profile: { filled: profileFilled, outlined: profileOutlined },
+        profile: { filled: profileFilled, outlined: profileOutlined },
+
         dashboard:  { filled: dashboardFilledYellow,  outlined: dashboardOutlinedYellow },
         production: { filled: productionFilledYellow, outlined: productionOutlinedYellow },
         mold:       { filled: moldFilledYellow,       outlined: moldOutlinedYellow },
@@ -1858,7 +1966,8 @@ class Sidebar extends React.Component {
         // dashboard: { filled: darkDashboardIconDanger, outlined: lightDashboardIconDanger },
         // ecommerce: { filled: eCommerceFilledDanger, outlined: eCommerceOutlinedDanger },
         // package: { filled: packageFilledDanger, outlined: packageOutlinedDanger },
-        // profile: { filled: profileFilledDanger, outlined: profileOutlinedDanger },
+        profile: { filled: profileFilledDanger, outlined: profileOutlinedDanger },
+
         dashboard:  { filled: dashboardFilledRed,  outlined: dashboardOutlinedRed },
         production: { filled: productionFilledRed, outlined: productionOutlinedRed },
         mold:       { filled: moldFilledRed,       outlined: moldOutlinedRed },
@@ -1885,7 +1994,8 @@ class Sidebar extends React.Component {
         // dashboard: { filled: darkDashboardIconSuccess, outlined: lightDashboardIconSuccess },
         // ecommerce: { filled: eCommerceFilledSuccess, outlined: eCommerceOutlinedSuccess },
         // package: { filled: packageFilledSuccess, outlined: packageOutlinedSuccess },
-        // profile: { filled: profileFilledSuccess, outlined: profileOutlinedSuccess },
+        profile: { filled: profileFilledSuccess, outlined: profileOutlinedSuccess },
+
         dashboard:  { filled: dashboardFilledGreen,  outlined: dashboardOutlinedGreen },
         production: { filled: productionFilledGreen, outlined: productionOutlinedGreen },
         mold:       { filled: moldFilledGreen,       outlined: moldOutlinedGreen },
@@ -1912,7 +2022,8 @@ class Sidebar extends React.Component {
         // dashboard: { filled: darkDashboardIconBlue, outlined: lightDashboardIconBlue },
         // ecommerce: { filled: eCommerceFilledBlue, outlined: eCommerceOutlinedBlue },
         // package: { filled: packageFilledBlue, outlined: packageOutlinedBlue },
-        // profile: { filled: profileFilledBlue, outlined: profileOutlinedBlue },
+        profile: { filled: profileFilledBlue, outlined: profileOutlinedBlue },
+
         dashboard:  { filled: dashboardFilledBlue,  outlined: dashboardOutlinedBlue },
         production: { filled: productionFilledBlue, outlined: productionOutlinedBlue },
         mold:       { filled: moldFilledBlue,       outlined: moldOutlinedBlue },
