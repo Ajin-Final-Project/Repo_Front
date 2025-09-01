@@ -1297,6 +1297,10 @@ import inspectionOutlinedYellow  from "../../images/theme-icons/yellow/check-lis
 import adminFilledYellow  from "../../images/theme-icons/yellow/user-svgrepo-com_yf.svg";
 import adminOutlinedYellow  from "../../images/theme-icons/yellow/user-svgrepo-com_black.svg";
 
+// AI 분석 시스템
+import aiFilledYellow  from "../../images/theme-icons/yellow/Charts_filled.svg";
+import aiOutlinedYellow  from "../../images/theme-icons/yellow/Charts_outlined.svg";
+
 
 /* =========================
  * danger(빨강)
@@ -1365,6 +1369,10 @@ import inspectionOutlinedRed from "../../images/theme-icons/yellow/check-lists-s
 import adminFilledRed from "../../images/theme-icons/red/user-svgrepo-com_rf.svg";
 import adminOutlinedRed from "../../images/theme-icons/yellow/user-svgrepo-com_black.svg";
 
+// AI 분석 시스템
+import aiFilledRed  from "../../images/theme-icons/red/Charts_filled.svg";
+import aiOutlinedRed  from "../../images/theme-icons/red/Charts_outlined.svg";
+
 /* =========================
  * success(초록)
  * ========================= */
@@ -1432,6 +1440,10 @@ import inspectionOutlinedGreen from "../../images/theme-icons/yellow/check-lists
 import adminFilledGreen from "../../images/theme-icons/green/user-svgrepo-com_gf.svg";
 import adminOutlinedGreen from "../../images/theme-icons/yellow/user-svgrepo-com_black.svg";
 
+// AI 분석 시스템
+import aiFilledGreen  from "../../images/theme-icons/green/Charts_filled.svg";
+import aiOutlinedGreen  from "../../images/theme-icons/green/Charts_outlined.svg";
+
 /* =========================
  * info(파랑)
  * ========================= */
@@ -1498,6 +1510,10 @@ import inspectionOutlinedBlue from "../../images/theme-icons/yellow/check-lists-
 // 관리자 시스템
 import adminFilledBlue from "../../images/theme-icons/blue/user-svgrepo-com_bf.svg";
 import adminOutlinedBlue from "../../images/theme-icons/yellow/user-svgrepo-com_black.svg";
+
+// AI 분석 시스템
+import aiFilledBlue  from "../../images/theme-icons/blue/Charts_filled.svg";
+import aiOutlinedBlue  from "../../images/theme-icons/blue/Charts_outlined.svg";
 
 /* =========================
  * dark sidebar 전용 아이콘 세트
@@ -1679,6 +1695,12 @@ import Account_icon_red from "../../images/theme-icons/red/Account_icon_red.svg"
 import Account_icon_green from "../../images/theme-icons/green/Account_icon_green.svg"
 import Account_icon_blue from "../../images/theme-icons/blue/Account_icon_blue.svg"
 
+// AI 분석 시스템
+import Ai_icon_yellow from "../../images/theme-icons/yellow/Charts_outlined.svg";
+import Ai_icon_red from "../../images/theme-icons/red/Charts_outlined.svg";
+import Ai_icon_green from "../../images/theme-icons/green/Charts_outlined.svg";
+import Ai_icon_blue  from "../../images/theme-icons/blue/Charts_outlined.svg";
+
 
 class Sidebar extends React.Component {
   static propTypes = {
@@ -1816,6 +1838,7 @@ class Sidebar extends React.Component {
         defect:     { filled: defectFilledYellow,     outlined: defectOutlinedYellow },
         downtime:   { filled: downtimeFilledYellow,   outlined: downtimeOutlinedYellow },
         inspection: { filled: inspectionFilledYellow, outlined: inspectionOutlinedYellow },
+        ai:         { filled: aiFilledYellow, outlined: aiOutlinedYellow },
         admin:      { filled: adminFilledYellow,      outlined: adminOutlinedYellow },
 
         settings: { filled: settingsFilled, outlined: settingsOutlined },
@@ -1842,6 +1865,7 @@ class Sidebar extends React.Component {
         defect:     { filled: defectFilledRed,     outlined: defectOutlinedRed },
         downtime:   { filled: downtimeFilledRed,   outlined: downtimeOutlinedRed },
         inspection: { filled: inspectionFilledRed, outlined: inspectionOutlinedRed },
+        ai:         { filled: aiFilledRed, outlined: aiOutlinedRed },
         admin:      { filled: adminFilledRed,      outlined: adminOutlinedRed },
         
         settings: { filled: settingsFilledDanger, outlined: settingsOutlinedDanger },
@@ -1868,6 +1892,7 @@ class Sidebar extends React.Component {
         defect:     { filled: defectFilledGreen,     outlined: defectOutlinedGreen },
         downtime:   { filled: downtimeFilledGreen,   outlined: downtimeOutlinedGreen },
         inspection: { filled: inspectionFilledGreen, outlined: inspectionOutlinedGreen },
+        ai:         { filled: aiFilledGreen, outlined: aiOutlinedGreen },
         admin:      { filled: adminFilledGreen,      outlined: adminOutlinedGreen },
 
         settings: { filled: settingsFilledSuccess, outlined: settingsOutlinedSuccess },
@@ -1894,6 +1919,7 @@ class Sidebar extends React.Component {
         defect:     { filled: defectFilledBlue,     outlined: defectOutlinedBlue },
         downtime:   { filled: downtimeFilledBlue,   outlined: downtimeOutlinedBlue },
         inspection: { filled: inspectionFilledBlue, outlined: inspectionOutlinedBlue },
+        ai:         { filled: aiFilledBlue, outlined: aiOutlinedBlue },
         admin:      { filled: adminFilledBlue,      outlined: adminOutlinedBlue },
 
         settings: { filled: settingsFilledBlue, outlined: settingsOutlinedBlue },
@@ -1928,6 +1954,7 @@ class Sidebar extends React.Component {
       { key: "downtime", label: "비가동 통계 시스템", link: "/app/downtime/chart", iconKey: "downtime" },
       { key: "inspection", label: "초/중/종품 검사 시스템", link: "/app/inspection/chart", iconKey: "inspection" },
       { key: "admin", label: "관리자 시스템", link: "/admin/users", iconKey: "admin" },
+      { key: "ai", label: "AI 분석 시스템", link: "/app/ai/chart", iconKey: "ai" },
       { key: "email", label: "Email", link: "/app/email", iconKey: "email", badge: 9 },
       { key: "documentation", label: "Documentation", link: "/documentation", iconKey: "documentation", target: "_blank" },
     ];
@@ -2107,6 +2134,21 @@ class Sidebar extends React.Component {
             ]}
           >
             <img src={this.themeIcons("admin")} alt="admin" width="24" height="24" />
+          </LinksGroup>
+
+          <LinksGroup
+            onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
+            activeItem={this.props.activeItem}
+            header="AI 예측 시뮬레이션"
+            isHeader
+            link="/app/ai/chart"
+            index="ai"
+            childrenLinks={[
+              { header: "생산량 예측", link: "/app/ai/product-forecast" },
+              { header: "병목 공정 예측", link: "/app/ai/bottleneck" },
+            ]}
+          >
+            <img src={this.themeIcons("ai")} alt="ai" width="24" height="24" />
           </LinksGroup>
 
           <LinksGroup
