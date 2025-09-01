@@ -14,7 +14,8 @@ import {
   Divider,
   Collapse,
   CircularProgress,
-  Alert
+  Alert,
+  MenuItem
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { 
@@ -95,8 +96,8 @@ class MoldShotCheck extends Component {
     const payload = {
       // === 생산내역 필터링 조건 ===
       plant: f.plant?.trim() || null,
-      worker: f.worker?.trim() || null,
-      work_center: f.work_center?.trim() || null,
+      responsible_person: f.worker?.trim() || null,
+      work_center: f.line?.trim() || null,
       material_no: f.itemCode?.trim() || null,
       material_name: f.itemName?.trim() || null,
       
@@ -506,37 +507,54 @@ closeItemCodeModal = () => {
             {/* 플랜트 */}
             <Grid item xs={12} sm={6} md={2}>
               <TextField
+                select
                 fullWidth
-                label="플랜트"
+                label="공장"
                 value={filters.plant}
                 onChange={(e) => this.handleFilterChange('plant', e.target.value)}
                 size="small"
                 variant="outlined"
-              />
+              >
+              <MenuItem value="아진산업-경산(본사)">아진산업-본사(경산)</MenuItem>
+              <MenuItem value="아진산업-1공장(경산)">아진산업-1공장(경산)</MenuItem>
+              <MenuItem value="아진산업-구어공장(경주)">아진산업-구어공장(경주)</MenuItem>
+              <MenuItem value="아진산업-하양공장(예정)">아진산업-하양공장(예정)</MenuItem>
+              </TextField>
             </Grid>
 
             {/* 책임자 */}
             <Grid item xs={12} sm={6} md={2}>
               <TextField
+                select
                 fullWidth
                 label="작업자"
                 value={filters.worker}
-                onChange={(e) => this.handleFilterChange('responsible_person', e.target.value)}
+                onChange={(e) => this.handleFilterChange('worker', e.target.value)}
                 size="small"
                 variant="outlined"
-              />
+               >
+               <MenuItem value="프레스">프레스</MenuItem>
+                          <MenuItem value="금형">금형</MenuItem>
+                          <MenuItem value="블랭크">블랭크</MenuItem>
+              </TextField>
             </Grid>
 
             {/* 작업장 */}
             <Grid item xs={12} sm={6} md={2}>
               <TextField
+                select
                 fullWidth
                 label="라인"
                 value={filters.line}
-                onChange={(e) => this.handleFilterChange('work_center', e.target.value)}
+                onChange={(e) => this.handleFilterChange('line', e.target.value)}
                 size="small"
                 variant="outlined"
-              />
+                >
+                <MenuItem value="1500T">1500T(E라인) </MenuItem>
+                            <MenuItem value="1200T">1200T(D라인)</MenuItem>
+                            <MenuItem value="1000T">1000T(F라인)</MenuItem>
+                            <MenuItem value="1000T-PRO">1000T-PRO(G라인)</MenuItem>
+              </TextField>
             </Grid>
 
             {/* 자재번호 */}
