@@ -28,23 +28,24 @@ import {
 } from '@mui/icons-material';
 import s from './DowntimeGrid.module.scss';
 import config from "../../config";
-// ⬇️ 품목코드 선택 모달 (이미 구현되어 있다고 하셨으므로 경로만 맞추세요)
+// ⬇️ 품목코드 선택 모달
 import ItemCodeModal from '../common/ItemCodeModal';
-
+import { connect } from "react-redux";
+import { selectThemeHex, selectThemeKey } from "../../reducers/layout";
 
 class DowntimeGrid extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      // 검색 필터 (ProductionGrid와 동일 구조/키 최대한 유지)
+      // 검색 필터
       filters: {
         start_work_date: "2025-06-01",
         end_work_date: "2025-06-30",
 
         // 기본 필터
         plant: "아진산업-경산(본사)",
-        worker: "프레스",      // 공정군(프레스/금형/블랭크)
-        workplace: "1500T",    // 라인(1500T/1200T/1000T/1000T-PRO)
+        workerplace: "프레스",
+        line: "1500T",
         itemCode: "",
 
         // 확장 필터
@@ -54,7 +55,7 @@ class DowntimeGrid extends Component {
         downtimeMinutes: null,
         note: "",
 
-        // 추가 필터들
+        // 추가 필터
         shift: "",
         productName: "",
         itemType: "",
@@ -146,7 +147,6 @@ class DowntimeGrid extends Component {
 
       const json = await response.json();
 
-      // 다양한 응답 형태에 대비하여 배열을 안전하게 추출
       const dataArray =
         (Array.isArray(json) && json) ||
         (Array.isArray(json?.data) && json.data) ||
@@ -197,8 +197,8 @@ class DowntimeGrid extends Component {
         id: item.id || idx + 1,
         workDate,
         plant: item.plant ?? item.플랜트 ?? '',
-        worker: item.worker ?? item.책임자 ?? '',
-        workplace: item.workplace ?? item.작업장 ?? '',
+        workerplace: item.workerplace ?? item.책임자 ?? '',
+        line: item.line ?? item.작업장 ?? '',
         itemCode: item.itemCode ?? item.자재번호 ?? '',
         itemName: item.itemName ?? item.자재명 ?? '', // 표시용
         carModel: item.carModel ?? item.차종 ?? '',
@@ -222,8 +222,8 @@ class DowntimeGrid extends Component {
         start_work_date: '',
         end_work_date: '',
         plant: "아진산업-경산(본사)",
-        worker: "프레스",
-        workplace: "1500T",
+        workerplace: "프레스",
+        line: "1500T",
         itemCode: '',
         itemName: '',
 
@@ -270,9 +270,9 @@ class DowntimeGrid extends Component {
     },
     { field: 'plant', headerName: '플랜트', width: 180,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'worker', headerName: '책임자', width: 120,
+    { field: 'workerplace', headerName: '책임자', width: 120,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'workplace', headerName: '작업장', width: 120,
+    { field: 'line', headerName: '작업장', width: 120,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
     { field: 'itemCode', headerName: '자재번호', width: 140,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
@@ -317,14 +317,8 @@ class DowntimeGrid extends Component {
   ];
 
   render() {
+    const { themeHex } = this.props;
     const { filters, filterExpanded, itemCodeModalOpen, quickRange, downtimeData, loading, error } = this.state;
-    console.log(downtimeData);
-
-    console.log(this.state.filters.plant);
-    console.log(this.state.filters.worker);
-    console.log(this.state.filters.workplace);
-    console.log(this.state.filters.start_work_date);
-    console.log(this.state.filters.end_work_date);
 
     return (
       <Box
@@ -358,7 +352,7 @@ class DowntimeGrid extends Component {
           </Typography>
         </Box>
 
-        {/* 필터 카드 (ProductionGrid와 동일 UX) */}
+        {/* 필터 카드 */}
         <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
           <CardHeader
             title={
@@ -454,14 +448,14 @@ class DowntimeGrid extends Component {
               </Box>
             }
             sx={{
-              backgroundColor: '#ff8f00',
+              backgroundColor: themeHex,
               color: 'white',
               borderRadius: 1,
               mb: 2,
             }}
           />
 
-          {/* 기본 필터: 공장/작업장/라인/품목코드/품목명 */}
+          {/* 기본 필터 */}
           <Grid container spacing={2}>
             {/* 공장 */}
             <Grid item xs={12} sm={6} md={2}>
@@ -488,8 +482,8 @@ class DowntimeGrid extends Component {
                 select
                 fullWidth
                 label="작업장"
-                value={filters.worker ?? '프레스'}
-                onChange={(e) => this.handleFilterChange('worker', e.target.value)}
+                value={filters.workerplace ?? '프레스'}
+                onChange={(e) => this.handleFilterChange('workerplace', e.target.value)}
                 size="small"
                 variant="outlined"
               >
@@ -499,14 +493,14 @@ class DowntimeGrid extends Component {
               </TextField>
             </Grid>
 
-            {/* 라인(press) */}
+            {/* 라인 */}
             <Grid item xs={12} sm={6} md={3}>
               <TextField
                 select
                 fullWidth
                 label="라인"
-                value={filters.workplace ?? '1500T'}
-                onChange={(e) => this.handleFilterChange('workplace', e.target.value)}
+                value={filters.line ?? '1500T'}
+                onChange={(e) => this.handleFilterChange('line', e.target.value)}
                 size="small"
                 variant="outlined"
               >
@@ -572,7 +566,7 @@ class DowntimeGrid extends Component {
             </Grid>
           </Grid>
 
-          {/* 확장 필터 (ProductionGrid와 동일 폼 유지) */}
+          {/* 확장 필터 */}
           <Collapse in={filterExpanded} timeout="auto" unmountOnExit>
             <Divider sx={{ my: 2 }} />
             <Grid container spacing={2}>
@@ -700,8 +694,8 @@ class DowntimeGrid extends Component {
                 onClick={this.handleSearch}
                 size="large"
                 sx={{
-                  backgroundColor: '#ff8f00',
-                  '&:hover': { backgroundColor: '#f57c00' },
+                  backgroundColor: themeHex,
+                  '&:hover': { backgroundColor: themeHex },
                 }}
               >
                 검색
@@ -712,10 +706,11 @@ class DowntimeGrid extends Component {
 
         {/* 그리드 */}
         <Paper elevation={3} sx={{ flex: 1, display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
-          <Box sx={{ height: '100%', width: '100%' }}>
+          {/* ⚠️ DataGrid가 자기 내부 스크롤(세로/가로)을 가지도록 고정 높이 부여 */}
+          <Box sx={{ height: 'calc(100vh - 380px)', width: '100%' }}>
             {loading && (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
-                <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
+                <CircularProgress size={60} sx={{ color: themeHex }} />
               </Box>
             )}
 
@@ -725,7 +720,7 @@ class DowntimeGrid extends Component {
                 <Button
                   variant="contained"
                   onClick={this.refreshData}
-                  sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}
+                  sx={{ backgroundColor: themeHex }}
                 >
                   다시 시도
                 </Button>
@@ -736,6 +731,9 @@ class DowntimeGrid extends Component {
               <DataGrid
                 rows={downtimeData}
                 columns={this.columns}
+                // ✅ autoHeight 제거: 내부 스크롤을 DataGrid가 관리
+                // autoHeight
+
                 pagination
                 paginationMode="client"
                 pageSizeOptions={[10, 25, 50, 100]}
@@ -750,11 +748,11 @@ class DowntimeGrid extends Component {
                 }}
                 sx={{
                   '& .super-app-theme--header': {
-                    backgroundColor: '#ff8f00',
+                    backgroundColor: themeHex,
                     color: 'white',
                     fontWeight: 'bold',
-                    position: 'sticky',  
-                    top: 0,          
+                    position: 'sticky',
+                    top: 0,
                     zIndex: 1,
                   },
                   '& .super-app-theme--cell': {
@@ -772,6 +770,10 @@ class DowntimeGrid extends Component {
                     borderBottom: '1px solid #e0e0e0',
                     padding: '8px 16px',
                   },
+                  // (선택) 가로 스크롤바 가독성 향상
+                  '& .MuiDataGrid-scrollbar--horizontal': {
+                    minHeight: 12,
+                  },
                 }}
               />
             )}
@@ -784,10 +786,9 @@ class DowntimeGrid extends Component {
           onClose={this.closeItemCodeModal}
           onSelect={this.handleItemCodeSelect}
           selectedItemCode={filters.itemCode}
-          // ProductionGrid와 동일 Prop 매핑
           plant={filters.plant}
-          worker={filters.worker}           // 공정군
-          workplace={filters.workplace}     // 라인(press)
+          worker={filters.workerplace}
+          line={filters.line}
           start_work_date={filters.start_work_date}
           end_work_date={filters.end_work_date}
         />
@@ -796,4 +797,7 @@ class DowntimeGrid extends Component {
   }
 }
 
-export default DowntimeGrid;
+export default connect((state) => ({
+  themeHex: selectThemeHex(state),
+  themeKey: selectThemeKey(state),
+}))(DowntimeGrid);

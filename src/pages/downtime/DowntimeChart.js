@@ -1026,7 +1026,7 @@ class DowntimeChart extends Component {
           plant={uiFilters.plant}
           worker={uiFilters.worker}
           line={uiFilters.line} 
-          workplace={uiFilters.line}
+          // workplace={uiFilters.line}
           start_work_date={uiFilters.start_work_date}
           end_work_date={uiFilters.end_work_date}
         />
