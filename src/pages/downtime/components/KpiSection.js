@@ -6,9 +6,6 @@ import {
   Card,
   CardContent,
   Typography,
-  CircularProgress,
-  Skeleton,
-  Alert,
   Divider,
   Stack,
   Chip,
@@ -26,30 +23,19 @@ import DateRangeIcon from "@mui/icons-material/DateRange";               // 기�
  * props:
  * - themeHex: string
  * - kpiSummary: { total, count, avg, topName, topValue, topList? }
- * - loading: { summary?: boolean }
- * - error:   { summary?: string|null }
  * - fmtNumber(n): (number) => string
  * - fmtMinutes(n): (number) => string
- * - pageLoading?: boolean
- * - pageError?: string|null
  * - periodStart?: string (YYYY-MM-DD)
  * - periodEnd?: string   (YYYY-MM-DD)
  */
 export default function KpiSection({
   themeHex = "#ff8f00",
   kpiSummary = { total: 0, count: 0, avg: 0, topName: "-", topValue: 0, topList: [] },
-  loading = {},
-  error = {},
   fmtNumber = (n) => String(n ?? 0),
   fmtMinutes = (n) => `${n ?? 0}`,
-  pageLoading = false,
-  pageError = null,
   periodStart = "",
   periodEnd = "",
 }) {
-  const isLoading = Boolean(pageLoading || loading.summary);
-  const errMsg = pageError || error.summary || null;
-
   const topList = Array.isArray(kpiSummary?.topList) ? kpiSummary.topList : [];
   const top3 = topList.slice(0, 3);
 
@@ -73,7 +59,7 @@ export default function KpiSection({
     </Box>
   );
 
-  // ✅ 세로·가로 모두 가운데 정렬 + “아이콘 / 제목 / 값” 각각 한 줄
+  // 세로·가로 가운데 + “아이콘 / 제목 / 값 / (선택)부제”
   const StatCard = ({ icon, title, value, subtitle }) => (
     <Card
       elevation={2}
@@ -96,38 +82,23 @@ export default function KpiSection({
           gap: 0.75,
         }}
       >
-        {/* 1) 아이콘 (한 줄) */}
         <IconWrap>{icon}</IconWrap>
-
-        {/* 2) 제목 (한 줄) */}
         <Typography variant="overline" sx={{ opacity: 0.8 }}>
           {title}
         </Typography>
-
-        {/* 3) 값 (한 줄) */}
-        {isLoading ? (
-          <Skeleton variant="text" width={120} height={38} />
-        ) : (
-          <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-            {value}
-          </Typography>
-        )}
-
-        {/* (선택) 보조설명 — 아래 한 줄 */}
+        <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+          {value}
+        </Typography>
         {subtitle ? (
-          isLoading ? (
-            <Skeleton variant="text" width={160} />
-          ) : (
-            <Typography variant="caption" sx={{ opacity: 0.7 }}>
-              {subtitle}
-            </Typography>
-          )
+          <Typography variant="caption" sx={{ opacity: 0.7 }}>
+            {subtitle}
+          </Typography>
         ) : null}
       </CardContent>
     </Card>
   );
 
-  // ✅ TOP 3 (비가동명만) — 레이아웃 유지
+  // TOP 3 (비가동명만)
   const TopListCard = () => (
     <Card
       elevation={2}
@@ -158,13 +129,7 @@ export default function KpiSection({
           </Typography>
         </Box>
 
-        {isLoading ? (
-          <Box sx={{ mt: 0.5, width: "100%" }}>
-            <Skeleton variant="text" width="90%" sx={{ mx: "auto" }} />
-            <Skeleton variant="text" width="85%" sx={{ mx: "auto" }} />
-            <Skeleton variant="text" width="80%" sx={{ mx: "auto" }} />
-          </Box>
-        ) : top3.length ? (
+        {top3.length ? (
           <Stack spacing={1} sx={{ mt: 0.5, alignItems: "center", width: "100%" }}>
             {top3.map((it, idx) => {
               const name = String(it?.name ?? "-");
@@ -213,16 +178,14 @@ export default function KpiSection({
     </Card>
   );
 
-  // 기간 표시(한 곳에서만)
+  // 기간 표시
   const PeriodBar = () => (
     <Box sx={{ display: "flex", mb: 3 }}>
       <Chip
         icon={<DateRangeIcon />}
         variant="outlined"
         label={
-          isLoading
-            ? "기간 계산 중…"
-            : periodStart && periodEnd
+          periodStart && periodEnd
             ? `기간: ${periodStart} ~ ${periodEnd}`
             : "기간: 전체"
         }
@@ -237,12 +200,6 @@ export default function KpiSection({
 
   return (
     <Box sx={{ mb: 3 }}>
-      {errMsg ? (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {errMsg}
-        </Alert>
-      ) : null}
-
       <PeriodBar />
 
       <Grid container spacing={2}>
@@ -251,7 +208,7 @@ export default function KpiSection({
           <StatCard
             icon={<AccessTimeIcon fontSize="small" />}
             title="총 비가동"
-            value={isLoading ? "—" : `${fmtMinutes(Number(kpiSummary?.total ??  0))}시`}
+            value={`${fmtMinutes(Number(kpiSummary?.total ??  0))}시`}
           />
         </Grid>
 
@@ -260,7 +217,7 @@ export default function KpiSection({
           <StatCard
             icon={<FormatListNumberedIcon fontSize="small" />}
             title="건수"
-            value={isLoading ? "—" : fmtNumber(Number(kpiSummary?.count ?? 0))}
+            value={fmtNumber(Number(kpiSummary?.count ?? 0))}
           />
         </Grid>
 
@@ -269,7 +226,7 @@ export default function KpiSection({
           <StatCard
             icon={<TimerIcon fontSize="small" />}
             title="평균 비가동(건당)"
-            value={isLoading ? "—" : `${fmtMinutes(Number(kpiSummary?.avg ?? 0))}분`}
+            value={`${fmtMinutes(Number(kpiSummary?.avg ?? 0))}분`}
           />
         </Grid>
 
@@ -278,13 +235,6 @@ export default function KpiSection({
           <TopListCard />
         </Grid>
       </Grid>
-
-      {isLoading ? (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 2, opacity: 0.7, justifyContent: "center" }}>
-          <CircularProgress size={18} />
-          <Typography variant="caption">KPI를 불러오는 중…</Typography>
-        </Box>
-      ) : null}
     </Box>
   );
 }

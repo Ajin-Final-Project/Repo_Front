@@ -22,6 +22,8 @@ import {
   Divider,
   Collapse,
   MenuItem,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -49,7 +51,7 @@ class DowntimeChart extends Component {
     this.ctrl = { summary: null, monthly: null, pie: null, notes: null, codes: null };
 
     this.state = {
-      pageLoading: false,
+      pageLoading: true,       // ✅ 방법 B: 초기 진입부터 로딩 ON
       pageError: null,
       loading: { summary: false, monthly: false, pie: false, notes: false, codes: false },
       error: { summary: null, monthly: null, pie: null, notes: null, codes: null },
@@ -104,42 +106,46 @@ class DowntimeChart extends Component {
   // ---------- lifecycle ----------
   async componentDidMount() {
     const { uiFilters } = this.state;
-    const codes = await this.fetchItemCodes({
-      press: uiFilters.line,
-      start_work_date: uiFilters.start_work_date,
-      end_work_date: uiFilters.end_work_date,
-    });
-
-    if (!codes || codes.length === 0) {
-      console.warn("⚠️ 자재번호가 없습니다. 초기 로드를 건너뜁니다.");
-      this.setState({
-        chartItemCode: "",
-        itemCodeOptions: [],
-        chartMonths: [],
-        chartSeries: [{ label: "비가동(분)", data: [] }],
-        chartMonthTop3Map: {}, // ✅ 초기화
-        pieData: [],
-        topNotes: [],
-      });
-      return;
-    }
-
-    const preferred = "64312-S8000";
-    const defaultCode = codes.includes(preferred) ? preferred : codes[0];
-    const preferredName = "PNL-DASH";
-    const defaultName = preferred === defaultCode ? preferredName : "";
-
-    await this.setStateAsync({
-      chartItemCode: defaultCode,
-      uiFilters: { ...uiFilters, itemCode: defaultCode, itemName: defaultName },
-      kpiFilters: {
+    this.setState({ pageError: null });         // ✅ 방법 B: 여기서 에러 초기화
+    try {
+      // 1) 품목코드 목록 먼저
+      const codes = await this.fetchItemCodes({
+        press: uiFilters.line,
         start_work_date: uiFilters.start_work_date,
         end_work_date: uiFilters.end_work_date,
-        press: uiFilters.line,
-      },
-    });
+      });
 
-    this.fetchAllSections();
+      if (!codes || codes.length === 0) {
+        // 코드가 없으면 섹션 호출 없이 종료
+        console.warn("⚠️ 자재번호가 없습니다. 초기 섹션 로드를 생략합니다.");
+        return;
+      }
+
+      // 2) 기본 선택 코드 세팅
+      const preferred = "64312-S8000";
+      const defaultCode = codes.includes(preferred) ? preferred : codes[0];
+      const preferredName = "PNL-DASH";
+      const defaultName = preferred === defaultCode ? preferredName : "";
+
+      await this.setStateAsync({
+        chartItemCode: defaultCode,
+        uiFilters: { ...uiFilters, itemCode: defaultCode, itemName: defaultName },
+        kpiFilters: {
+          start_work_date: uiFilters.start_work_date,
+          end_work_date: uiFilters.end_work_date,
+          press: uiFilters.line,
+        },
+      });
+
+      // 3) KPI/Monthly/Pie/Notes 병렬 로드
+      await this.fetchAllSections();
+    } catch (e) {
+      console.error("[componentDidMount]", e);
+      this.setState({ pageError: "데이터를 불러오는 중 오류가 발생했습니다." });
+    } finally {
+      // 4) 페이지 로딩 끝
+      this.setState({ pageLoading: false });
+    }
   }
 
   // ---------- utils ----------
@@ -244,9 +250,9 @@ class DowntimeChart extends Component {
   // ✅ 월별 합계 + (있다면) TOP3까지 수용
   normalizeMonthly = (arr) => {
     // arr 가능성:
-    //  A) [{ym, minutes, top:[{name, minutes}...]}]  ← 확장된 백엔드
-    //  B) [{ym, minutes}]                            ← 기존 백엔드
-    //  C) (구버전 일부) [{ym, name, minutes}]       ← 월·비가동명별 행
+    //  A) [{ym, minutes, top:[{name, minutes}...]}]
+    //  B) [{ym, minutes}]
+    //  C) [{ym, name, minutes}]
     const totals = {};
     const topMap = {};
 
@@ -261,17 +267,15 @@ class DowntimeChart extends Component {
           minutes: Number(t?.minutes ?? 0),
         }));
       } else if (r.name !== undefined) {
-        // 월·비가동명별 행일 경우 총합을 누적
         totals[ym] = (totals[ym] ?? 0) + minutes;
       } else {
-        // 단순 월별 합계 행
         totals[ym] = minutes;
       }
     }
 
     const months = Object.keys(totals).sort();
     const data = months.map((m) => totals[m]);
-    return { months, data, topMap }; // ✅ topMap 동반 반환
+    return { months, data, topMap };
   };
 
   normalizePie = (arr) => {
@@ -378,7 +382,7 @@ class DowntimeChart extends Component {
       this.setState({
         chartMonths: [],
         chartSeries: [{ label: "비가동(분)", data: [] }],
-        chartMonthTop3Map: {}, // ✅ 초기화
+        chartMonthTop3Map: {},
       });
       return;
     }
@@ -404,11 +408,11 @@ class DowntimeChart extends Component {
       );
 
       const rows = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
-      const { months, data, topMap } = this.normalizeMonthly(rows); // ✅ topMap 포함
+      const { months, data, topMap } = this.normalizeMonthly(rows);
       this.setState({
         chartMonths: months,
         chartSeries: [{ label: "비가동(분)", data }],
-        chartMonthTop3Map: topMap || {}, // ✅ 저장
+        chartMonthTop3Map: topMap || {},
       });
     } catch (e) {
       console.error("[fetchMonthly]", e);
@@ -505,14 +509,13 @@ class DowntimeChart extends Component {
     }
   };
 
+  // ✅ 방법 B: pageLoading은 여기서 관리하지 않음
   fetchAllSections = async () => {
-    this.setState({ pageLoading: true, pageError: null });
+    this.setState({ pageError: null });
     try {
       await Promise.all([this.fetchSummary(), this.fetchMonthly(), this.fetchPie(), this.fetchTopNotes()]);
     } catch {
       this.setState({ pageError: "데이터를 불러오는 중 오류가 발생했습니다." });
-    } finally {
-      this.setState({ pageLoading: false });
     }
   };
 
@@ -573,8 +576,7 @@ class DowntimeChart extends Component {
     await this.setStateAsync({
       uiFilters: defaults,
       quickRange: null,
-      chartItemCode: "", // ✅ 품번 초기화
-      // ✅ 차트/파이/비고 데이터도 즉시 비움
+      chartItemCode: "",
       chartMonths: [],
       chartSeries: [{ label: "비가동(분)", data: [] }],
       chartMonthTop3Map: {},
@@ -582,7 +584,6 @@ class DowntimeChart extends Component {
       topNotes: [],
     });
 
-    // 품번 리스트는 갱신하되 자동 선택은 하지 않음
     this.fetchItemCodes({
       press: defaults.line,
       start_work_date: defaults.start_work_date,
@@ -595,7 +596,7 @@ class DowntimeChart extends Component {
 
     let finalItem = uiFilters.itemCode;
     if (!finalItem) {
-      finalItem = ""; // ✅ 품번 없으면 빈 값 유지
+      finalItem = "";
     }
 
     await this.setStateAsync({
@@ -608,10 +609,9 @@ class DowntimeChart extends Component {
     });
 
     if (finalItem) {
-      // ✅ 품번 있을 때만 전체 섹션 로드
-      this.fetchAllSections();
+      // 검색 시에는 페이지 전체 로딩은 켜지지 않고, 각 섹션 개별 로딩으로 처리
+      await this.fetchAllSections();
     } else {
-      // ✅ 품번 없으면 KPI만 새로고침 + 나머지는 비움
       await this.fetchSummary();
       this.setState({
         chartMonths: [],
@@ -635,7 +635,7 @@ class DowntimeChart extends Component {
       error,
       chartMonths,
       chartSeries,
-      chartMonthTop3Map, // ✅
+      chartMonthTop3Map,
       pieData,
       topNotes,
       pageLoading,
@@ -742,7 +742,6 @@ class DowntimeChart extends Component {
               sx={{ backgroundColor: themeHex, color: "white", borderRadius: 1, mb: 2 }}
             />
 
-            {/* 기본 필터 */}
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6} md={2}>
                 <TextField
@@ -981,41 +980,83 @@ class DowntimeChart extends Component {
           </Paper>
         </Box>
 
-        {/* KPI 카드 */}
-        <KpiSection
-          themeHex={themeHex}
-          kpiSummary={kpiSummary}
-          loading={loading}
-          error={error}
-          fmtNumber={this.fmtNumber}
-          fmtMinutes={this.fmtMinutes}
-          pageLoading={pageLoading}
-          pageError={pageError}
-          periodStart={this.state.kpiFilters.start_work_date}
-          periodEnd={this.state.kpiFilters.end_work_date}
-        />
+        {/* 🧱 KPI 섹션: 로딩/에러/정상 */}
+        <Paper elevation={3} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+          {(pageLoading || loading.summary) ? (
+            <Box sx={{ height: 180, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <CircularProgress size={60} sx={{ color: themeHex }} />
+            </Box>
+          ) : (error.summary || pageError) ? (
+            <Box sx={{ p: 2 }}>
+              <Alert severity="error" sx={{ mb: 2 }}>{error.summary || pageError}</Alert>
+              <Button variant="contained" onClick={this.fetchSummary} sx={{ backgroundColor: themeHex }}>
+                다시 시도
+              </Button>
+            </Box>
+          ) : (
+            <KpiSection
+              themeHex={themeHex}
+              kpiSummary={kpiSummary}
+              fmtNumber={this.fmtNumber}
+              fmtMinutes={this.fmtMinutes}
+              periodStart={this.state.kpiFilters.start_work_date}
+              periodEnd={this.state.kpiFilters.end_work_date}
+            />
+          )}
+        </Paper>
 
-        {/* 월별 차트 */}
-        <MonthlySection
-          chartMonths={chartMonths}
-          chartSeries={chartSeries}
-          chartItemCode={chartItemCode}
-          monthTop3Map={chartMonthTop3Map}
-          loading={loading}
-          error={error}
-          themeHex={themeHex}
-          monthValueFormatter={this.monthKeyToLabel}
-          fmtNumber={this.fmtNumber}
-        />
+        {/* 📊 월별 차트: 로딩/에러/정상 */}
+        <Paper elevation={3} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+          {loading.monthly ? (
+            <Box sx={{ height: 320, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <CircularProgress size={60} sx={{ color: themeHex }} />
+            </Box>
+          ) : error.monthly ? (
+            <Box sx={{ p: 2 }}>
+              <Alert severity="error" sx={{ mb: 2 }}>{error.monthly}</Alert>
+              <Button variant="contained" onClick={this.fetchMonthly} sx={{ backgroundColor: themeHex }}>
+                다시 시도
+              </Button>
+            </Box>
+          ) : (
+            <MonthlySection
+              chartMonths={chartMonths}
+              chartSeries={chartSeries}
+              chartItemCode={chartItemCode}
+              monthTop3Map={chartMonthTop3Map}
+              themeHex={themeHex}
+              monthValueFormatter={this.monthKeyToLabel}
+              fmtNumber={this.fmtNumber}
+            />
+          )}
+        </Paper>
 
-        {/* 파이 + 비고 */}
-        <PieAndNotesSection
-          pieData={pieData}
-          topNotes={topNotes}
-          loading={loading}
-          error={error}
-          chartItemCode={chartItemCode}
-        />
+        {/* 🥧 파이 + 비고: 로딩/에러/정상 */}
+        <Paper elevation={3} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+          {(loading.pie || loading.notes) ? (
+            <Box sx={{ minHeight: 320, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <CircularProgress size={60} sx={{ color: themeHex }} />
+            </Box>
+          ) : (error.pie || error.notes) ? (
+            <Box sx={{ p: 2 }}>
+              <Alert severity="error" sx={{ mb: 2 }}>{error.pie || error.notes}</Alert>
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Button variant="contained" onClick={this.fetchPie} sx={{ backgroundColor: themeHex }}>
+                  파이 다시 시도
+                </Button>
+                <Button variant="contained" onClick={this.fetchTopNotes} sx={{ backgroundColor: themeHex }}>
+                  비고 다시 시도
+                </Button>
+              </Box>
+            </Box>
+          ) : (
+            <PieAndNotesSection
+              pieData={pieData}
+              topNotes={topNotes}
+              chartItemCode={chartItemCode}
+            />
+          )}
+        </Paper>
 
         {/* 품목코드 선택 모달 */}
         <ItemCodeModal
@@ -1025,8 +1066,7 @@ class DowntimeChart extends Component {
           selectedItemCode={uiFilters.itemCode}
           plant={uiFilters.plant}
           worker={uiFilters.worker}
-          line={uiFilters.line} 
-          // workplace={uiFilters.line}
+          line={uiFilters.line}
           start_work_date={uiFilters.start_work_date}
           end_work_date={uiFilters.end_work_date}
         />
@@ -1037,5 +1077,5 @@ class DowntimeChart extends Component {
 
 export default connect((state) => ({
   themeHex: selectThemeHex(state),
-  themeKey: selectThemeKey(state),
+  // themeKey: selectThemeKey(state),
 }))(DowntimeChart);

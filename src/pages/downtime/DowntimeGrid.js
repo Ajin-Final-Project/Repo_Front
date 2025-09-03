@@ -68,7 +68,7 @@ class DowntimeGrid extends Component {
       itemCodeModalOpen: false, // 모달 열림/닫힘
 
       downtimeData: [],
-      loading: false,
+      loading: false,           // ⬅️ 기본 false
       error: null,
     };
   }
@@ -154,13 +154,14 @@ class DowntimeGrid extends Component {
         [];
 
       const formatted = this.formatApiData(dataArray);
-      this.setState({ downtimeData: formatted, loading: false });
+      this.setState({ downtimeData: formatted });
     } catch (err) {
       console.error('데이터 로드 중 오류:', err);
       this.setState({
         error: '데이터를 불러오는 중 오류가 발생했습니다.',
-        loading: false,
       });
+    } finally {
+      this.setState({ loading: false });
     }
   };
 
@@ -319,6 +320,9 @@ class DowntimeGrid extends Component {
   render() {
     const { themeHex } = this.props;
     const { filters, filterExpanded, itemCodeModalOpen, quickRange, downtimeData, loading, error } = this.state;
+
+    // 공통 높이(스피너/그리드 영역 동일)
+    const gridHeight = 'calc(100vh - 380px)';
 
     return (
       <Box
@@ -706,34 +710,31 @@ class DowntimeGrid extends Component {
 
         {/* 그리드 */}
         <Paper elevation={3} sx={{ flex: 1, display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
-          {/* ⚠️ DataGrid가 자기 내부 스크롤(세로/가로)을 가지도록 고정 높이 부여 */}
-          <Box sx={{ height: 'calc(100vh - 380px)', width: '100%' }}>
-            {loading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
-                <CircularProgress size={60} sx={{ color: themeHex }} />
-              </Box>
-            )}
-
-            {error && (
-              <Box sx={{ p: 3 }}>
-                <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
-                <Button
-                  variant="contained"
-                  onClick={this.refreshData}
-                  sx={{ backgroundColor: themeHex }}
-                >
-                  다시 시도
-                </Button>
-              </Box>
-            )}
-
-            {!loading && !error && (
+          {/* ⬇️ 로딩/에러/데이터 없음/그리드를 분기 렌더링 (스피너 중요) */}
+          {loading ? (
+            <Box sx={{ height: gridHeight, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
+            </Box>
+          ) : error ? (
+            <Box sx={{ p: 3 }}>
+              <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+              <Button
+                variant="contained"
+                onClick={this.refreshData}
+                sx={{ backgroundColor: themeHex }}
+              >
+                다시 시도
+              </Button>
+            </Box>
+          ) : (downtimeData?.length ?? 0) === 0 ? (
+            <Box sx={{ height: gridHeight, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <Typography color="text.secondary">데이터가 없습니다.</Typography>
+            </Box>
+          ) : (
+            <Box sx={{ height: gridHeight, width: '100%' }}>
               <DataGrid
                 rows={downtimeData}
                 columns={this.columns}
-                // ✅ autoHeight 제거: 내부 스크롤을 DataGrid가 관리
-                // autoHeight
-
                 pagination
                 paginationMode="client"
                 pageSizeOptions={[10, 25, 50, 100]}
@@ -776,8 +777,8 @@ class DowntimeGrid extends Component {
                   },
                 }}
               />
-            )}
-          </Box>
+            </Box>
+          )}
         </Paper>
 
         {/* 품목코드 선택 모달 */}

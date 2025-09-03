@@ -1,8 +1,6 @@
 // MonthlySection.jsx
 import React from "react";
-import {
-  Box, Typography, Paper, CircularProgress, Divider,
-} from "@mui/material";
+import { Box, Typography, Divider } from "@mui/material";
 
 // BarChart 모드
 import { BarChart as MuiBarChart } from "@mui/x-charts/BarChart";
@@ -67,34 +65,34 @@ function makeMonthlyTooltipContent({ chartMonths, seriesData, monthTop3Map, safe
   };
 }
 
-/* ───────── 공통 프레임 ───────── */
-function ChartFrame({ titleColor, chartItemCode, loading, error, children }) {
+/* ───────── 간단 프레임 (부모가 Paper 감쌈) ───────── */
+function ChartFrame({ titleColor, chartItemCode, children }) {
   return (
-    <Paper sx={{ p: 3, mb: 3, borderRadius: "16px" }}>
+    <Box sx={{ p: 1, mb: 1 }}>
       <Typography variant="h6" sx={{ display: "flex", alignItems: "center", gap: 1, color: titleColor, mb: 2 }}>
         <BarChartIcon /> {`${chartItemCode || "-"} · 월별 비가동 합계`}
       </Typography>
       {children}
-      {error?.monthly && <Typography color="error" sx={{ mt: 1 }}>{error.monthly}</Typography>}
-    </Paper>
+    </Box>
   );
 }
 
 /* ───────── ① 기본: BarChart 모드 (권장) ───────── */
 export default function MonthlySection({
   chartMonths, chartSeries, chartItemCode, monthTop3Map = {},
-  loading, error, themeHex = "#f6a04d", monthValueFormatter, fmtNumber,
+  themeHex = "#f6a04d", monthValueFormatter, fmtNumber,
 }) {
   const safeFmtNum = makeSafeFmtNum(fmtNumber);
   const safeFmtMonth = makeSafeFmtMonth(monthValueFormatter);
   const seriesData = chartSeries?.[0]?.data ?? [];
-  if (!chartItemCode) return <Typography>품번을 선택해주세요</Typography>;
+  if (!chartItemCode) return <Typography sx={{ textAlign: "center"}}>품번을 선택해주세요</Typography>;
 
-  const hasData = !loading?.monthly && !error?.monthly && (chartMonths?.length ?? 0) > 0;
+  // 부모에서 로딩/에러를 가림 → 여기선 ‘데이터 유무’만 판단
+  const hasData = (chartMonths?.length ?? 0) > 0 && (seriesData?.length ?? 0) > 0;
 
-  // ⬇️ 라벨이 잘리지 않도록 Y축 상단에 여유를 줍니다(최대값의 +10%)
+  // 라벨 잘림 방지: 상단 여유
   const yMax = Math.max(...seriesData.map((v) => num(v)), 0);
-  const yMaxWithHeadroom = yMax > 0 ? yMax * 1.1 + 1 : 10;
+  const yMaxWithHeadroom = Number.isFinite(yMax) && yMax > 0 ? yMax * 1.1 + 1 : 10;
 
   const MonthlyTooltipContent = makeMonthlyTooltipContent({
     chartMonths, seriesData, monthTop3Map, safeFmtNum, safeFmtMonth,
@@ -111,66 +109,62 @@ export default function MonthlySection({
   );
 
   return (
-    <ChartFrame titleColor={themeHex} chartItemCode={chartItemCode} loading={loading} error={error}>
+    <ChartFrame titleColor={themeHex} chartItemCode={chartItemCode}>
       {hasData ? (
         <MuiBarChart
           xAxis={[{
             id: "months", scaleType: "band", data: chartMonths,
             label: "월", valueFormatter: (v) => safeFmtMonth(v), tickLabelInterval: () => true,
           }]}
-          yAxis={[{ label: "비가동(분)", max: yMaxWithHeadroom }]} 
+          yAxis={[{ label: "비가동(분)", max: yMaxWithHeadroom }]}
           series={[{
             label: "비가동(분)",
             data: seriesData,
             valueFormatter: (v) => `${safeFmtNum(v)}분`,
             color: themeHex,
           }]}
-          // ✅ 막대 꼭대기 바깥에 라벨
           barLabel={(item) => `${safeFmtNum(item.value)}분`}
           barLabelStyle={{ fontSize: 14, fontWeight: 700, fill: "#333", textAnchor: "middle" }}
           barLabelPosition="end"
           height={420}
           margin={{ top: 56, right: 24, bottom: 64, left: 64 }}
           borderRadius={8}
-          // ✅ 커스텀 툴팁 (TOP3 포함)
           slots={{ tooltip: MonthlyTooltip }}
           slotProps={{ tooltip: { trigger: "item" } }}
         />
       ) : (
-        <Box sx={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "text.secondary", gap: 1 }}>
-          {loading?.monthly ? (<><CircularProgress size={18} /> 월별 합계 로딩…</>) : "표시할 데이터가 없습니다."}
+        <Box sx={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "text.secondary" }}>
+          표시할 데이터가 없습니다.
         </Box>
       )}
     </ChartFrame>
   );
 }
 
-/* ───────── ② 선택: v8 조합 모드 ─────────
-   (BarChart에서 레이블이 여전히 안 보이면 이 모드로 전환하세요)
-*/
+/* ───────── ② 선택: v8 조합 모드 ───────── */
 export function MonthlySectionV8({
   chartMonths, chartSeries, chartItemCode, monthTop3Map = {},
-  loading, error, themeHex = "#f6a04d", monthValueFormatter, fmtNumber,
+  themeHex = "#f6a04d", monthValueFormatter, fmtNumber,
 }) {
   const safeFmtNum = makeSafeFmtNum(fmtNumber);
   const safeFmtMonth = makeSafeFmtMonth(monthValueFormatter);
   const seriesData = chartSeries?.[0]?.data ?? [];
   if (!chartItemCode) return <Typography>품번을 선택해주세요</Typography>;
-  const hasData = !loading?.monthly && !error?.monthly && (chartMonths?.length ?? 0) > 0;
+
+  const hasData = (chartMonths?.length ?? 0) > 0 && (seriesData?.length ?? 0) > 0;
 
   const yMax = Math.max(...seriesData.map((v) => num(v)), 0);
-  const yMaxWithHeadroom = yMax > 0 ? yMax * 1.1 + 1 : 10;
+  const yMaxWithHeadroom = Number.isFinite(yMax) && yMax > 0 ? yMax * 1.1 + 1 : 10;
 
   const MonthlyTooltipContent = makeMonthlyTooltipContent({
     chartMonths, seriesData, monthTop3Map, safeFmtNum, safeFmtMonth,
   });
 
-  // 막대 바깥 라벨(클리핑 방지용: 최상단 막대는 살짝 내려 그립니다)
+  // 막대 바깥 라벨
   const OutsideBarLabel = (props) => {
     const { x, y, width, dataIndex } = props;
     const v = num(seriesData?.[dataIndex]);
     const labelX = x + (width ?? 0) / 2;
-    // y가 너무 위(0 근처)이면 12px로 클램프 → clipPath 밖으로 안 나가게
     const labelY = Math.max((y ?? 0) - 6, 12);
     return (
       <text x={labelX} y={labelY} textAnchor="middle" fontSize={14} fontWeight={700} fill="#333">
@@ -180,14 +174,14 @@ export function MonthlySectionV8({
   };
 
   return (
-    <ChartFrame titleColor={themeHex} chartItemCode={chartItemCode} loading={loading} error={error}>
+    <ChartFrame titleColor={themeHex} chartItemCode={chartItemCode}>
       {hasData ? (
         <ChartContainer
           xAxis={[{
             id: "months", scaleType: "band", data: chartMonths,
             label: "월", valueFormatter: (v) => safeFmtMonth(v), tickLabelInterval: () => true,
           }]}
-          yAxis={[{ label: "비가동(분)", max: yMaxWithHeadroom }]}  
+          yAxis={[{ label: "비가동(분)", max: yMaxWithHeadroom }]}
           series={[{
             type: "bar", id: "minutes", label: "비가동(분)", data: seriesData,
             color: themeHex, valueFormatter: (v) => `${safeFmtNum(v)}분`, borderRadius: 8,
@@ -205,8 +199,8 @@ export function MonthlySectionV8({
           />
         </ChartContainer>
       ) : (
-        <Box sx={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "text.secondary", gap: 1 }}>
-          {loading?.monthly ? (<><CircularProgress size={18} /> 월별 합계 로딩…</>) : "표시할 데이터가 없습니다."}
+        <Box sx={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "text.secondary" }}>
+          표시할 데이터가 없습니다.
         </Box>
       )}
     </ChartFrame>
