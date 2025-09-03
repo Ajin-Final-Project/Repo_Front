@@ -2065,7 +2065,7 @@ class Sidebar extends React.Component {
       { key: "downtime", label: "비가동 통계 시스템", link: "/app/downtime/chart", iconKey: "downtime" },
       { key: "inspection", label: "초/중/종품 검사 시스템", link: "/app/inspection/chart", iconKey: "inspection" },
       { key: "admin", label: "관리자 시스템", link: "/admin/users", iconKey: "admin" },
-      { key: "ai", label: "AI 분석 시스템", link: "/app/ai/chart", iconKey: "ai" },
+      { key: "ai", label: "AI 분석 시스템", link: "/app/ai/product-forecast", iconKey: "ai" },
       { key: "email", label: "Email", link: "/app/email", iconKey: "email", badge: 9 },
       { key: "documentation", label: "Documentation", link: "/documentation", iconKey: "documentation", target: "_blank" },
     ];
@@ -2252,7 +2252,7 @@ class Sidebar extends React.Component {
             activeItem={this.props.activeItem}
             header="AI 예측 시뮬레이션"
             isHeader
-            link="/app/ai/chart"
+            link="/app/ai/product-forecast"
             index="ai"
             childrenLinks={[
               { header: "생산량 예측", link: "/app/ai/product-forecast" },
