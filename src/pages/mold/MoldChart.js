@@ -12,7 +12,8 @@ import {
   Legend,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  LabelList
 } from 'recharts';
 import { 
   Box, 
@@ -27,109 +28,98 @@ import {
   FormControl,
   TextField,
   CircularProgress,
-  Alert
+  Alert,
+  Button,
+  IconButton,
+  InputAdornment,
+  Collapse,
+  Divider,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow
 } from '@mui/material';
 import { 
   BarChart as BarChartIcon,
   TrendingUp as TrendingUpIcon,
   Schedule as ScheduleIcon,
   Warning as WarningIcon,
-  PieChart as PieChartIcon
+  PieChart as PieChartIcon,
+  Search as SearchIcon,
+  ExpandLess as ExpandLessIcon,
+  ExpandMore as ExpandMoreIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon
 } from '@mui/icons-material';
 import s from './MoldCleaningChart.module.scss';
 import config from '../../config';
+import ItemCodeModal from '../common/ItemCodeModal';
+
 // API 엔드포인트들
-
-
-
-
 const API_ENDPOINTS = {
   WORK_COUNT: `${config.baseURLApi}/smartFactory/mold-chart/work-count`,
   RUNTIME: `${config.baseURLApi}/smartFactory/mold-chart/runtime`,
   SUMMARIZE: `${config.baseURLApi}/smartFactory/mold-chart/summarize`,
   BREAKDOWN: `${config.baseURLApi}/smartFactory/mold-chart/breakdown`,
   BREAKDOWN_PIE_TOP10: `${config.baseURLApi}/smartFactory/mold-chart/breakdown-pie-top10`,
-  EQUIPMENT_LIST: `${config.baseURLApi}/smartFactory/mold-chart/equipment-list`
+  EQUIPMENT_LIST: `${config.baseURLApi}/smartFactory/mold-chart/equipment-list`,
+  CLEANING_CHECK_LIST: `${config.baseURLApi}/smartFactory/mold-chart/cleaning-ranked`,
+  SHOT_ANALYSIS: `${config.baseURLApi}/smartFactory/mold-chart/shot-analysis`,
 };
 
 class MoldChart extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      selectedYear: new Date().getFullYear(),
-      selectedPress: '1000T',
-      startDate: '2024-01-01',
-      endDate: '2024-12-31',
-      // 막대 그래프용 날짜
-      barStartDate: '2024-01-01',
-      barEndDate: '2024-12-31',
-      // 선 그래프용 날짜
-      lineStartDate: '2024-01-01',
-      lineEndDate: '2024-12-31',
-      // 고장 건수 차트용 날짜
-      breakdownStartDate: '2024-01-01',
-      breakdownEndDate: '2024-12-31',
-      // 설비내역 드롭다운
-      selectedEquipment: '',
+      // 통합된 검색 필터
+      filters: {
+        plant: "아진산업-경산(본사)",
+        worker: "프레스",
+        line: "1500T",
+        itemCode: '',
+        itemName: '',
+        start_date: new Date(new Date().getFullYear(), 0, 1).toLocaleDateString('sv-SE'),
+        end_date: new Date().toLocaleDateString('sv-SE'),
+        equipment_detail: '전체'
+      },
+      filterExpanded: false,
+      quickRange: 'year',
+      itemCodeModalOpen: false,
+      
+      // 차트 데이터
       workCountData: [],
       runtimeData: [],
       breakdownData: [],
       equipmentRankingData: [],
+      cleaningRankedData: [],
+      moldAnalysisData: {},
       summaryData: {},
+      equipmentTypes: [{ 설비내역: '전체' }],
+      selectedMonthDetail:[],
+      
+      // 상태
       loading: false,
-      error: null,
-      years: [],
-      pressTypes: ['1000T', '1200T', '1500T', '1000T PRO'],
-      equipmentTypes: []
+      error: null
     };
   }
 
   componentDidMount() {
-    this.generateYearOptions();
-    this.generateDateRange();
-    this.fetchAllData();
     this.fetchEquipmentList();
+    this.fetchAllData();
   }
 
   componentDidUpdate(prevProps, prevState) {
-    if (prevState.selectedYear !== this.state.selectedYear || 
-        prevState.selectedPress !== this.state.selectedPress ||
-        prevState.startDate !== this.state.startDate ||
-        prevState.endDate !== this.state.endDate ||
-        prevState.barStartDate !== this.state.barStartDate ||
-        prevState.barEndDate !== this.state.barEndDate ||
-        prevState.lineStartDate !== this.state.lineStartDate ||
-        prevState.lineEndDate !== this.state.lineEndDate ||
-        prevState.breakdownStartDate !== this.state.breakdownStartDate ||
-        prevState.breakdownEndDate !== this.state.breakdownEndDate ||
-        prevState.selectedEquipment !== this.state.selectedEquipment) {
+    // 필터가 변경되면 모든 데이터를 다시 가져옴
+    if (
+      prevState.filters.start_date !== this.state.filters.start_date ||
+      prevState.filters.end_date !== this.state.filters.end_date ||
+      prevState.filters.line !== this.state.filters.line ||
+      prevState.filters.itemName !== this.state.filters.itemName ||
+      prevState.filters.equipment_detail !== this.state.filters.equipment_detail
+    ) {
       this.fetchAllData();
     }
-  }
-
-  generateYearOptions = () => {
-    const currentYear = new Date().getFullYear();
-    const years = [];
-    for (let year = currentYear - 5; year <= currentYear + 1; year++) {
-      years.push(year);
-    }
-    this.setState({ years });
-  }
-
-  generateDateRange = () => {
-    const selectedYear = this.state.selectedYear;
-    const startDate = `${selectedYear}-01-01`;
-    const endDate = `${selectedYear}-12-31`;
-    this.setState({ 
-      startDate, 
-      endDate,
-      barStartDate: startDate,
-      barEndDate: endDate,
-      lineStartDate: startDate,
-      lineEndDate: endDate,
-      breakdownStartDate: startDate,
-      breakdownEndDate: endDate
-    });
   }
 
   // 모든 데이터를 가져오는 메서드
@@ -142,7 +132,8 @@ class MoldChart extends Component {
         this.fetchRuntimeData(),
         this.fetchSummaryData(),
         this.fetchBreakdownData(),
-        this.fetchEquipmentRankingData()
+        this.fetchEquipmentRankingData(),
+        this.fetchCleaningRankedData()
       ]);
     } catch (error) {
       console.error('데이터 로드 오류:', error);
@@ -159,8 +150,9 @@ class MoldChart extends Component {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          start_date: this.state.barStartDate,
-          end_date: this.state.barEndDate
+          start_date: this.state.filters.start_date,
+          end_date: this.state.filters.end_date,
+          line: this.state.filters.line
         }),
       });
       
@@ -183,8 +175,9 @@ class MoldChart extends Component {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          start_date: this.state.lineStartDate,
-          end_date: this.state.lineEndDate
+          start_date: this.state.filters.start_date,
+          end_date: this.state.filters.end_date,
+          line: this.state.filters.line
         }),
       });
       
@@ -236,9 +229,9 @@ class MoldChart extends Component {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          equipment_detail: this.state.selectedPress,
-          start_date: this.state.startDate,
-          end_date: this.state.endDate
+          equipment_detail: this.state.filters.line,
+          start_date: this.state.filters.start_date,
+          end_date: this.state.filters.end_date
         }),
       });
       
@@ -264,9 +257,12 @@ class MoldChart extends Component {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          equipment_detail: this.state.selectedEquipment,
-          start_date: this.state.breakdownStartDate,
-          end_date: this.state.breakdownEndDate
+          plant: this.state.filters.plant,
+          worker: this.state.filters.worker,
+          line: this.state.filters.line,
+          itemCd: this.state.filters.itemCode,
+          start_date: this.state.filters.start_date,
+          end_date: this.state.filters.end_date
         }),
       });
       
@@ -275,10 +271,50 @@ class MoldChart extends Component {
       }
       
       const json = await response.json();
+ 
       this.setState({ breakdownData: json.data || json || [] });
+      
     } catch (error) {
       console.error('고장 건수 데이터 로드 오류:', error);
       this.setState({ breakdownData: [] });
+    }
+  }
+
+  // 막대 클릭 시 상세 데이터 가져오기
+  handleBarClick = async (data) => {
+    try {
+      
+      // 데이터가 객체인지 확인하고 필요한 정보 추출
+      const ym = data.ym || data.label;
+      const order_cnt = data.order_cnt || data.value;
+      
+      
+      // 클릭된 월의 상세 데이터를 가져오는 API 호출
+      const response = await fetch(`${config.baseURLApi}/smartFactory/mold-chart/breakdown-detail`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plant: this.state.filters.plant,
+          worker: this.state.filters.worker,
+          line: this.state.filters.line,
+          itemCd: this.state.filters.itemCode,
+          ym: ym, // 클릭된 월
+          start_date: this.state.filters.start_date,
+          end_date: this.state.filters.end_date
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const json = await response.json();
+ 
+      // 여기서 상세 데이터를 처리하거나 모달로 표시할 수 있습니다
+      this.setState({ selectedMonthDetail: json.data });
+      
+    } catch (error) {
+      console.error('상세 데이터 로드 오류:', error);
     }
   }
 
@@ -289,8 +325,8 @@ class MoldChart extends Component {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          start_date: this.state.breakdownStartDate,
-          end_date: this.state.breakdownEndDate
+          start_date: this.state.filters.start_date,
+          end_date: this.state.filters.end_date
         }),
       });
       
@@ -303,6 +339,63 @@ class MoldChart extends Component {
     } catch (error) {
       console.error('설비 순위 데이터 로드 오류:', error);
       this.setState({ equipmentRankingData: [] });
+    }
+  }
+
+  // 금형 세척주기 랭킹 데이터 가져오기
+  fetchCleaningRankedData = async () => {
+    try {
+      const response = await fetch(API_ENDPOINTS.CLEANING_CHECK_LIST, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plant: this.state.filters.plant,
+          worker: this.state.filters.worker,
+          line: this.state.filters.line,
+          itemCd: this.state.filters.itemCode
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const json = await response.json();
+      this.setState({ cleaningRankedData: json.data || [] });
+    } catch (error) {
+      console.error('금형 세척주기 랭킹 데이터 로드 오류:', error);
+      this.setState({ cleaningRankedData: [] });
+    }
+  }
+
+  // 금형 점검 분석 데이터 가져오기
+  fetchMoldAnalysisData = async (moldCode) => {
+    try {
+      const response = await fetch(API_ENDPOINTS.SHOT_ANALYSIS, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mold_code: `${moldCode}`
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const json = await response.json();
+      const analysisData = json.data && json.data.length > 0 ? json.data[0] : {};
+      this.setState({ moldAnalysisData: analysisData });
+    } catch (error) {
+      console.error('금형 점검 분석 데이터 로드 오류:', error);
+      this.setState({ moldAnalysisData: {} });
+    }
+  }
+
+  // 그리드 행 클릭 이벤트 핸들러
+  handleRowClick = (moldCode) => {
+    if (moldCode) {
+      this.fetchMoldAnalysisData(moldCode);
     }
   }
 
@@ -321,90 +414,92 @@ class MoldChart extends Component {
       
       this.setState({ 
         equipmentTypes: allEquipmentList,
-        selectedEquipment: '전체' // 기본값으로 '전체' 설정
+        filters: { ...this.state.filters, equipment_detail: '전체' }
       });
     } catch (error) {
       console.error('설비 목록 데이터 로드 오류:', error);
       this.setState({ 
         equipmentTypes: [{ 설비내역: '전체' }],
-        selectedEquipment: '전체'
+        filters: { ...this.state.filters, equipment_detail: '전체' }
       });
     }
   }
 
-  handleYearChange = (event) => {
-    const newYear = event.target.value;
-    this.setState({ selectedYear: newYear }, () => {
-      this.generateDateRange();
-    });
-  }
+  // 빠른 기간 선택 메서드
+  toYMD = (d) => d.toLocaleDateString('sv-SE'); // YYYY-MM-DD
 
-  handlePressChange = (event) => {
-    this.setState({ selectedPress: event.target.value });
-  }
+  setQuickRange = (type) => {
+    const now = new Date();
+    const today = this.toYMD(now);
 
-  handleStartDateChange = (event) => {
-    this.setState({ startDate: event.target.value });
-  }
+    let start = today;
+    let end = today;
 
-  handleEndDateChange = (event) => {
-    this.setState({ endDate: event.target.value });
-  }
+    if (type === 'today') {
+      // 금일: 오늘~오늘
+      start = today;
+      end = today;
+    } else if (type === 'week') {
+      // 주간: 월요일~오늘 (한국/ISO 기준 월요일 시작)
+      const d = new Date(now);
+      const day = d.getDay();           // 0(일)~6(토)
+      const diffToMonday = (day + 6) % 7; // 월=1 -> 0, 일=0 -> 6
+      d.setDate(d.getDate() - diffToMonday);
+      start = this.toYMD(d);
+      end = today;
+    } else if (type === 'month') {
+      // 월간: 1일~오늘
+      const d = new Date(now.getFullYear(), now.getMonth(), 1);
+      start = this.toYMD(d);
+      end = today;
+    } else if (type === 'year') {
+      // 년간: 1월1일~오늘
+      const d = new Date(now.getFullYear(), 0, 1);
+      start = this.toYMD(d);
+      end = today;
+    }
 
-  handleBarStartDateChange = (event) => {
-    this.setState({ barStartDate: event.target.value });
-  }
+    this.setState(prev => ({
+      quickRange: type,
+      filters: {
+        ...prev.filters,
+        start_date: start,
+        end_date: end,
+      }
+    }));
+  };
 
-  handleBarEndDateChange = (event) => {
-    this.setState({ barEndDate: event.target.value });
-  }
+  toggleFilterExpansion = () => {
+    this.setState(prev => ({ filterExpanded: !prev.filterExpanded }));
+  };
 
-  handleLineStartDateChange = (event) => {
-    this.setState({ lineStartDate: event.target.value });
-  }
+  handleFilterChange = (field, value) => {
+    this.setState(prev => ({
+      filters: { ...prev.filters, [field]: value }
+    }));
+  };
 
-  handleLineEndDateChange = (event) => {
-    this.setState({ lineEndDate: event.target.value });
-  }
+  openItemCodeModal = () => {
+    this.setState({ itemCodeModalOpen: true });
+  };
 
-  handleBreakdownStartDateChange = (event) => {
-    this.setState({ breakdownStartDate: event.target.value });
-  }
+  closeItemCodeModal = () => {
+    this.setState({ itemCodeModalOpen: false });
+  };
 
-  handleBreakdownEndDateChange = (event) => {
-    this.setState({ breakdownEndDate: event.target.value });
-  }
-
-  handleEquipmentChange = (event) => {
-    this.setState({ selectedEquipment: event.target.value });
-  }
-
-  // 데이터 키를 표시 이름으로 변환하는 헬퍼 메서드
-  getDataKeyDisplayName = (dataKey) => {
-    const displayNames = {
-      'plannedRuntime': '계획 가동시간',
-      'actualRuntime': '실제 가동시간',
-      'efficiency': '효율성',
-      'workCount': '작업횟수',
-      'breakdownCount': '고장 건수',
-      'maintenanceCount': '정비 건수',
-      'emergencyCount': '긴급 수리',
-      '1000T': '1000T',
-      '1500T': '1500T',
-      '3000T': '3000T',
-      '1000T PRO': '1000T PRO',
-      'sum_1000T': '1000T',
-      'sum_1500T': '1500T',
-      'sum_1200T': '1200T',
-      'sum_1000T_PRO': '1000T PRO',
-      '월': '월'
-    };
-    
-    return displayNames[dataKey] || dataKey;
-  }
+  handleItemCodeSelect = ({ 품목번호, 품목명 }) => {
+    this.setState(prev => ({
+      filters: {
+        ...prev.filters,
+        itemCode: 품목번호 || '',
+        itemName: 품목명 || '',
+      },
+      itemCodeModalOpen: false, // 선택 후 모달 닫기
+    }));
+  };
 
   renderWorkCountChart = () => {
-    const { workCountData, loading, barStartDate, barEndDate } = this.state;
+    const { workCountData, loading } = this.state;
 
     return (
       <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
@@ -419,66 +514,6 @@ class MoldChart extends Component {
           프레스 월별 작업횟수 
         </Typography>
 
-        {/* 막대 그래프용 날짜 선택 */}
-        <Box sx={{ mb: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #e0e0e0' }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={3}>
-              <Typography variant="body2" sx={{ color: '#333', fontWeight: 600 }}>
-                프레스 작업횟수 기간:
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                type="date"
-                label="시작일"
-                value={barStartDate}
-                onChange={this.handleBarStartDateChange}
-                size="small"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                sx={{
-                  backgroundColor: 'white',
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#ff8f00',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#ff8f00',
-                    },
-                  }
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={1}>
-              <Typography variant="body2" sx={{ color: '#666', textAlign: 'center' }}>
-                ~
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                type="date"
-                label="종료일"
-                value={barEndDate}
-                onChange={this.handleBarEndDateChange}
-                size="small"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                sx={{
-                  backgroundColor: 'white',
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#ff8f00',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#ff8f00',
-                    },
-                  }
-                }}
-              />
-            </Grid>
-          </Grid>
-        </Box>
-
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
             <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
@@ -489,13 +524,17 @@ class MoldChart extends Component {
               데이터가 없습니다.
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              콘솔에서 API 응답을 확인해주세요.
+              품목을 선택해주세요
             </Typography>
           </Box>
         ) : (
           <Box sx={{ height: 400 }}>
+
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={workCountData}>
+              <BarChart 
+                data={workCountData}
+                margin={{ top: 28, right: 16, left: 8, bottom: 8 }}  // ↑ 라벨 공간
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis 
                   dataKey="월" 
@@ -507,8 +546,11 @@ class MoldChart extends Component {
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 12, fill: '#666' }}
+                  allowDecimals={false}
+                  tickFormatter={(v) => (v?.toLocaleString?.() ?? v)}
                 />
                 <Tooltip 
+                  formatter={(v) => (v?.toLocaleString?.() ?? v)}
                   contentStyle={{
                     backgroundColor: 'white',
                     border: '1px solid #e0e0e0',
@@ -517,30 +559,74 @@ class MoldChart extends Component {
                   }}
                 />
                 <Legend />
-                <Bar 
+
+                {this.state.filters.line === '1000T' && (
+                  <Bar dataKey="sum_1000T" fill="#8884d8" radius={[4, 4, 0, 0]} name="1000T" isAnimationActive={false}>
+                    <LabelList
                   dataKey="sum_1000T" 
-                  fill="#8884d8"
-                  radius={[4, 4, 0, 0]}
-                  name="1000T"
-                />
-                <Bar 
+                      position="top"
+                      content={({ x, y, width, value }) => {
+                        if (!value) return null;
+                        return (
+                          <text x={x + width / 2} y={y - 6} textAnchor="middle" fontSize={12} fill="#333">
+                            {Number(value).toLocaleString()}
+                          </text>
+                        );
+                      }}
+                    />
+                  </Bar>
+                )}
+
+                {this.state.filters.line === '1200T' && (
+                  <Bar dataKey="sum_1200T" fill="#82ca9d" radius={[4, 4, 0, 0]} name="1200T" isAnimationActive={false}>
+                    <LabelList
                   dataKey="sum_1200T" 
-                  fill="#82ca9d"
-                  radius={[4, 4, 0, 0]}
-                  name="1200T"
-                />
-                <Bar 
+                      position="top"
+                      content={({ x, y, width, value }) => {
+                        if (!value) return null;
+                        return (
+                          <text x={x + width / 2} y={y - 6} textAnchor="middle" fontSize={12} fill="#333">
+                            {Number(value).toLocaleString()}
+                          </text>
+                        );
+                      }}
+                    />
+                  </Bar>
+                )}
+
+                {this.state.filters.line === '1500T' && (
+                  <Bar dataKey="sum_1500T" fill="#ffc658" radius={[4, 4, 0, 0]} name="1500T" isAnimationActive={false}>
+                    <LabelList
                   dataKey="sum_1500T" 
-                  fill="#ffc658"
-                  radius={[4, 4, 0, 0]}
-                  name="1500T"
-                />
-                <Bar 
+                      position="top"
+                      content={({ x, y, width, value }) => {
+                        if (!value) return null;
+                        return (
+                          <text x={x + width / 2} y={y - 6} textAnchor="middle" fontSize={12} fill="#333">
+                            {Number(value).toLocaleString()}
+                          </text>
+                        );
+                      }}
+                    />
+                  </Bar>
+                )}
+
+                {this.state.filters.line === '1000T-PRO' && (
+                  <Bar dataKey="sum_1000T_PRO" fill="#ff7300" radius={[4, 4, 0, 0]} name="1000T PRO" isAnimationActive={false}>
+                    <LabelList
                   dataKey="sum_1000T_PRO" 
-                  fill="#ff7300"
-                  radius={[4, 4, 0, 0]}
-                  name="1000T PRO"
-                />
+                      position="top"
+                      content={({ x, y, width, value }) => {
+                        if (!value) return null;
+                        return (
+                          <text x={x + width / 2} y={y - 6} textAnchor="middle" fontSize={12} fill="#333">
+                            {Number(value).toLocaleString()}
+                          </text>
+                        );
+                      }}
+                    />
+                  </Bar>
+                )}
               </BarChart>
             </ResponsiveContainer>
           </Box>
@@ -550,7 +636,7 @@ class MoldChart extends Component {
   }
 
   renderRuntimeChart = () => {
-    const { runtimeData, loading, lineStartDate, lineEndDate } = this.state;
+    const { runtimeData, loading } = this.state;
 
     return (
       <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
@@ -564,66 +650,6 @@ class MoldChart extends Component {
           <TrendingUpIcon />
           프레스 가동시간
         </Typography>
-
-        {/* 선 그래프용 날짜 선택 */}
-        <Box sx={{ mb: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #e0e0e0' }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={3}>
-              <Typography variant="body2" sx={{ color: '#333', fontWeight: 600 }}>
-                가동시간 기간:
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                type="date"
-                label="시작일"
-                value={lineStartDate}
-                onChange={this.handleLineStartDateChange}
-                size="small"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                sx={{
-                  backgroundColor: 'white',
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#ff8f00',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#ff8f00',
-                    },
-                  }
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={1}>
-              <Typography variant="body2" sx={{ color: '#666', textAlign: 'center' }}>
-                ~
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                type="date"
-                label="종료일"
-                value={lineEndDate}
-                onChange={this.handleLineStartDateChange}
-                size="small"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                sx={{
-                  backgroundColor: 'white',
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#ff8f00',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#ff8f00',
-                    },
-                  }
-                }}
-              />
-            </Grid>           
-          </Grid>
-        </Box>
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
@@ -663,6 +689,7 @@ class MoldChart extends Component {
                   }}
                 />
                 <Legend />
+                                 {this.state.filters.line === '1000T' && (
                 <Line 
                   type="monotone" 
                   dataKey="1000T" 
@@ -672,6 +699,8 @@ class MoldChart extends Component {
                   dot={{ fill: '#8884d8', strokeWidth: 2, r: 6 }}
                   activeDot={{ r: 8 }}
                 />
+                 )}
+                 {this.state.filters.line === '1200T' && (
                 <Line 
                   type="monotone" 
                   dataKey="1200T" 
@@ -681,6 +710,8 @@ class MoldChart extends Component {
                   dot={{ fill: '#82ca9d', strokeWidth: 2, r: 6 }}
                   activeDot={{ r: 8 }}
                 />
+                 )}
+                 {this.state.filters.line === '1500T' && (
                 <Line 
                   type="monotone" 
                   dataKey="1500T" 
@@ -690,6 +721,8 @@ class MoldChart extends Component {
                   dot={{ fill: '#ffc658', strokeWidth: 2, r: 6 }}
                   activeDot={{ r: 8 }}
                 />
+                 )}
+                 {this.state.filters.line === '1000T-PRO' && (
                 <Line 
                   type="monotone" 
                   dataKey="1000T PRO" 
@@ -699,6 +732,7 @@ class MoldChart extends Component {
                   dot={{ fill: '#ff7300', strokeWidth: 2, r: 6 }}
                   activeDot={{ r: 8 }}
                 />
+                 )}
               </LineChart>
             </ResponsiveContainer>
           </Box>
@@ -708,10 +742,10 @@ class MoldChart extends Component {
   }
 
   renderBreakdownChart = () => {
-    const { breakdownData, loading, breakdownStartDate, breakdownEndDate, selectedEquipment } = this.state;
+    const { breakdownData, loading, equipmentTypes } = this.state;
 
     return (
-      <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+      <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2, height: 500 }}>
         <Typography variant="h6" sx={{ 
                   display: 'flex', 
                   alignItems: 'center', 
@@ -722,96 +756,6 @@ class MoldChart extends Component {
           <WarningIcon />
           월별 금형 고장 건수
         </Typography>
-
-        {/* 고장 건수 차트용 날짜 선택 및 설비 선택 */}
-        <Box sx={{ mb: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #e0e0e0' }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={2}>
-              <Typography variant="body2" sx={{ color: '#333', fontWeight: 600 }}>
-                설비내역:
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={2}>
-              <FormControl size="small" fullWidth>
-                <Select
-                  value={selectedEquipment}
-                  onChange={this.handleEquipmentChange}
-                  sx={{
-                    backgroundColor: 'white',
-                    '& .MuiOutlinedInput-root': {
-                      '&:hover fieldset': {
-                        borderColor: '#ff8f00',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#ff8f00',
-                      },
-                    }
-                  }}
-                >
-                  {this.state.equipmentTypes.map((equipment) => (
-                    <MenuItem key={equipment.설비내역} value={equipment.설비내역}>
-                      {equipment.설비내역}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={1}>
-              <Typography variant="body2" sx={{ color: '#666', textAlign: 'center' }}>
-                기간:
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={2}>
-              <TextField
-                type="date"
-                label="시작일"
-                value={breakdownStartDate}
-                onChange={this.handleBreakdownStartDateChange}
-                size="small"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                sx={{
-                  backgroundColor: 'white',
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#ff8f00',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#ff8f00',
-                    },
-                  }
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={1}>
-              <Typography variant="body2" sx={{ color: '#666', textAlign: 'center' }}>
-                ~
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={2}>
-              <TextField
-                type="date"
-                label="종료일"
-                value={breakdownEndDate}
-                onChange={this.handleBreakdownEndDateChange}
-                size="small"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                sx={{
-                  backgroundColor: 'white',
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#ff8f00',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#ff8f00',
-                    },
-                  }
-                }}
-              />
-            </Grid>
-          </Grid>
-        </Box>
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
@@ -829,7 +773,10 @@ class MoldChart extends Component {
         ) : (
           <Box sx={{ height: 400 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={breakdownData}>
+              <BarChart 
+                data={breakdownData}
+                margin={{ top: 24, right: 16, left: 8, bottom: 8 }}   // ↑ 라벨 공간
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis 
                   dataKey="ym" 
@@ -841,8 +788,11 @@ class MoldChart extends Component {
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 12, fill: '#666' }}
+                  tickFormatter={(v) => v?.toLocaleString?.() ?? v}    // 천단위
+                  allowDecimals={false}
                 />
                 <Tooltip 
+                  formatter={(v) => v?.toLocaleString?.()}
                   contentStyle={{
                     backgroundColor: 'white',
                     border: '1px solid #e0e0e0',
@@ -852,13 +802,40 @@ class MoldChart extends Component {
                 />
                 <Legend />
                 <Bar 
-                  dataKey="고장건수" 
+                  dataKey="order_cnt" 
                   fill="#8884d8"
                   radius={[4, 4, 0, 0]}
                   name="고장 건수"
-                />
+                  isAnimationActive={false}
+                  onClick={(entry, index) => {
+                    // entry.payload에 원본 행이 들어있음
+                    const { ym, order_cnt } = entry?.payload || {};
+                    this.handleBarClick({ ym, order_cnt, index });     // 필요 값만 전달
+                  }}
+                  style={{ cursor: 'pointer' }}
+                  barCategoryGap={20}
+                >
+                  {/* 막대 위 수치 라벨 */}
+                  <LabelList
+                    dataKey="order_cnt"
+                    position="top"
+                    offset={6}
+                    formatter={(v) => (v ? v.toLocaleString() : '')}
+                    // 0이면 표시 안 함 (커스텀)
+                    content={(props) => {
+                      const { x, y, width, value } = props;
+                      if (!value) return null;
+                      return (
+                        <text x={x + width / 2} y={y - 6} textAnchor="middle" fontSize={12} fill="#333">
+                          {Number(value).toLocaleString()}
+                        </text>
+                      );
+                    }}
+                  />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
+
           </Box>
         )}
       </Paper>
@@ -866,7 +843,7 @@ class MoldChart extends Component {
   }
 
   renderEquipmentRankingChart = () => {
-    const { equipmentRankingData, loading, breakdownStartDate, breakdownEndDate } = this.state;
+    const { equipmentRankingData, loading } = this.state;
 
     return (
       <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
@@ -880,66 +857,6 @@ class MoldChart extends Component {
           <PieChartIcon />
           고장점검 설비 순위 top10
         </Typography>
-
-        {/* 설비 순위 차트용 날짜 선택 */}
-        <Box sx={{ mb: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #e0e0e0' }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={3}>
-              <Typography variant="body2" sx={{ color: '#333', fontWeight: 600 }}>
-                설비 순위 기간:
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                type="date"
-                label="시작일"
-                value={breakdownStartDate}
-                onChange={this.handleBreakdownStartDateChange}
-                size="small"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                sx={{
-                  backgroundColor: 'white',
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#ff8f00',
-                    },
-                    '&:focus fieldset': {
-                      borderColor: '#ff8f00',
-                    },
-                  }
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={1}>
-              <Typography variant="body2" sx={{ color: '#666', textAlign: 'center' }}>
-                ~
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                type="date"
-                label="종료일"
-                value={breakdownEndDate}
-                onChange={this.handleBreakdownEndDateChange}
-                size="small"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                sx={{
-                  backgroundColor: 'white',
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#ff8f00',
-                    },
-                    '&:focus fieldset': {
-                      borderColor: '#ff8f00',
-                    },
-                  }
-                }}
-              />
-            </Grid>
-          </Grid>
-        </Box>
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
@@ -965,6 +882,8 @@ class MoldChart extends Component {
                   labelLine={false}
                   label={({ 설비내역, 비율퍼센트 }) => `${설비내역} ${비율퍼센트}%`}
                   outerRadius={120}
+                  innerRadius={40}
+                  paddingAngle={3}
                   fill="#8884d8"
                   dataKey="설비횟수"
                 >
@@ -989,14 +908,13 @@ class MoldChart extends Component {
     );
   }
 
-  renderSummaryCards = () => {
-    const { summaryData, selectedPress, startDate, endDate } = this.state;
+  // 선택된 월의 상세 데이터를 테이블로 표시
+  renderSelectedMonthDetail = () => {
+    const { selectedMonthDetail } = this.state;
     
-    // summaryData가 배열인 경우 첫 번째 요소를 사용
-    const data = Array.isArray(summaryData) && summaryData.length > 0 ? summaryData[0] : summaryData;
-    
+        if (!selectedMonthDetail || selectedMonthDetail.length === 0) {
     return (
-      <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+        <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2, height: 500 }}>
         <Typography variant="h6" sx={{ 
                   display: 'flex', 
                   alignItems: 'center', 
@@ -1004,92 +922,328 @@ class MoldChart extends Component {
                   color: '#ffb300',
                   mb: 2
                 }}>
-                  <ScheduleIcon />
-                  프레스 요약정보
+            <WarningIcon />
+            월별 상세 데이터
                 </Typography>
-        {/* 프레스 선택 및 기간 선택 */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <FormControl fullWidth size="small">
-              <Typography variant="body2" sx={{ mb: 1, color: '#333', fontWeight: 600 }}>
-                프레스 선택:
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
+            <Typography variant="body1" color="text.secondary">
+              막대그래프에서 월을 클릭하여 상세 데이터를 확인하세요.
               </Typography>
-              <Select
-                value={selectedPress}
-                onChange={this.handlePressChange}
-                sx={{
-                  backgroundColor: 'white',
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#ff8f00',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#ff8f00',
-                    },
-                  }
+          </Box>
+        </Paper>
+      );
+    }
+
+        return (
+      <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2, height: 500 }}>
+        <Typography variant="h6" sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  color: '#ffb300',
+                  mb: 2
+                }}>
+          <WarningIcon />
+          월별 상세 데이터 ({selectedMonthDetail[0]?.ym}월)
+            </Typography>
+
+        <TableContainer sx={{ height: 300 }}>
+          <Table stickyHeader size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold' }}>설비내역</TableCell>
+                <TableCell sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold' }}>오더내역</TableCell>
+                <TableCell sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold' }}>오더번호</TableCell>
+                <TableCell sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold' }}>통지번호</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {selectedMonthDetail.map((row, index) => (
+                <TableRow key={index} hover>
+                  <TableCell>{row.설비내역 || '-'}</TableCell>
+                  <TableCell>{row.오더내역 || '-'}</TableCell>
+                  <TableCell>{row.오더번호 || '-'}</TableCell>
+                  <TableCell>{row.통지번호 || '-'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+    );
+  }
+
+  // 금형 세척주기 랭킹 그리드를 렌더링하는 메서드
+  renderCleaningRankedGrid = () => {
+    const { cleaningRankedData } = this.state;
+    
+    return (
+      <Paper 
+              sx={{
+          p: 3, 
+          height: 420,
+          borderRadius: '12px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+        }}
+      >
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#1976d2' }}>
+          금형 세척주기 랭킹
+        </Typography>
+        
+        {cleaningRankedData.length > 0 ? (
+          <TableContainer sx={{ height: 300 }}>
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>자재명</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>설비내역</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>금형번호</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {cleaningRankedData.map((row, index) => (
+                  <TableRow 
+                    key={index} 
+                    hover 
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      this.handleRowClick(row.금형번호);
+                    }}
+                    sx={{ cursor: 'pointer' }}
+                  >
+                    <TableCell>{row.자재명 || '-'}</TableCell>
+                    <TableCell>{row.설비내역 || '-'}</TableCell>
+                    <TableCell>{row.금형번호 || '-'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ) : (
+          <Box sx={{ 
+            height: 300, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            color: '#666'
+          }}>
+            <Typography>데이터가 없습니다</Typography>
+          </Box>
+        )}
+      </Paper>
+    );
+  }
+
+  // 금형 점검 분석 파이차트와 요약카드를 렌더링하는 메서드
+  renderMoldAnalysis = () => {
+    const { moldAnalysisData } = this.state;
+    
+    // 파이차트 데이터 준비
+    const progressRate = moldAnalysisData['진행률(%)'] || 0;
+    const pieData = [
+      { name: '소모한 점검타수', value: progressRate, fill: '#8884d8' },
+      { name: '남은 점검타수', value: 100 - progressRate, fill: '#e0e0e0' }
+    ];
+
+    return (
+      <Paper 
+        sx={{ 
+          p: 3, 
+          height: 420,
+          borderRadius: '12px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+        }}
+      >
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#1976d2' }}>
+          진행률 분석
+        </Typography>
+        
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
+          {/* 파이차트와 총점검수 */}
+          <Box sx={{ display: 'flex', gap: 2, height: 200 }}>
+            {/* 파이차트 */}
+            <Box sx={{ flex: 1 }}>
+              {Object.keys(moldAnalysisData).length > 0 && progressRate > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={60}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value) => [`${value}%`, '진행률']}
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: '1px solid #ccc',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <Box sx={{ 
+                  height: '100%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  color: '#666'
+                }}>
+                  <Typography>그리드에서 행을 클릭하여 분석 데이터를 확인하세요</Typography>
+                </Box>
+              )}
+            </Box>
+
+            {/* 총점검수 카드 */}
+            <Box sx={{ width: 120, display: 'flex', alignItems: 'center' }}>
+              <Paper 
+                sx={{ 
+                  p: 2, 
+                  width: '100%',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  backgroundColor: '#f8f9fa',
+                  textAlign: 'center'
                 }}
               >
-                {this.state.pressTypes.map((press) => (
-                  <MenuItem key={press} value={press}>
-                    {press}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
+                <Typography variant="caption" sx={{ color: '#666', display: 'block', mb: 1 }}>
+                  총 점검수
+                </Typography>
+                <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                  {moldAnalysisData['총 점검수'] || '-'}
+                </Typography>
+              </Paper>
+            </Box>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Typography variant="body2" sx={{ mb: 1, color: '#333', fontWeight: 600 }}>
-              시작일:
-            </Typography>
-            <TextField
-              type="date"
-              value={startDate}
-              onChange={this.handleStartDateChange}
-              size="small"
-              fullWidth
-              sx={{
-                backgroundColor: 'white',
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: '#ff8f00',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#ff8f00',
-                  },
-                }
+          {/* 80%, 90% 대비 비율/수치를 한줄로 */}
+          <Box sx={{ display: 'flex', gap: 1.5, height: 120 }}>
+            <Paper 
+              sx={{ 
+                p: 2, 
+                flex: 1,
+                height: '100%',
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                backgroundColor: '#f8f9fa',
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center'
               }}
-            />
-          </Grid>
+            >
+              <Typography variant="caption" sx={{ color: '#666', display: 'block', mb: 1 }}>
+                80% 대비 비율
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#4caf50' }}>
+                {moldAnalysisData['80프로대비비율(%)'] ? `${moldAnalysisData['80프로대비비율(%)']}%` : '-'}
+              </Typography>
+            </Paper>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Typography variant="body2" sx={{ mb: 1, color: '#333', fontWeight: 600 }}>
-              종료일:
-            </Typography>
-            <TextField
-              type="date"
-              value={endDate}
-              onChange={this.handleEndDateChange}
-              size="small"
-              fullWidth
-              sx={{
-                backgroundColor: 'white',
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: '#ff8f00',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#ff8f00',
-                  },
-                }
+            <Paper 
+              sx={{ 
+                p: 2, 
+                flex: 1,
+                height: '100%',
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                backgroundColor: '#f8f9fa',
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center'
               }}
-            />
-          </Grid>
-        </Grid>
+            >
+              <Typography variant="caption" sx={{ color: '#666', display: 'block', mb: 1 }}>
+                80% 대비 수치
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#4caf50' }}>
+                {moldAnalysisData['80프로대비수치'] || '-'}
+              </Typography>
+            </Paper>
 
-        {/* 요약 카드들 */}
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={6} md={3}>
+            <Paper 
+              sx={{ 
+                p: 2, 
+                flex: 1,
+                height: '100%',
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                backgroundColor: '#f8f9fa',
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center'
+              }}
+            >
+              <Typography variant="caption" sx={{ color: '#666', display: 'block', mb: 1 }}>
+                90% 대비 비율
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#ff9800' }}>
+                {moldAnalysisData['90프로대비비율(%)'] ? `${moldAnalysisData['90프로대비비율(%)']}%` : '-'}
+              </Typography>
+            </Paper>
+
+            <Paper 
+              sx={{ 
+                p: 2, 
+                flex: 1,
+                height: '100%',
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                backgroundColor: '#f8f9fa',
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center'
+              }}
+            >
+              <Typography variant="caption" sx={{ color: '#666', display: 'block', mb: 1 }}>
+                90% 대비 수치
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#ff9800' }}>
+                {moldAnalysisData['90프로대비수치'] || '-'}
+              </Typography>
+            </Paper>
+          </Box>
+        </Box>
+      </Paper>
+    );
+  }
+
+        renderSummaryCards = () => {
+    const { summaryData } = this.state;
+    
+    // summaryData가 배열인 경우 첫 번째 요소를 사용
+    const data = Array.isArray(summaryData) && summaryData.length > 0 ? summaryData[0] : summaryData;
+    
+    return (
+      <Paper elevation={3} sx={{ p: 2, mb: 3, borderRadius: 2, height: 500 }}>
+        <Typography variant="subtitle1" sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  color: '#ffb300',
+                  mb: 1.5,
+                  fontSize: '0.9rem'
+                }}>
+                  <ScheduleIcon sx={{ fontSize: '1.2rem' }} />
+                  프레스 요약정보
+                </Typography>
+
+                 {/* 요약 카드들을 세로로 배치 */}
+         <Grid container spacing={1.5}>
+           <Grid item xs={12}>
             <Card elevation={2} sx={{ 
               borderRadius: 2,
               '&:hover': {
@@ -1097,18 +1251,18 @@ class MoldChart extends Component {
                 transition: 'all 0.2s ease-in-out'
               }
             }}>
-              <CardContent sx={{ textAlign: 'center', p: 2 }}>
-                <Typography variant="h4" sx={{ color: '#4CAF50', fontWeight: 'bold', mb: 1 }}>
-                  {data.avg_작업횟수 ? Math.round(data.avg_작업횟수).toLocaleString() : 0}
+               <CardContent sx={{ textAlign: 'center', p: 1.5 }}>
+                 <Typography variant="h5" sx={{ color: '#4CAF50', fontWeight: 'bold', mb: 0.5 }}>
+                   {data.avg_작업횟수 ? Math.round(data.avg_작업횟수).toLocaleString() : 0}
                 </Typography>
-                <Typography variant="body2" sx={{ color: '#666', textTransform: 'uppercase' }}>
-                  {selectedPress} 평균 작업횟수
+                 <Typography variant="caption" sx={{ color: '#666', textTransform: 'uppercase', fontSize: '0.7rem' }}>
+                   평균 작업횟수
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
+           <Grid item xs={12}>
             <Card elevation={2} sx={{ 
               borderRadius: 2,
               '&:hover': {
@@ -1116,50 +1270,12 @@ class MoldChart extends Component {
                 transition: 'all 0.2s ease-in-out'
               }
             }}>
-              <CardContent sx={{ textAlign: 'center', p: 2 }}>
-                <Typography variant="h4" sx={{ color: '#FF9800', fontWeight: 'bold', mb: 1 }}>
-                  {data.avg_가동시간 ? Math.round(data.avg_가동시간).toLocaleString() : 0}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#666', textTransform: 'uppercase' }}>
-                  평균 가동시간 (분)
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card elevation={2} sx={{ 
-              borderRadius: 2,
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                transition: 'all 0.2s ease-in-out'
-              }
-            }}>
-              <CardContent sx={{ textAlign: 'center', p: 2 }}>
-                <Typography variant="h4" sx={{ color: '#2196F3', fontWeight: 'bold', mb: 1 }}>
+               <CardContent sx={{ textAlign: 'center', p: 1.5 }}>
+                 <Typography variant="h5" sx={{ color: '#2196F3', fontWeight: 'bold', mb: 0.5 }}>
                   {data.sum_작업횟수 ? data.sum_작업횟수.toLocaleString() : 0}
                 </Typography>
-                <Typography variant="body2" sx={{ color: '#666', textTransform: 'uppercase' }}>
+                 <Typography variant="caption" sx={{ color: '#666', textTransform: 'uppercase', fontSize: '0.7rem' }}>
                   총 작업횟수
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card elevation={2} sx={{ 
-              borderRadius: 2,
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                transition: 'all 0.2s ease-in-out'
-              }
-            }}>
-              <CardContent sx={{ textAlign: 'center', p: 2 }}>
-                <Typography variant="h4" sx={{ color: '#9C27B0', fontWeight: 'bold', mb: 1 }}>
-                  {data.sum_가동시간 ? Math.round(data.sum_가동시간).toLocaleString() : 0}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#666', textTransform: 'uppercase' }}>
-                  총 가동시간 (분)
                 </Typography>
               </CardContent>
             </Card>
@@ -1170,7 +1286,7 @@ class MoldChart extends Component {
   }
 
   render() {
-    const { selectedYear, years, error } = this.state;
+    const { filters, filterExpanded, error } = this.state;
 
     return (
       <Box className={s.root} sx={{
@@ -1198,29 +1314,299 @@ class MoldChart extends Component {
           </Typography>
         </Box>
 
-       
-        {/* 차트들 */}
-        <Grid container spacing={3}>
-          <Grid item xs={12} lg={6}>
-            {this.renderWorkCountChart()}
+        {/* 검색 필터 섹션 */}
+        <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+          {/* 필터 섹션의 헤더 */}
+          <CardHeader
+            title={
+              <Typography
+                variant="h6"
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  color: 'white',
+                }}
+              >
+                <SearchIcon />
+                검색 조건
+              </Typography>
+            }
+            action={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                {/* 빠른 기간 버튼 */}
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    size="small"
+                    variant={this.state.quickRange === 'today' ? 'contained' : 'outlined'}
+                    onClick={() => this.setQuickRange('today')}
+                    sx={{
+                      borderColor: 'white',
+                      color: 'white',
+                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+                    }}
+                  >
+                    금일
+                  </Button>
+                  <Button
+                    size="small"
+                    variant={this.state.quickRange === 'week' ? 'contained' : 'outlined'}
+                    onClick={() => this.setQuickRange('week')}
+                    sx={{
+                      borderColor: 'white',
+                      color: 'white',
+                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+                    }}
+                  >
+                    주간
+                  </Button>
+                  <Button
+                    size="small"
+                    variant={this.state.quickRange === 'month' ? 'contained' : 'outlined'}
+                    onClick={() => this.setQuickRange('month')}
+                    sx={{
+                      borderColor: 'white',
+                      color: 'white',
+                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+                    }}
+                  >
+                    월간
+                  </Button>
+                  <Button
+                    size="small"
+                    variant={this.state.quickRange === 'year' ? 'contained' : 'outlined'}
+                    onClick={() => this.setQuickRange('year')}
+                    sx={{
+                      borderColor: 'white',
+                      color: 'white',
+                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+                    }}
+                  >
+                    년간
+                  </Button>
+                </Box>
+
+                {/* 구분자 파이프(옵션) */}
+                <Typography sx={{ color: 'white', opacity: 0.8, mx: 0.5 }}>|</Typography>
+
+                {/* 기간선택 + 날짜 필드 */}
+                <Typography sx={{ color: 'white' }}>기간선택</Typography>
+                <TextField
+                  type="date"
+                  value={filters.start_date}
+                  onChange={(e) => this.handleFilterChange('start_date', e.target.value)}
+                  size="small"
+                  variant="outlined"
+                  sx={{ backgroundColor: 'white', borderRadius: 1, minWidth: 150 }}
+                />
+                <Typography sx={{ color: 'white' }}>~</Typography>
+                <TextField
+                  type="date"
+                  value={filters.end_date}
+                  onChange={(e) => this.handleFilterChange('end_date', e.target.value)}
+                  size="small"
+                  variant="outlined"
+                  sx={{ backgroundColor: 'white', borderRadius: 1, minWidth: 150 }}
+                />
+
+                {/* 확장/축소 버튼 */}
+                <IconButton onClick={this.toggleFilterExpansion} sx={{ color: 'white' }}>
+                  {filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                </IconButton>
+              </Box>
+            }
+            sx={{
+              backgroundColor: '#ff8f00',
+              color: 'white',
+              borderRadius: 1,
+              mb: 2,
+            }}
+          />
+
+          {/* 기본 필터 (8개) - 항상 보이는 주요 검색 필드들 */}
+          <Grid container spacing={2}>
+            {/* 공장 */}
+            <Grid item xs={12} sm={6} md={2}>
+              <TextField
+                select                     
+                fullWidth
+                label="공장"
+                value={filters.plant ?? ''}
+                onChange={(e) => this.handleFilterChange('plant', e.target.value)}
+                size="small"
+                variant="outlined"
+                SelectProps={{ MenuProps: { PaperProps: { sx: { maxHeight: 280 } } } }}
+              >
+                <MenuItem value="아진산업-경산(본사)">아진산업-본사(경산)</MenuItem>
+                <MenuItem value="아진산업-1공장(경산)">아진산업-1공장(경산)</MenuItem>
+                <MenuItem value="아진산업-구어공장(경주)">아진산업-구어공장(경주)</MenuItem>
+                <MenuItem value="아진산업-하양공장(예정)">아진산업-하양공장(예정)</MenuItem>
+              </TextField>
           </Grid>
-          <Grid item xs={12} lg={6}>
-            {this.renderRuntimeChart()}
+
+            {/* 작업장 */}
+            <Grid item xs={12} sm={6} md={2}>
+              <TextField
+                select
+                fullWidth
+                label="작업장"
+                value={filters.worker}
+                onChange={(e) => this.handleFilterChange('worker', e.target.value)}
+                size="small"
+                variant="outlined"
+               >
+                <MenuItem value="프레스">프레스</MenuItem>
+                <MenuItem value="금형">금형</MenuItem>
+                <MenuItem value="블랭크">블랭크</MenuItem>
+              </TextField>
           </Grid>
+
+            {/* 작업자 */}
+            <Grid item xs={12} sm={6} md={2}>
+              <TextField
+                select
+                fullWidth
+                label="작업자"
+                value={filters.line}
+                onChange={(e) => this.handleFilterChange('line', e.target.value)}
+                size="small"
+                variant="outlined"
+              >
+                <MenuItem value="1500T">1500T(E라인) </MenuItem>
+                <MenuItem value="1200T">1200T(D라인)</MenuItem>
+                <MenuItem value="1000T">1000T(F라인)</MenuItem>
+                <MenuItem value="1000T-PRO">1000T-PRO(G라인)</MenuItem>
+              </TextField>
         </Grid>
 
-        {/* 요약 카드들 (그래프 밑에 배치) */}
-        {this.renderSummaryCards()}
+            <Grid item xs={12} sm={6} md={2}>
+              <TextField
+                fullWidth
+                label="품목코드"
+                value={filters.itemCode}
+                onClick={this.openItemCodeModal}
+                size="small"
+                variant="outlined"
+                InputProps={{
+                  readOnly: true,
+                  style: { cursor: 'pointer' },
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
+                    </InputAdornment>
+                  )
+                }}
+                sx={{
+                  '& .MuiInputBase-root': {
+                    cursor: 'pointer',
+                    '&:hover': { backgroundColor: '#f5f5f5' }
+                  }
+                }}
+              />
+            </Grid>
 
-        {/* 하단 차트들 */}
+            <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                fullWidth
+                label="품목명"
+                value={filters.itemName}
+                onClick={this.openItemCodeModal}
+                size="small"
+                variant="outlined"
+                InputProps={{
+                  readOnly: true,
+                  style: { cursor: 'pointer' },
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
+                    </InputAdornment>
+                  )
+                }}
+                sx={{
+                  '& .MuiInputBase-root': {
+                    cursor: 'pointer',
+                    '&:hover': { backgroundColor: '#f5f5f5' }
+                  }
+                }}
+              />
+            </Grid>
+          </Grid>
+
+          {/* 확장된 필터 - 화살표 클릭 시 펼쳐지는 추가 검색 필드들 */}
+          <Collapse in={filterExpanded} timeout="auto" unmountOnExit>
+            {/* 구분선 추가 */}
+            <Divider sx={{ my: 2 }} />
+            
+            <Grid container spacing={2}>
+              {/* 설비내역 선택 */}
+              <Grid item xs={12} sm={6} md={3}>
+                <FormControl size="small" fullWidth>
+                  <TextField
+                    select
+                    label="설비내역"
+                    value={filters.equipment_detail}
+                    onChange={(e) => this.handleFilterChange('equipment_detail', e.target.value)}
+                    size="small"
+                    variant="outlined"
+                  >
+                    {this.state.equipmentTypes.map((equipment) => (
+                      <MenuItem key={equipment.설비내역} value={equipment.설비내역}>
+                        {equipment.설비내역}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </FormControl>
+              </Grid>
+            </Grid>
+          </Collapse>
+        </Paper>
+
         <Grid container spacing={3}>
           <Grid item xs={12} lg={6}>
             {this.renderBreakdownChart()}
           </Grid>
           <Grid item xs={12} lg={6}>
+             {this.renderSelectedMonthDetail()}
+          </Grid>
+        </Grid>
+
+        {/* 차트들 */}
+
+
+                        {/* 프레스 작업횟수, 가동시간, 요약정보를 한 줄로 배치 */}
+        <Grid container spacing={3}>
+           <Grid item xs={12} lg={5}>
+             {this.renderWorkCountChart()}
+           </Grid>
+           <Grid item xs={12} lg={5}>
+             {this.renderRuntimeChart()}
+           </Grid>
+           <Grid item xs={12} lg={2}>
+        {this.renderSummaryCards()}
+           </Grid>
+         </Grid>
+
+                  {/* 금형 세척주기 랭킹 그리드와 분석 차트 */}
+         <Grid container spacing={3}>
+           <Grid item xs={12} lg={7}>
+            {this.renderCleaningRankedGrid()}
+          </Grid>
+          <Grid item xs={12} lg={5}>
+            {this.renderMoldAnalysis()}
+          </Grid>
+        </Grid>
+
+        {/* 세로 간격 추가 */}
+        <Box sx={{ mt: 4 }} />
+
+         {/* 고장점검 설비 순위 Top10 - 맨 아래로 이동 */}
+         <Grid container spacing={3}>
+           <Grid item xs={12}>
             {this.renderEquipmentRankingChart()}
           </Grid>
         </Grid>
+
+
 
         {/* 에러 메시지 */}
         {error && (
@@ -1228,6 +1614,17 @@ class MoldChart extends Component {
             <Alert severity="error">{error}</Alert>
           </Box>
         )}
+
+        {/* 품목 코드 선택 모달 */}
+        <ItemCodeModal
+          open={this.state.itemCodeModalOpen}
+          onClose={this.closeItemCodeModal}
+          onSelect={this.handleItemCodeSelect}
+          selectedItemCode={this.state.filters.itemCode}
+          plant={this.state.filters.plant}
+          worker={this.state.filters.worker}
+          line={this.state.filters.line}
+        />
       </Box>
     );
   }
