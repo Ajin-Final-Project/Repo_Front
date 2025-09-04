@@ -15,6 +15,7 @@ import {
   Collapse,
   CircularProgress,
   Alert,
+  MenuItem,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import {
@@ -23,10 +24,14 @@ import {
   FilterList as FilterIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon,
 } from '@mui/icons-material';
 import s from './DowntimeGrid.module.scss';
-
-const API_BASE = process.env.REACT_APP_API_BASE;
+import config from "../../config";
+// ⬇️ 품목코드 선택 모달
+import ItemCodeModal from '../common/ItemCodeModal';
+import { connect } from "react-redux";
+import { selectThemeHex, selectThemeKey } from "../../reducers/layout";
 
 class DowntimeGrid extends Component {
   constructor(props) {
@@ -34,21 +39,36 @@ class DowntimeGrid extends Component {
     this.state = {
       // 검색 필터
       filters: {
-        start_work_date: new Date(new Date().getFullYear(), 0, 1).toLocaleDateString('sv-SE'),
-        end_work_date: new Date().toLocaleDateString('sv-SE'),
-        plant: '',
-        worker: '',
-        workplace: '',
-        itemCode: '',
-        carModel: '',
-        downtimeCode: '',
-        downtimeName: '',
+        start_work_date: "2025-06-01",
+        end_work_date: "2025-06-30",
+
+        // 기본 필터
+        plant: "아진산업-경산(본사)",
+        workerplace: "프레스",
+        line: "1500T",
+        itemCode: "",
+
+        // 확장 필터
+        carModel: "",
+        downtimeCode: "",
+        downtimeName: "",
         downtimeMinutes: null,
-        note: '',
+        note: "",
+
+        // 추가 필터
+        shift: "",
+        productName: "",
+        itemType: "",
+        categoryMain: "",
+        categorySub: "",
       },
+
+      quickRange: null,         // 금일/주간/월간/년간
       filterExpanded: false,
+      itemCodeModalOpen: false, // 모달 열림/닫힘
+
       downtimeData: [],
-      loading: false,
+      loading: false,           // ⬅️ 기본 false
       error: null,
     };
   }
@@ -57,11 +77,67 @@ class DowntimeGrid extends Component {
     this.fetchDowntimeData();
   }
 
+  // ---------- 유틸 ----------
+  toYMD = (d) => {
+    if (!d) return "";
+    const dt = d instanceof Date ? d : new Date(d);
+    return dt.toLocaleDateString("sv-SE"); // YYYY-MM-DD
+  };
+
+  setQuickRange = (type) => {
+    const now = new Date();
+    const today = this.toYMD(now);
+
+    let start = today;
+    let end = today;
+
+    if (type === 'today') {
+      start = today; end = today;
+    } else if (type === 'week') {
+      const d = new Date(now);
+      const day = d.getDay();                 // 0(일)~6(토)
+      const diffToMonday = (day + 6) % 7;     // 월=0, 일=6
+      d.setDate(d.getDate() - diffToMonday);  // 월요일
+      start = this.toYMD(d);
+      end = today;
+    } else if (type === 'month') {
+      const d = new Date(now.getFullYear(), now.getMonth(), 1);
+      start = this.toYMD(d);
+      end = today;
+    } else if (type === 'year') {
+      const d = new Date(now.getFullYear(), 0, 1);
+      start = this.toYMD(d);
+      end = today;
+    }
+
+    this.setState((prev) => ({
+      quickRange: type,
+      filters: { ...prev.filters, start_work_date: start, end_work_date: end },
+      downtimeData: [], // 선택 즉시 기존 데이터 초기화(옵션)
+    }));
+  };
+
+  // ---------- 모달 ----------
+  openItemCodeModal = () => this.setState({ itemCodeModalOpen: true });
+  closeItemCodeModal = () => this.setState({ itemCodeModalOpen: false });
+  handleItemCodeSelect = ({ 품목번호, 품목명 }) => {
+    this.setState((prev) => ({
+      filters: {
+        ...prev.filters,
+        itemCode: 품목번호 || "",
+        itemName: 품목명 || "",
+      },
+      itemCodeModalOpen: false,
+      downtimeData: [],
+    }));
+  };
+
+  // ---------- API ----------
   fetchDowntimeData = async () => {
     this.setState({ loading: true, error: null });
     try {
       const requestBody = { ...this.state.filters };
-      const response = await fetch(`${API_BASE}/smartFactory/downtime_grid/list`, {
+      const response = await fetch(`${config.baseURLApi}/smartFactory/downtime_grid/list`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
@@ -71,44 +147,27 @@ class DowntimeGrid extends Component {
 
       const json = await response.json();
 
-      // ── 원본 응답 로깅 ─────────────────────────────────────────────
-      console.log('[RAW json]', json);
-
-      // 다양한 응답 형태에 대비하여 배열을 안전하게 추출
       const dataArray =
         (Array.isArray(json) && json) ||
         (Array.isArray(json?.data) && json.data) ||
         (Array.isArray(json?.result) && json.result) ||
         [];
 
-      if (dataArray.length > 0) {
-        console.log('[RAW first row keys]', Object.keys(dataArray[0]));
-      } else {
-        console.log('[RAW] data 배열이 비어있거나 구조가 다릅니다.');
-      }
-
       const formatted = this.formatApiData(dataArray);
-
-      // 포맷 결과 확인
-      console.log('[FORMATTED first row]', formatted[0]);
-      console.log('[FORMATTED workDate list]', formatted.map(r => r.workDate));
-
-      this.setState({ downtimeData: formatted, loading: false });
+      this.setState({ downtimeData: formatted });
     } catch (err) {
       console.error('데이터 로드 중 오류:', err);
       this.setState({
         error: '데이터를 불러오는 중 오류가 발생했습니다.',
-        loading: false,
       });
+    } finally {
+      this.setState({ loading: false });
     }
   };
 
-  // ★★★ 전처리에서 Date 객체로 변환(방법 2 핵심)
   formatApiData = (apiData) => {
     if (!Array.isArray(apiData)) return [];
-
     return apiData.map((item, idx) => {
-      // 근무일자 후보를 넓게 잡아 매핑
       const workDateRaw =
         item.workDate ??
         item.work_date ??
@@ -119,7 +178,6 @@ class DowntimeGrid extends Component {
         item.Date ??
         '';
 
-      // 안전 파싱: 'YYYY-MM-DD' → 로컬 기준 날짜로 인식되도록 T00:00:00 붙임
       let workDate = null;
       if (workDateRaw) {
         const str = typeof workDateRaw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(workDateRaw)
@@ -129,7 +187,6 @@ class DowntimeGrid extends Component {
         workDate = isNaN(d.getTime()) ? null : d;
       }
 
-      // 비가동(분) 숫자화
       const downtimeMinutesRaw =
         item.downtimeMinutes ??
         item['비가동(분)'] ??
@@ -139,36 +196,52 @@ class DowntimeGrid extends Component {
 
       return {
         id: item.id || idx + 1,
-        workDate, // ★ Date 객체로 저장
+        workDate,
         plant: item.plant ?? item.플랜트 ?? '',
-        worker: item.worker ?? item.책임자 ?? '',
-        workplace: item.workplace ?? item.작업장 ?? '',
+        workerplace: item.workerplace ?? item.책임자 ?? '',
+        line: item.line ?? item.작업장 ?? '',
         itemCode: item.itemCode ?? item.자재번호 ?? '',
+        itemName: item.itemName ?? item.자재명 ?? '', // 표시용
         carModel: item.carModel ?? item.차종 ?? '',
         downtimeCode: item.downtimeCode ?? item.비가동코드 ?? '',
         downtimeName: item.downtimeName ?? item.비가동명 ?? '',
         downtimeMinutes,
         note: item.note ?? item.비고 ?? '',
+        shift: item.shift ?? item['주야구분'] ?? '',
+        productName: item.productName ?? item['품명'] ?? '',
+        itemType: item.itemType ?? item['품목구분'] ?? '',
+        categoryMain: item.categoryMain ?? item['대분류'] ?? '',
+        categorySub: item.categorySub ?? item['소분류'] ?? '',
       };
     });
   };
 
+  // ---------- 핸들러 ----------
   clearFilters = () => {
     this.setState({
       filters: {
         start_work_date: '',
         end_work_date: '',
-        plant: '',
-        worker: '',
-        workplace: '',
+        plant: "아진산업-경산(본사)",
+        workerplace: "프레스",
+        line: "1500T",
         itemCode: '',
+        itemName: '',
+
         carModel: '',
         downtimeCode: '',
         downtimeName: '',
         downtimeMinutes: '',
         note: '',
+
+        shift: '',
+        productName: '',
+        itemType: '',
+        categoryMain: '',
+        categorySub: '',
       },
       downtimeData: [],
+      quickRange: null,
     });
   };
 
@@ -184,86 +257,48 @@ class DowntimeGrid extends Component {
     this.setState((p) => ({ filterExpanded: !p.filterExpanded }));
   refreshData = () => this.fetchDowntimeData();
 
-  // DataGrid 컬럼 정의
+  // ---------- 그리드 컬럼 ----------
   columns = [
-    {
-      field: 'id',
-      headerName: 'No.',
-      width: 80,
-      type: 'number',
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-    {
-      field: 'workDate',
-      headerName: '근무일자',
-      width: 120,
-      type: 'date',
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-      // ★ valueGetter 제거! (row 접근 없이, Date로 이미 저장됨)
-      valueFormatter: (params) => {
-        const v = params?.value;
+    { field: 'id', headerName: 'No.', width: 80, type: 'number',
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'workDate', headerName: '근무일자', width: 120, type: 'date',
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
+      valueFormatter: (p) => {
+        const v = p?.value;
         const d = v instanceof Date ? v : (v ? new Date(v) : null);
         return d && !isNaN(d.getTime()) ? d.toLocaleDateString('ko-KR') : '';
       },
     },
-    {
-      field: 'plant',
-      headerName: '플랜트',
-      width: 160,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-    {
-      field: 'worker',
-      headerName: '책임자',
-      width: 120,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-    {
-      field: 'workplace',
-      headerName: '작업장',
-      width: 120,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-    {
-      field: 'itemCode',
-      headerName: '자재번호',
-      width: 140,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-    {
-      field: 'carModel',
-      headerName: '차종',
-      width: 120,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-    {
-      field: 'downtimeCode',
-      headerName: '비가동코드',
-      width: 140,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-    {
-      field: 'downtimeName',
-      headerName: '비가동명',
-      width: 200,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-    {
-      field: 'downtimeMinutes',
-      headerName: '비가동(분)',
-      width: 120,
-      type: 'number',
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
+    { field: 'plant', headerName: '플랜트', width: 180,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'workerplace', headerName: '책임자', width: 120,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'line', headerName: '작업장', width: 120,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'itemCode', headerName: '자재번호', width: 140,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'itemName', headerName: '자재명', width: 160,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'carModel', headerName: '차종', width: 120,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+
+    { field: 'shift', headerName: '주야구분', width: 110,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'productName', headerName: '품명', width: 160,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'itemType', headerName: '품목구분', width: 120,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'categoryMain', headerName: '대분류', width: 120,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'categorySub', headerName: '소분류', width: 120,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+
+    { field: 'downtimeCode', headerName: '비가동코드', width: 140,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'downtimeName', headerName: '비가동명', width: 200,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'downtimeMinutes', headerName: '비가동(분)', width: 120, type: 'number',
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
       renderCell: (params) => (
         <Chip
           label={
@@ -278,26 +313,16 @@ class DowntimeGrid extends Component {
         />
       ),
     },
-    {
-      field: 'note',
-      headerName: '비고',
-      width: 260,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
+    { field: 'note', headerName: '비고', width: 260,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
   ];
 
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.downtimeData !== this.state.downtimeData) {
-      // state에 저장된 workDate들을 한 번 더 확인 (필요 없으면 제거)
-      console.log('[STATE] workDate list after setState:',
-        this.state.downtimeData.map(r => r.workDate)
-      );
-    }
-  }
-
   render() {
-    const { filters, filterExpanded, downtimeData, loading, error } = this.state;
+    const { themeHex } = this.props;
+    const { filters, filterExpanded, itemCodeModalOpen, quickRange, downtimeData, loading, error } = this.state;
+
+    // 공통 높이(스피너/그리드 영역 동일)
+    const gridHeight = 'calc(100vh - 380px)';
 
     return (
       <Box
@@ -344,12 +369,90 @@ class DowntimeGrid extends Component {
               </Typography>
             }
             action={
-              <IconButton onClick={this.toggleFilterExpansion} sx={{ color: 'white' }}>
-                {filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-              </IconButton>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                {/* 빠른 기간 */}
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    size="small"
+                    variant={quickRange === 'today' ? 'contained' : 'outlined'}
+                    onClick={() => this.setQuickRange('today')}
+                    sx={{
+                      borderColor: 'white',
+                      color: 'white',
+                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+                    }}
+                  >
+                    금일
+                  </Button>
+                  <Button
+                    size="small"
+                    variant={quickRange === 'week' ? 'contained' : 'outlined'}
+                    onClick={() => this.setQuickRange('week')}
+                    sx={{
+                      borderColor: 'white',
+                      color: 'white',
+                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+                    }}
+                  >
+                    주간
+                  </Button>
+                  <Button
+                    size="small"
+                    variant={quickRange === 'month' ? 'contained' : 'outlined'}
+                    onClick={() => this.setQuickRange('month')}
+                    sx={{
+                      borderColor: 'white',
+                      color: 'white',
+                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+                    }}
+                  >
+                    월간
+                  </Button>
+                  <Button
+                    size="small"
+                    variant={quickRange === 'year' ? 'contained' : 'outlined'}
+                    onClick={() => this.setQuickRange('year')}
+                    sx={{
+                      borderColor: 'white',
+                      color: 'white',
+                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+                    }}
+                  >
+                    년간
+                  </Button>
+                </Box>
+
+                {/* 구분선 */}
+                <Typography sx={{ color: 'white', opacity: 0.8, mx: 0.5 }}>|</Typography>
+
+                {/* 기간 선택 */}
+                <Typography sx={{ color: 'white' }}>기간선택</Typography>
+                <TextField
+                  type="date"
+                  value={filters.start_work_date || ''}
+                  onChange={(e) => this.handleFilterChange('start_work_date', e.target.value)}
+                  size="small"
+                  variant="outlined"
+                  sx={{ backgroundColor: 'white', borderRadius: 1, minWidth: 150 }}
+                />
+                <Typography sx={{ color: 'white' }}>~</Typography>
+                <TextField
+                  type="date"
+                  value={filters.end_work_date || ''}
+                  onChange={(e) => this.handleFilterChange('end_work_date', e.target.value)}
+                  size="small"
+                  variant="outlined"
+                  sx={{ backgroundColor: 'white', borderRadius: 1, minWidth: 150 }}
+                />
+
+                {/* 확장 토글 */}
+                <IconButton onClick={this.toggleFilterExpansion} sx={{ color: 'white' }}>
+                  {filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                </IconButton>
+              </Box>
             }
             sx={{
-              backgroundColor: '#ff8f00',
+              backgroundColor: themeHex,
               color: 'white',
               borderRadius: 1,
               mb: 2,
@@ -358,87 +461,110 @@ class DowntimeGrid extends Component {
 
           {/* 기본 필터 */}
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={3}>
+            {/* 공장 */}
+            <Grid item xs={12} sm={6} md={2}>
               <TextField
+                select
                 fullWidth
-                label="시작일"
-                type="date"
-                value={filters.start_work_date}
-                onChange={(e) => this.handleFilterChange('start_work_date', e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                label="종료일"
-                type="date"
-                value={filters.end_work_date}
-                onChange={(e) => this.handleFilterChange('end_work_date', e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                label="플랜트"
-                value={filters.plant}
+                label="공장"
+                value={filters.plant ?? ''}
                 onChange={(e) => this.handleFilterChange('plant', e.target.value)}
                 size="small"
-              />
+                variant="outlined"
+                SelectProps={{ MenuProps: { PaperProps: { sx: { maxHeight: 280 } } } }}
+              >
+                <MenuItem value="아진산업-경산(본사)">아진산업-경산(본사)</MenuItem>
+                <MenuItem value="아진산업-1공장(경산)">아진산업-1공장(경산)</MenuItem>
+                <MenuItem value="아진산업-구어공장(경주)">아진산업-구어공장(경주)</MenuItem>
+                <MenuItem value="아진산업-하양공장(예정)">아진산업-하양공장(예정)</MenuItem>
+              </TextField>
             </Grid>
+
+            {/* 작업장(공정군) */}
+            <Grid item xs={12} sm={6} md={2}>
+              <TextField
+                select
+                fullWidth
+                label="작업장"
+                value={filters.workerplace ?? '프레스'}
+                onChange={(e) => this.handleFilterChange('workerplace', e.target.value)}
+                size="small"
+                variant="outlined"
+              >
+                <MenuItem value="프레스">프레스</MenuItem>
+                <MenuItem value="금형">금형</MenuItem>
+                <MenuItem value="블랭크">블랭크</MenuItem>
+              </TextField>
+            </Grid>
+
+            {/* 라인 */}
             <Grid item xs={12} sm={6} md={3}>
               <TextField
+                select
                 fullWidth
-                label="책임자"
-                value={filters.worker}
-                onChange={(e) => this.handleFilterChange('worker', e.target.value)}
+                label="라인"
+                value={filters.line ?? '1500T'}
+                onChange={(e) => this.handleFilterChange('line', e.target.value)}
                 size="small"
+                variant="outlined"
+              >
+                <MenuItem value="1500T">1500T(E라인)</MenuItem>
+                <MenuItem value="1200T">1200T(D라인)</MenuItem>
+                <MenuItem value="1000T">1000T(F라인)</MenuItem>
+                <MenuItem value="1000T-PRO">1000T-PRO(G라인)</MenuItem>
+              </TextField>
+            </Grid>
+
+            {/* 품목코드 (모달 오픈) */}
+            <Grid item xs={12} sm={6} md={2}>
+              <TextField
+                fullWidth
+                label="품목코드"
+                value={filters.itemCode || ''}
+                onClick={this.openItemCodeModal}
+                size="small"
+                variant="outlined"
+                InputProps={{
+                  readOnly: true,
+                  style: { cursor: 'pointer' },
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiInputBase-root': {
+                    cursor: 'pointer',
+                    '&:hover': { backgroundColor: '#f5f5f5' },
+                  },
+                }}
               />
             </Grid>
 
+            {/* 품목명 (표시용) */}
             <Grid item xs={12} sm={6} md={3}>
               <TextField
                 fullWidth
-                label="작업장"
-                value={filters.workplace}
-                onChange={(e) => this.handleFilterChange('workplace', e.target.value)}
+                label="품목명"
+                value={filters.itemName || ''}
+                onClick={this.openItemCodeModal}
                 size="small"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                label="자재번호"
-                value={filters.itemCode}
-                onChange={(e) => this.handleFilterChange('itemCode', e.target.value)}
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                label="차종"
-                value={filters.carModel}
-                onChange={(e) => this.handleFilterChange('carModel', e.target.value)}
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                label="비가동코드"
-                value={filters.downtimeCode}
-                onChange={(e) => this.handleFilterChange('downtimeCode', e.target.value)}
-                size="small"
+                variant="outlined"
                 InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
+                  readOnly: true,
+                  style: { cursor: 'pointer' },
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
                     </InputAdornment>
                   ),
+                }}
+                sx={{
+                  '& .MuiInputBase-root': {
+                    cursor: 'pointer',
+                    '&:hover': { backgroundColor: '#f5f5f5' },
+                  },
                 }}
               />
             </Grid>
@@ -448,6 +574,32 @@ class DowntimeGrid extends Component {
           <Collapse in={filterExpanded} timeout="auto" unmountOnExit>
             <Divider sx={{ my: 2 }} />
             <Grid container spacing={2}>
+              {/* 1열 */}
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="차종"
+                  value={filters.carModel}
+                  onChange={(e) => this.handleFilterChange('carModel', e.target.value)}
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="비가동코드"
+                  value={filters.downtimeCode}
+                  onChange={(e) => this.handleFilterChange('downtimeCode', e.target.value)}
+                  size="small"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
                   fullWidth
@@ -467,12 +619,61 @@ class DowntimeGrid extends Component {
                   size="small"
                 />
               </Grid>
+
+              {/* 2열 */}
               <Grid item xs={12} sm={12} md={6}>
                 <TextField
                   fullWidth
                   label="비고"
                   value={filters.note}
                   onChange={(e) => this.handleFilterChange('note', e.target.value)}
+                  size="small"
+                />
+              </Grid>
+
+              {/* 추가 필터 */}
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="주야구분"
+                  value={filters.shift}
+                  onChange={(e) => this.handleFilterChange('shift', e.target.value)}
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="품명"
+                  value={filters.productName}
+                  onChange={(e) => this.handleFilterChange('productName', e.target.value)}
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="품목구분"
+                  value={filters.itemType}
+                  onChange={(e) => this.handleFilterChange('itemType', e.target.value)}
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="대분류"
+                  value={filters.categoryMain}
+                  onChange={(e) => this.handleFilterChange('categoryMain', e.target.value)}
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="소분류"
+                  value={filters.categorySub}
+                  onChange={(e) => this.handleFilterChange('categorySub', e.target.value)}
                   size="small"
                 />
               </Grid>
@@ -497,8 +698,8 @@ class DowntimeGrid extends Component {
                 onClick={this.handleSearch}
                 size="large"
                 sx={{
-                  backgroundColor: '#ff8f00',
-                  '&:hover': { backgroundColor: '#f57c00' },
+                  backgroundColor: themeHex,
+                  '&:hover': { backgroundColor: themeHex },
                 }}
               >
                 검색
@@ -509,27 +710,28 @@ class DowntimeGrid extends Component {
 
         {/* 그리드 */}
         <Paper elevation={3} sx={{ flex: 1, display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
-          <Box sx={{ height: '100%', width: '100%' }}>
-            {loading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
-                <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
-              </Box>
-            )}
-
-            {error && (
-              <Box sx={{ p: 3 }}>
-                <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
-                <Button
-                  variant="contained"
-                  onClick={this.refreshData}
-                  sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}
-                >
-                  다시 시도
-                </Button>
-              </Box>
-            )}
-
-            {!loading && !error && (
+          {/* ⬇️ 로딩/에러/데이터 없음/그리드를 분기 렌더링 (스피너 중요) */}
+          {loading ? (
+            <Box sx={{ height: gridHeight, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
+            </Box>
+          ) : error ? (
+            <Box sx={{ p: 3 }}>
+              <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+              <Button
+                variant="contained"
+                onClick={this.refreshData}
+                sx={{ backgroundColor: themeHex }}
+              >
+                다시 시도
+              </Button>
+            </Box>
+          ) : (downtimeData?.length ?? 0) === 0 ? (
+            <Box sx={{ height: gridHeight, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <Typography color="text.secondary">데이터가 없습니다.</Typography>
+            </Box>
+          ) : (
+            <Box sx={{ height: gridHeight, width: '100%' }}>
               <DataGrid
                 rows={downtimeData}
                 columns={this.columns}
@@ -547,9 +749,12 @@ class DowntimeGrid extends Component {
                 }}
                 sx={{
                   '& .super-app-theme--header': {
-                    backgroundColor: '#ff8f00',
+                    backgroundColor: themeHex,
                     color: 'white',
                     fontWeight: 'bold',
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 1,
                   },
                   '& .super-app-theme--cell': {
                     borderBottom: '1px solid #e0e0e0',
@@ -566,14 +771,34 @@ class DowntimeGrid extends Component {
                     borderBottom: '1px solid #e0e0e0',
                     padding: '8px 16px',
                   },
+                  // (선택) 가로 스크롤바 가독성 향상
+                  '& .MuiDataGrid-scrollbar--horizontal': {
+                    minHeight: 12,
+                  },
                 }}
               />
-            )}
-          </Box>
+            </Box>
+          )}
         </Paper>
+
+        {/* 품목코드 선택 모달 */}
+        <ItemCodeModal
+          open={itemCodeModalOpen}
+          onClose={this.closeItemCodeModal}
+          onSelect={this.handleItemCodeSelect}
+          selectedItemCode={filters.itemCode}
+          plant={filters.plant}
+          worker={filters.workerplace}
+          line={filters.line}
+          start_work_date={filters.start_work_date}
+          end_work_date={filters.end_work_date}
+        />
       </Box>
     );
   }
 }
 
-export default DowntimeGrid;
+export default connect((state) => ({
+  themeHex: selectThemeHex(state),
+  themeKey: selectThemeKey(state),
+}))(DowntimeGrid);

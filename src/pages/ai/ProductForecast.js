@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { selectThemeHex } from "../../reducers/layout";
 import {
   Grid,
   Card,
@@ -15,6 +17,10 @@ import {
   Select,
   MenuItem,
   FormControl,
+  Button,
+  TextField,
+  CardHeader,
+  IconButton,
 } from "@mui/material";
 import {
   ComposedChart,
@@ -29,148 +35,341 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { DataGrid } from "@mui/x-data-grid";
+import {
+  Search as SearchIcon,
+  ExpandLess as ExpandLessIcon,
+  ExpandMore as ExpandMoreIcon,
+} from "@mui/icons-material";
 import styles from "./ProductForecast.module.scss";
 
-// ========== Mock Data ==========
-const timeData = [
-  { time: "07:50~08:50", actual: 800, predicted: 820 },
-  { time: "08:50~10:00", actual: 760, predicted: 780 },
-  { time: "10:00~11:10", actual: 850, predicted: 860 },
-  { time: "11:10~12:20", actual: 900, predicted: 890 },
-  { time: "12:20~13:30", actual: 750, predicted: 770 },
-];
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    // label이 NaN 같은 경우는 출력 안 함
+    const showLabel = label && label !== "NaN" && label !== "NaN~NaN" && label !== "-";
 
-const shiftDataDay = [
-  ["07:50 – 08:50", 800],
-  ["08:50 – 10:00", 760],
-  ["10:00 – 11:00", 850],
-  ["11:00 – 12:40", 850],
-  ["12:40 – 13:40", 840],
-  ["13:40 – 14:50", 830],
-  ["14:50 – 15:50", 780],
-  ["15:50 – 17:10", 790],
-  ["17:10 – 18:10", 800],
-  ["18:10 – 19:10", 810],
-  ["19:10 – 20:40", 790],
-];
-const shiftDataNight = [
-  ["20:40 – 21:40", 850],
-  ["21:40 – 22:40", 860],
-  ["22:40 – 23:40", 850],
-  ["23:40 – 00:30", 870],
-  ["00:30 – 01:30", 800],
-  ["01:30 – 02:30", 790],
-  ["02:30 – 03:30", 810],
-  ["03:30 – 05:00", 820],
-  ["05:00 – 06:00", 830],
-  ["06:00 – 07:00", 800],
-  ["07:00 – 07:50", 760],
-];
-
-const dailyData = [
-  { date: "25.06.27", predicted: 12000, actual: 11900 },
-  { date: "25.06.28", predicted: 13500, actual: 13560 },
-  { date: "25.06.29", predicted: 13580, actual: 13470 },
-  { date: "25.06.30", predicted: 13000, actual: 11900 },
-];
-
-const tableRows = [
-  { id: 1, type: "과거", date: "25.06.27", predicted: 12000, actual: 11900, diff: -100, absDiff: 100, acc: "97%", uph: 700 },
-  { id: 2, type: "과거", date: "25.06.28", predicted: 13500, actual: 13560, diff: +60, absDiff: 60, acc: "98%", uph: 800 },
-  { id: 3, type: "과거", date: "25.06.29", predicted: 13580, actual: 13470, diff: -110, absDiff: 110, acc: "97%", uph: 600 },
-  { id: 4, type: "현재", date: "25.06.30", predicted: 13000, actual: 11900, diff: -100, absDiff: 100, acc: "97%", uph: 700 },
-];
-
-const tableColumns = [
-  { field: "type", headerName: "구분", flex: 1 },
-  { field: "date", headerName: "날짜", flex: 1 },
-  { field: "predicted", headerName: "예측 생산량", flex: 1 },
-  { field: "actual", headerName: "실제 생산량", flex: 1 },
-  { field: "diff", headerName: "오차", flex: 1 },
-  { field: "absDiff", headerName: "절대오차", flex: 1 },
-  { field: "acc", headerName: "예측 정확도", flex: 1 },
-  { field: "uph", headerName: "시간당 생산량", flex: 1 },
-];
+    return (
+      <div style={{ background: "white", border: "1px solid #ccc", padding: "8px" }}>
+        {showLabel && <div><b>시간:</b> {label}</div>}
+        {payload.map((entry, index) => (
+          <div key={index}>
+            {entry.name}: {Number(entry.value).toFixed(2)}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
 
 export default function ProductForecast() {
+  // ✅ Redux에서 themeHex 가져오기
+  const themeHex = useSelector(selectThemeHex);
+
   const [selectedSku, setSelectedSku] = useState("SKU1");
+  const [hourlyData, setHourlyData] = useState([]);
+  const [dailyData, setDailyData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // ✅ 시간별 그래프 애니메이션
-  const [visibleCount, setVisibleCount] = useState(1);
-  useEffect(() => {
-    if (visibleCount < timeData.length) {
-      const timer = setTimeout(() => setVisibleCount(visibleCount + 1), 1200);
-      return () => clearTimeout(timer);
-    }
-  }, [visibleCount]);
-  const visibleTimeData = timeData.map((d, i) =>
-    i < visibleCount ? d : { ...d, actual: null, predicted: null }
-  );
+  // ✅ 검색 필터 상태
+  const [quickRange, setQuickRange] = useState("month");
+  const [filters, setFilters] = useState({
+    start_work_date: "2024-01-01",
+    end_work_date: "2025-06-30",
+  });
+  const [filterExpanded, setFilterExpanded] = useState(false);
 
-  // ✅ 일자별 그래프 애니메이션
-  const [visibleDailyCount, setVisibleDailyCount] = useState(1);
+  // ✅ 초 → HH:MM 변환 함수
+  const secondsToHHMM = (sec) => {
+    if (sec === null || sec === undefined) return "";
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  };
+
+  // ✅ 시간별/일별 데이터 API 호출
   useEffect(() => {
-    if (visibleDailyCount < dailyData.length) {
-      const timer = setTimeout(() => setVisibleDailyCount(visibleDailyCount + 1), 2500);
-      return () => clearTimeout(timer);
-    }
-  }, [visibleDailyCount]);
-  const visibleDailyData = dailyData.map((d, i) =>
-    i < visibleDailyCount ? d : { ...d, actual: null, predicted: null }
-  );
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const hourlyRes = await fetch("http://localhost:8000/smartFactory/forecast/hourly", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sku: selectedSku }),
+        });
+        const hourlyJson = await hourlyRes.json();
+
+        const dailyRes = await fetch("http://localhost:8000/smartFactory/forecast/daily", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sku: selectedSku }),
+        });
+        const dailyJson = await dailyRes.json();
+
+        setHourlyData(hourlyJson.data || []);
+        setDailyData(dailyJson.data || []);
+      } catch (err) {
+        console.error("❌ 데이터 가져오기 실패:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [selectedSku]);
+
+  // ✅ recharts용 데이터 변환 (문자열 보장)
+  const timeData = hourlyData.map((d) => {
+    const start = secondsToHHMM(d.slot_start);
+    const end = secondsToHHMM(d.slot_end);
+    return {
+      time: start && end ? `${start}~${end}` : "-",   // ✅ fallback 추가
+      actual: d.actual,
+      predicted: d.prediction,
+    };
+  });
+
+  const visibleTimeData = timeData;
+
+  const visibleDailyData = dailyData.map((d) => ({
+    date: d.date,
+    actual: d.actual,
+    predicted: d.pred,
+  }));
+
+  // ✅ DataGrid 행 데이터
+  const tableRows = dailyData.map((d, idx) => ({
+    id: idx + 1,
+    date: d.date,
+    predicted: d.pred ? Number(d.pred).toFixed(2) : "-",
+    actual: d.actual ? Math.round(d.actual) : "-",
+    diff: d.error ? Number(d.error).toFixed(2) : "-",
+    absDiff: d.abs_error ? Number(d.abs_error).toFixed(2) : "-",
+    acc: d.pct_error ? `${(100 - d.pct_error).toFixed(2)}%` : "-",
+    uph: d.hourly_avg ? Number(d.hourly_avg).toFixed(2) : "-",
+  }));
+
+  const tableColumns = [
+    { field: "date", headerName: "날짜", flex: 1 },
+    { field: "predicted", headerName: "예측 생산량", flex: 1 },
+    { field: "actual", headerName: "실제 생산량", flex: 1 },
+    { field: "diff", headerName: "오차", flex: 1 },
+    { field: "absDiff", headerName: "절대오차", flex: 1 },
+    { field: "acc", headerName: "예측 정확도", flex: 1 },
+    { field: "uph", headerName: "시간당 생산량", flex: 1 },
+  ];
+
+  // ✅ 공정 단계별 현황
+  const avgUtil = {
+    blanking: ((hourlyData.reduce((a, b) => a + (b.blanking_util || 0), 0) / (hourlyData.length || 1)) * 100).toFixed(2),
+    press: ((hourlyData.reduce((a, b) => a + (b.press_util || 0), 0) / (hourlyData.length || 1)) * 100).toFixed(2),
+    assembly: ((hourlyData.reduce((a, b) => a + (b.assembly_util || 0), 0) / (hourlyData.length || 1)) * 100).toFixed(2),
+  };
+
+  // ✅ KPI 지표
+  const lastRow = hourlyData[hourlyData.length - 1] || {};
+  const kpi = {
+    uph: lastRow.uph?.toFixed(2) || "-",
+    actual: lastRow.actual ? Math.round(lastRow.actual) : "-",
+    uphAchievement: lastRow.uph_achievement_pct ? (lastRow.uph_achievement_pct * 100).toFixed(2) : "-",
+    target: lastRow.daily_target || "-",
+    cumActual: lastRow.cum_actual_today ? Math.round(lastRow.cum_actual_today) : "-",
+    achievement: lastRow.current_achievement_pct ? (lastRow.current_achievement_pct * 100).toFixed(2) : "-",
+  };
+
+  // ✅ 교대별 시간대 고정
+  const dayShiftTimes = [
+    ["07:50", "08:50"],
+    ["08:50", "10:00"],
+    ["10:00", "11:00"],
+    ["11:00", "12:40"],
+    ["12:40", "13:40"],
+    ["13:40", "14:50"],
+    ["14:50", "15:50"],
+    ["15:50", "17:10"],
+    ["17:10", "18:10"],
+    ["18:10", "19:10"],
+    ["19:10", "20:40"],
+  ];
+
+  const nightShiftTimes = [
+    ["20:40", "21:40"],
+    ["21:40", "22:40"],
+    ["22:40", "23:40"],
+    ["23:40", "00:30"],
+    ["00:30", "01:30"],
+    ["01:30", "02:30"],
+    ["02:30", "03:30"],
+    ["03:30", "05:00"],
+    ["05:00", "06:00"],
+    ["06:00", "07:00"],
+    ["07:00", "07:50"],
+  ];
+
+  const getShiftData = (timeRanges) =>
+    timeRanges.map(([start, end]) => {
+      const found = hourlyData.find(
+        (d) =>
+          secondsToHHMM(d.slot_start) === start &&
+          secondsToHHMM(d.slot_end) === end
+      );
+      return {
+        start,
+        end,
+        actual: found ? Math.round(found.actual || 0) : "",
+      };
+    });
+
+  const dayShift = getShiftData(dayShiftTimes);
+  const nightShift = getShiftData(nightShiftTimes);
+
+  // ✅ 필터 값 변경 핸들러
+  const handleFilterChange = (field, value) => {
+    setFilters((prev) => ({ ...prev, [field]: value }));
+  };
 
   return (
     <Box className={styles.pageWrapper}>
-      {/* 상단 제목 */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" marginBottom={2}>
-        <Typography variant="h4" fontWeight="bold">
+      {/* ✅ 상단 제목 + 설명 */}
+      <Box sx={{ mb: 3 }}>
+        <Typography
+          variant="h4"
+          gutterBottom
+          sx={{ fontWeight: "bold", color: themeHex }}
+        >
           생산량 예측
         </Typography>
-      </Box>
-
-      {/* SKU 선택 */}
-      <Box display="flex" justifyContent="flex-start" alignItems="center" marginBottom={3}>
-        <Typography variant="h6" style={{ marginRight: 12 }}>
-          분석 대상 SKU 선택
+        <Typography variant="body1" color="text.secondary">
+          생산 예측 결과를 시각화하여 계획과 실적을 쉽게 비교할 수 있습니다.
         </Typography>
-        <FormControl size="medium">
-          <Select
-            value={selectedSku}
-            onChange={(e) => setSelectedSku(e.target.value)}
-            style={{ minWidth: 160, fontWeight: "bold" }}
-          >
-            <MenuItem value="SKU1">SKU1</MenuItem>
-            <MenuItem value="SKU2">SKU2</MenuItem>
-            <MenuItem value="SKU3">SKU3</MenuItem>
-            <MenuItem value="SKU4">SKU4</MenuItem>
-          </Select>
-        </FormControl>
       </Box>
 
-      {/* 1) 공정 단계별 현황 */}
+      {/* 검색 필터 섹션 */}
+      <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+        {/* 헤더 */}
+        <CardHeader
+          title={
+            <Typography
+              variant="h6"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                color: "white",
+              }}
+            >
+              <SearchIcon />
+              검색 조건
+            </Typography>
+          }
+          sx={{
+            backgroundColor: themeHex,
+            color: "white",
+            borderRadius: 1,
+            mb: 2,
+          }}
+        />
+
+        {/* 바디 (주간/월간 + 기간선택 + SKU 선택) */}
+        <Grid container spacing={2} alignItems="center">
+          {/* 주간/월간 버튼 */}
+          <Grid item>
+            <Box sx={{ display: "flex", gap: 1 }}>
+              {["week", "month"].map((range) => (
+                <Button
+                  key={range}
+                  size="small"
+                  variant={quickRange === range ? "contained" : "outlined"}
+                  onClick={() => setQuickRange(range)}
+                  sx={{
+                    borderColor: themeHex,
+                    color: quickRange === range ? "white" : themeHex,
+                    backgroundColor: quickRange === range ? themeHex : "transparent",
+                    "&:hover": {
+                      backgroundColor:
+                        quickRange === range ? themeHex : "rgba(255,143,0,0.08)",
+                    },
+                  }}
+                >
+                  {range === "week" ? "주간" : "월간"}
+                </Button>
+              ))}
+            </Box>
+          </Grid>
+
+          {/* 기간선택 */}
+          <Grid item>
+            <Typography sx={{ mr: 1 }}>기간선택</Typography>
+          </Grid>
+          <Grid item>
+            <TextField
+              type="date"
+              value={filters.start_work_date}
+              onChange={(e) => handleFilterChange("start_work_date", e.target.value)}
+              size="small"
+              variant="outlined"
+              sx={{ backgroundColor: "white", borderRadius: 1, minWidth: 150 }}
+            />
+          </Grid>
+          <Grid item>
+            <Typography>~</Typography>
+          </Grid>
+          <Grid item>
+            <TextField
+              type="date"
+              value={filters.end_work_date}
+              onChange={(e) => handleFilterChange("end_work_date", e.target.value)}
+              size="small"
+              variant="outlined"
+              sx={{ backgroundColor: "white", borderRadius: 1, minWidth: 150 }}
+            />
+          </Grid>
+
+          {/* SKU 선택 */}
+          <Grid item>
+            <Typography sx={{ ml: 2 }}>분석 대상 SKU</Typography>
+          </Grid>
+          <Grid item>
+            <FormControl size="small" sx={{ minWidth: 120, backgroundColor: "white", borderRadius: 1 }}>
+              <Select
+                value={selectedSku}
+                onChange={(e) => setSelectedSku(e.target.value)}
+                sx={{ fontWeight: "bold" }}
+              >
+                <MenuItem value="SKU1">SKU1</MenuItem>
+                <MenuItem value="SKU2">SKU2</MenuItem>
+                <MenuItem value="SKU3">SKU3</MenuItem>
+                <MenuItem value="SKU4">SKU4</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Paper>
+
+
+      {/* 1) 일자별 생산량 */}
       <Card className={styles.sectionCard}>
         <CardContent>
-          <Typography variant="h6" gutterBottom>공정 단계별 현황</Typography>
-          <Grid container spacing={2} marginTop={1}>
-            <Grid item xs={4}>
-              <Box className={styles.infoBox}>
-                <Typography variant="subtitle2">블랭킹 가동률</Typography>
-                <Typography variant="h6" fontWeight="bold">75.5%</Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={4}>
-              <Box className={styles.infoBox}>
-                <Typography variant="subtitle2">프레스 가동률</Typography>
-                <Typography variant="h6" fontWeight="bold">75.1%</Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={4}>
-              <Box className={styles.infoBox}>
-                <Typography variant="subtitle2">조립셀 가동률</Typography>
-                <Typography variant="h6" fontWeight="bold">80.1%</Typography>
-              </Box>
-            </Grid>
-          </Grid>
+          <Typography variant="h6" gutterBottom>일자별 실제 vs 예측</Typography>
+          <Box display="flex" justifyContent="center">
+            <div style={{ width: "80%", height: 400 }}>
+              <ResponsiveContainer>
+                <ComposedChart data={visibleDailyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis domain={['dataMin - 10', 'dataMax + 10']} />
+                  <Tooltip
+                    formatter={(value, name) => [Number(value).toFixed(2), name]}  // ✅ 소수점 2자리
+                  />
+                  <Legend verticalAlign="top" align="right" wrapperStyle={{ marginBottom: 10 }} />
+                  <Line type="monotone" dataKey="predicted" stroke="#1E3A8A" strokeWidth={3} name="예측" />
+                  <Area type="monotone" dataKey="actual" fill={themeHex} stroke={themeHex} name="실제" />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </Box>
+          <div style={{ height: 400, width: "100%", marginTop: 16 }}>
+            <DataGrid rows={tableRows} columns={tableColumns} pageSize={5} autoHeight />
+          </div>
         </CardContent>
       </Card>
 
@@ -180,17 +379,19 @@ export default function ProductForecast() {
         <Grid item xs={12} md={8}>
           <Card className={styles.sectionCard}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>시간별 실제 vs 예측</Typography>
+              <Typography variant="h6" gutterBottom>
+                시간별 실제 vs 예측
+              </Typography>
               <div style={{ width: "100%", height: 300 }}>
                 <ResponsiveContainer>
                   <ComposedChart data={visibleTimeData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="time" />
-                    <YAxis />
-                    <Tooltip />
+                    <YAxis domain={['dataMin - 10', 'dataMax + 10']} />
+                    <Tooltip content={<CustomTooltip />} />   {/* ✅ 커스텀 Tooltip */}
                     <Legend verticalAlign="top" align="right" wrapperStyle={{ marginBottom: 10 }} />
-                    <Line type="monotone" dataKey="actual" stroke="#82ca9d" name="실제" />
-                    <Scatter dataKey="predicted" fill="#ff7300" name="예측" />
+                    <Line type="monotone" dataKey="actual" stroke={themeHex} strokeWidth={3} name="실제" />
+                    <Scatter dataKey="predicted" fill="#1E3A8A" name="예측" />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -202,7 +403,9 @@ export default function ProductForecast() {
         <Grid item xs={12} md={4}>
           <Card className={styles.sectionCard}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>KPI 지표</Typography>
+              <Typography variant="h6" gutterBottom>
+                KPI 지표
+              </Typography>
               <Grid container spacing={2} sx={{ height: "100%" }}>
                 {/* SKU별 시간별 */}
                 <Grid item xs={6} sx={{ display: "flex", height: "100%" }}>
@@ -211,10 +414,10 @@ export default function ProductForecast() {
                       <Typography variant="subtitle2" color="textSecondary" gutterBottom>
                         SKU별 시간별
                       </Typography>
-                      <Typography variant="body1">정미 UPH: <b>963</b></Typography>
-                      <Typography variant="body1">실적 UPH: <b>876</b></Typography>
-                      <Typography variant="h6" fontWeight="bold" color="success.main" sx={{ mt: 1 }}>
-                        달성률 91.0%
+                      <Typography variant="body1">정미 UPH: <b>{kpi.uph}</b></Typography>
+                      <Typography variant="body1">실적 UPH: <b>{kpi.actual}</b></Typography>
+                      <Typography variant="h6" fontWeight="bold" color="#1E3A8A" sx={{ mt: 1 }}>
+                        달성률 {kpi.uphAchievement}%
                       </Typography>
                     </CardContent>
                   </Card>
@@ -227,10 +430,10 @@ export default function ProductForecast() {
                       <Typography variant="subtitle2" color="textSecondary" gutterBottom>
                         SKU별 누적
                       </Typography>
-                      <Typography variant="body1">목표 생산량: <b>23,100</b></Typography>
-                      <Typography variant="body1">누적 생산량: <b>20,832</b></Typography>
-                      <Typography variant="h6" fontWeight="bold" color="success.main" sx={{ mt: 1 }}>
-                        달성률 90.1%
+                      <Typography variant="body1">목표 생산량: <b>{kpi.target}</b></Typography>
+                      <Typography variant="body1">누적 생산량: <b>{kpi.cumActual}</b></Typography>
+                      <Typography variant="h6" fontWeight="bold" color="#1E3A8A" sx={{ mt: 1 }}>
+                        달성률 {kpi.achievement}%
                       </Typography>
                     </CardContent>
                   </Card>
@@ -241,7 +444,36 @@ export default function ProductForecast() {
         </Grid>
       </Grid>
 
-      {/* 3) 교대별 생산량 */}
+      {/* 3) 공정 단계별 현황 */}
+      <Card className={styles.sectionCard}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            공정 단계별 현황
+          </Typography>
+          <Grid container spacing={2} marginTop={1}>
+            <Grid item xs={4}>
+                <Box className={styles.infoBox} sx={{ backgroundColor: themeHex }}>
+                    <Typography variant="subtitle2">블랭킹 가동률</Typography>
+                    <Typography variant="h6" fontWeight="bold">{avgUtil.blanking}%</Typography>
+                </Box>
+            </Grid>
+            <Grid item xs={4}>
+                <Box className={styles.infoBox} sx={{ backgroundColor: themeHex }}>
+                    <Typography variant="subtitle2">프레스 가동률</Typography>
+                    <Typography variant="h6" fontWeight="bold">{avgUtil.press}%</Typography>
+                </Box>
+            </Grid>
+            <Grid item xs={4}>
+                <Box className={styles.infoBox} sx={{ backgroundColor: themeHex }}>
+                    <Typography variant="subtitle2">조립셀 가동률</Typography>
+                    <Typography variant="h6" fontWeight="bold">{avgUtil.assembly}%</Typography>
+                </Box>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {/* 4) 교대별 생산량 */}
       <Card className={styles.sectionCard}>
         <CardContent>
           <Typography variant="h6">교대별 생산량</Typography>
@@ -260,48 +492,17 @@ export default function ProductForecast() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {shiftDataDay.map((row, idx) => (
+                {dayShift.map((d, idx) => (
                   <TableRow key={idx}>
-                    <TableCell>{row[0]}</TableCell>
-                    <TableCell>{row[1]}</TableCell>
-                    <TableCell>{shiftDataNight[idx]?.[0] || ""}</TableCell>
-                    <TableCell>{shiftDataNight[idx]?.[1] || ""}</TableCell>
+                    <TableCell>{d.start} – {d.end}</TableCell>
+                    <TableCell>{d.actual}</TableCell>
+                    <TableCell>{nightShift[idx].start} – {nightShift[idx].end}</TableCell>
+                    <TableCell>{nightShift[idx].actual}</TableCell>
                   </TableRow>
                 ))}
-                <TableRow>
-                  <TableCell sx={{ fontWeight: "bold" }}>주간 총생산량</TableCell>
-                  <TableCell sx={{ fontWeight: "bold" }}>{shiftDataDay.reduce((a, b) => a + b[1], 0)}</TableCell>
-                  <TableCell sx={{ fontWeight: "bold" }}>야간 총생산량</TableCell>
-                  <TableCell sx={{ fontWeight: "bold" }}>{shiftDataNight.reduce((a, b) => a + b[1], 0)}</TableCell>
-                </TableRow>
               </TableBody>
             </Table>
           </TableContainer>
-        </CardContent>
-      </Card>
-
-      {/* 4) 일자별 생산량 */}
-      <Card className={styles.sectionCard}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>일자별 실제 vs 예측</Typography>
-          <Box display="flex" justifyContent="center">
-            <div style={{ width: "80%", height: 400 }}>
-              <ResponsiveContainer>
-                <ComposedChart data={visibleDailyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend verticalAlign="top" align="right" wrapperStyle={{ marginBottom: 10 }} />
-                  <Line type="monotone" dataKey="predicted" stroke="#ff7300" strokeWidth={3} name="예측" />
-                  <Area type="monotone" dataKey="actual" fill="rgba(130, 202, 157, 0.7)" stroke="#82ca9d" name="실제" />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-          </Box>
-          <div style={{ height: 400, width: "100%", marginTop: 16 }}>
-            <DataGrid rows={tableRows} columns={tableColumns} pageSize={5} autoHeight />
-          </div>
         </CardContent>
       </Card>
     </Box>

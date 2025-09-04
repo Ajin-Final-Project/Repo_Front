@@ -1,4 +1,4 @@
-// src/pages/mold/MoldShotCountData.js
+// src/pages/mold/MoldShotCheck.js
 import React, { Component } from 'react';
 import {
   Box,
@@ -14,7 +14,8 @@ import {
   Divider,
   Collapse,
   CircularProgress,
-  Alert
+  Alert,
+  MenuItem
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { 
@@ -23,13 +24,16 @@ import {
   FilterList as FilterIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon,
   ThermostatOutlined
 } from '@mui/icons-material';
 
 import s from './MoldCleaningData.module.scss'; // 스타일 재사용(원하면 파일명 변경)
 import config from '../../config';
 
-const API_URL = `${config.baseURLApi}/smartFactory/mold_shotCount/list`; 
+import ItemCodeModal from '../common/ItemCodeModal';
+
+const API_URL = `${config.baseURLApi}/smartFactory/mold_shot_check/list`; 
 // ↑ 백엔드 경로가 다르면 여기만 수정하세요.
 
 class MoldShotCheck extends Component {
@@ -38,36 +42,43 @@ class MoldShotCheck extends Component {
 
     this.state = {
       filters: {
-        // === 주신 스키마를 그대로 반영 (초기값은 공란) ===
-        plant: '',
-        equipment_type: '',
+        // === 생산내역 필터링 조건 ===
+        responsible_person: '',
+        work_center: '',
+        itemCode: '',
+        itemName: '',
+        plant: "아진산업-경산(본사)",                  // 공장
+        worker: "프레스",                 // 작업자
+        line: "1500T",
+        
+        // === 금형세척주기 검색 조건 ===
+        equipment_detail: '',
+        order_type: '',
+        action_content: '',
+        basic_start_date: new Date(new Date().getFullYear(), 0, 1).toLocaleDateString('sv-SE'),
+        basic_end_date:  new Date().toLocaleDateString('sv-SE'),
+        
+        // === 금형타발수관리 검색 조건 ===
         mold_no: '',
-        mold_name: '',
         measuring_point: '',
         measuring_position: '',
         cum_shot_min: '',
         cum_shot_max: '',
         inspection_hit_count: '',
         maintenance_cycle: '',
-        maintenance_cycle_unit: '',
         progress_min: '',
         progress_max: '',
-        functional_location: '',
-        functional_location_desc: '',
-        planner_group: '',
-        maintenance_plan: '',
-        startDate: "2025-01-01",
-        endDate: "2025-06-30",
-        part_no1: '',
-        part_no2: '',
-        part_no3: '',
-        part_no4: '',
-        part_no5: ''
+        
+        // === 날짜 범위 검색 ===
+        start_date: "2025-01-01",
+        end_date: "2025-06-30",   
       },
       filterExpanded: false,
+      quickRange: 'year', // 빠른 기간 선택 상태
       rows: [],
       loading: false,
-      error: null
+      error: null,
+      itemCodeModalOpen: false,
     };
   }
 
@@ -83,30 +94,32 @@ class MoldShotCheck extends Component {
     const parseFloatOrNull = (v) => (v === '' || v === null || v === undefined ? null : parseFloat(v));
 
     const payload = {
-      plant: parseIntOrNull(f.plant),
-      equipment_type: f.equipment_type?.trim() || null,
-      mold_no: parseIntOrNull(f.mold_no),
-      mold_name: f.mold_name?.trim() || null,
-      measuring_point: parseIntOrNull(f.measuring_point),
+      // === 생산내역 필터링 조건 ===
+      plant: f.plant?.trim() || null,
+      responsible_person: f.worker?.trim() || null,
+      work_center: f.line?.trim() || null,
+      material_no: f.itemCode?.trim() || null,
+      material_name: f.itemName?.trim() || null,
+      
+      // === 금형세척주기 검색 조건 ===
+      equipment_detail: f.equipment_detail?.trim() || null,
+      order_type: f.order_type?.trim() || null,
+      action_content: f.action_content?.trim() || null,
+      basic_start_date: f.basic_start_date || null,
+      basic_end_date: f.basic_end_date || null,
+      
+      // === 금형타발수관리 검색 조건 ===
+      mold_no: f.mold_no?.trim() || null,
+      measuring_point: f.measuring_point?.trim() || null,
       measuring_position: f.measuring_position?.trim() || null,
       cum_shot_min: parseIntOrNull(f.cum_shot_min),
       cum_shot_max: parseIntOrNull(f.cum_shot_max),
       inspection_hit_count: parseIntOrNull(f.inspection_hit_count),
       maintenance_cycle: parseIntOrNull(f.maintenance_cycle),
-      maintenance_cycle_unit: f.maintenance_cycle_unit?.trim() || null,
       progress_min: parseFloatOrNull(f.progress_min),
       progress_max: parseFloatOrNull(f.progress_max),
-      functional_location: f.functional_location?.trim() || null,
-      functional_location_desc: f.functional_location_desc?.trim() || null,
-      planner_group: f.planner_group?.trim() || null,
-      maintenance_plan: f.maintenance_plan?.trim() || null,
-      startDate: f.startDate || null, // YYYY-MM-DD
-      endDate: f.endDate || null,
-      part_no1: f.part_no1?.trim() || null,
-      part_no2: f.part_no2?.trim() || null,
-      part_no3: f.part_no3?.trim() || null,
-      part_no4: f.part_no4?.trim() || null,
-      part_no5: f.part_no5?.trim() || null
+      
+
     };
 
     // 값이 null/''/undefined인 키는 제거 → 불필요한 0/빈값 전송 방지
@@ -146,51 +159,47 @@ class MoldShotCheck extends Component {
     if (!Array.isArray(apiData)) return [];
     return apiData.map((item, index) => {
       // 한글 컬럼 ↔ 영문 키 매핑 (SELECT * 원본을 그대로 받더라도 안전)
-      const plant = item.plant ?? item['플랜트'] ?? null;
-      const equipment_type = item.equipment_type ?? item['설비유형'] ?? '';
+      const plant = item.plant ?? item['플랜트'] ?? '';
+      const responsible_person = item.responsible_person ?? item['책임자'] ?? '';
+      const material_no = item.material_no ?? item['자재번호'] ?? '';
+      const material_name = item.material_name ?? item['자재명'] ?? '';
+      const equipment_detail = item.equipment_detail ?? item['설비내역'] ?? '';
+      const order_type = item.order_type ?? item['오더유형'] ?? '';
+      const action_content = item.action_content ?? item['조치내용'] ?? '';
+      const basic_start_date = item.basic_start_date ?? item['기본시작일'] ?? '';
+      const basic_end_date = item.basic_end_date ?? item['기본종료일'] ?? '';
+      const shot_plant = item.shot_plant ?? item['shot_플랜트'] ?? null;
       const mold_no = item.mold_no ?? item['금형번호'] ?? null;
-      const mold_name = item.mold_name ?? item['금형내역'] ?? '';
       const measuring_point = item.measuring_point ?? item['측정지점'] ?? null;
       const measuring_position = item.measuring_position ?? item['측정위치'] ?? '';
-      const cum_shot = item.cum_shot ?? item['누적 Shot 수'] ?? null;
+      const cum_shot = item.cum_shot ?? item['누적_Shot_수'] ?? null;
+      const inspection_hit_count_80 = item.inspection_hit_count_80 ?? item['점검타발수_80'] ?? null;
+      const inspection_hit_count_90 = item.inspection_hit_count_90 ?? item['점검타발수_90'] ?? null;
       const inspection_hit_count = item.inspection_hit_count ?? item['점검타발수'] ?? null;
       const maintenance_cycle = item.maintenance_cycle ?? item['유지보수주기'] ?? null;
-      const progress = item.progress ?? item['진행률(%)'] ?? null;
-      const maintenance_cycle_unit = item.maintenance_cycle_unit ?? item['유지보수주기단위'] ?? '';
-      const functional_location = item.functional_location ?? item['기능위치'] ?? '';
-      const functional_location_desc = item.functional_location_desc ?? item['기능위치 내역'] ?? '';
-      const planner_group = item.planner_group ?? item['계획자그룹'] ?? '';
-      const maintenance_plan = item.maintenance_plan ?? item['유지보수계획'] ?? '';
-      const last_result_date = item.last_result_date ?? item['생산실적처리 최종일'] ?? ''; // date
-      const part_no1 = item.part_no1 ?? item['타발처리 품번1'] ?? '';
-      const part_no2 = item.part_no2 ?? item['타발처리 품번2'] ?? '';
-      const part_no3 = item.part_no3 ?? item['타발처리 품번3'] ?? '';
-      const part_no4 = item.part_no4 ?? item['타발처리 품번4'] ?? '';
-      const part_no5 = item.part_no5 ?? item['타발처리 품번5'] ?? '';
+      const progress_pct = item.progress_pct ?? item['진행율_pct'] ?? null;
 
       return {
         id: index+1,
         plant,
-        equipment_type,
+        responsible_person,
+        material_no,
+        material_name,
+        equipment_detail,
+        order_type,
+        action_content,
+        basic_start_date,
+        basic_end_date,
+        shot_plant,
         mold_no,
-        mold_name,
         measuring_point,
         measuring_position,
         cum_shot,
+        inspection_hit_count_80,
+        inspection_hit_count_90,
         inspection_hit_count,
         maintenance_cycle,
-        progress,
-        maintenance_cycle_unit,
-        functional_location,
-        functional_location_desc,
-        planner_group,
-        maintenance_plan,
-        last_result_date,
-        part_no1,
-        part_no2,
-        part_no3,
-        part_no4,
-        part_no5
+        progress_pct
       };
     });
   };
@@ -198,30 +207,31 @@ class MoldShotCheck extends Component {
   clearFilters = () => {
     this.setState({
       filters: {
-        plant: '',
-        equipment_type: '',
+        ...this.state.filters,
+        // plant: '',
+        ////  worker: '',
+        //line: '',
+        itemCode: '',
+        itemName: '',
+        
+        // === 금형세척주기 검색 조건 ===
+        equipment_detail: '',
+        order_type: '',
+        action_content: '',
+        basic_start_date: '',
+        basic_end_date: '',
+        
+        // === 금형타발수관리 검색 조건 ===
         mold_no: '',
-        mold_name: '',
         measuring_point: '',
         measuring_position: '',
         cum_shot_min: '',
         cum_shot_max: '',
         inspection_hit_count: '',
         maintenance_cycle: '',
-        maintenance_cycle_unit: '',
         progress_min: '',
         progress_max: '',
-        functional_location: '',
-        functional_location_desc: '',
-        planner_group: '',
-        maintenance_plan: '',
-        startDate: '',
-        endDate: '',
-        part_no1: '',
-        part_no2: '',
-        part_no3: '',
-        part_no4: '',
-        part_no5: ''
+        
       },
       rows: []
     });
@@ -242,54 +252,118 @@ class MoldShotCheck extends Component {
     this.setState(prev => ({ filterExpanded: !prev.filterExpanded }));
   };
 
+  // 빠른 기간 선택 메서드
+  toYMD = (d) => d.toLocaleDateString('sv-SE'); // YYYY-MM-DD
+
+  setQuickRange = (type) => {
+    const now = new Date();
+    const today = this.toYMD(now);
+
+    let start = today;
+    let end = today;
+
+    if (type === 'today') {
+      // 금일: 오늘~오늘
+      start = today;
+      end = today;
+    } else if (type === 'week') {
+      // 주간: 월요일~오늘 (한국/ISO 기준 월요일 시작)
+      const d = new Date(now);
+      const day = d.getDay();           // 0(일)~6(토)
+      const diffToMonday = (day + 6) % 7; // 월=1 -> 0, 일=0 -> 6
+      d.setDate(d.getDate() - diffToMonday);
+      start = this.toYMD(d);
+      end = today;
+    } else if (type === 'month') {
+      // 월간: 1일~오늘
+      const d = new Date(now.getFullYear(), now.getMonth(), 1);
+      start = this.toYMD(d);
+      end = today;
+    } else if (type === 'year') {
+      // 년간: 1월1일~오늘
+      const d = new Date(now.getFullYear(), 0, 1);
+      start = this.toYMD(d);
+      end = today;
+    }
+
+    this.setState(prev => ({
+      quickRange: type,
+      filters: {
+        ...prev.filters,
+        basic_start_date: start,
+        basic_end_date: end,
+      },
+      rows: [], // 선택 시 기존 데이터 초기화
+    }));
+  };
+
   columns = [
     { field: 'id', headerName: 'ID', width: 70, type: 'string',
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'},
-    { field: 'last_result_date', headerName: '최종처리일', width: 140, type: 'date',
+    { field: 'plant', headerName: '공장', width: 180,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'responsible_person', headerName: '작업자', width: 100,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'material_no', headerName: '품번', width: 150,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'material_name', headerName: '품명', width: 200,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
+      renderCell: (params) => (<Chip label={params.value || '-'} size="small" variant="outlined" />) },
+    { field: 'equipment_detail', headerName: '설비내역', width: 200,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'order_type', headerName: '오더유형', width: 100,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'action_content', headerName: '조치내용', width: 220,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'basic_start_date', headerName: '기본시작일', width: 120, type: 'date',
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
       valueGetter: (params) => (params.value ? new Date(params.value) : null) },
-    { field: 'plant', headerName: '플랜트', width: 100, type: 'number',
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'equipment_type', headerName: '설비유형', width: 110,
+    { field: 'basic_end_date', headerName: '기본종료일', width: 120, type: 'date',
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
+      valueGetter: (params) => (params.value ? new Date(params.value) : null) },
+    { field: 'shot_plant', headerName: 'Shot 플랜트', width: 120, type: 'number',
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
     { field: 'mold_no', headerName: '금형번호', width: 110, type: 'number',
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'mold_name', headerName: '금형내역', width: 100,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
-      renderCell: (params) => (<Chip label={params.value || '-'} size="small" variant="outlined" />) },
     { field: 'measuring_point', headerName: '측정지점', width: 110, type: 'number',
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
     { field: 'measuring_position', headerName: '측정위치', width: 160,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
     { field: 'cum_shot', headerName: '누적 Shot 수', width: 130, type: 'number',
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'inspection_hit_count_80', headerName: '점검타발수(80%)', width: 140, type: 'number',
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'inspection_hit_count_90', headerName: '점검타발수(90%)', width: 140, type: 'number',
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
     { field: 'inspection_hit_count', headerName: '점검타발수', width: 120, type: 'number',
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
     { field: 'maintenance_cycle', headerName: '유지보수주기', width: 120, type: 'number',
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'maintenance_cycle_unit', headerName: '주기단위', width: 100,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'progress', headerName: '진행률(%)', width: 110, type: 'number',
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'functional_location', headerName: '기능위치', width: 150,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'functional_location_desc', headerName: '기능위치 내역', width: 150,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'planner_group', headerName: '계획자그룹', width: 120,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'maintenance_plan', headerName: '유지보수계획', width: 180,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'part_no1', headerName: '품번1', width: 110,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'part_no2', headerName: '품번2', width: 110,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'part_no3', headerName: '품번3', width: 110,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'part_no4', headerName: '품번4', width: 110,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'part_no5', headerName: '품번5', width: 110,
+    { field: 'progress_pct', headerName: '진행률(%)', width: 110, type: 'number',
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' }
   ];
+
+  openItemCodeModal = () => {
+    this.setState({ itemCodeModalOpen: true });
+  };
+
+
+closeItemCodeModal = () => {
+    this.setState({ itemCodeModalOpen: false });
+  };
+
+ handleItemCodeSelect = ({ 품목번호, 품목명 }) => {
+            this.setState(prev => ({
+              filters: {
+                ...prev.filters,
+                itemCode: 품목번호 || '',
+                itemName: 품목명   || '',
+              },
+              itemCodeModalOpen: false, // 선택 후 모달 닫기
+            }));
+          };
+
+
 
   render() {
     const { filters, filterExpanded, rows, loading, error } = this.state;
@@ -312,243 +386,391 @@ class MoldShotCheck extends Component {
             gap: 1
           }}>
             <FilterIcon />
-            금형타발수 데이터 그리드
+            금형세척/점검 데이터 그리드
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            금형타발수(누적/점검타발/주기/진행률) 및 기능/계획/품번 정보 조회.
+            금형세척 점검 데이터(생산내역, 금형세척주기, 금형타발수관리) 통합 조회.
           </Typography>
         </Box>
 
         {/* 검색 필터 카드 */}
         <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+          {/* 필터 섹션의 헤더 */}
           <CardHeader
             title={
-              <Typography variant="h6" sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 1,
-                color: 'white'
-              }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  color: 'white',
+                }}
+              >
                 <SearchIcon />
                 검색 조건
               </Typography>
             }
             action={
-              <IconButton onClick={this.toggleFilterExpansion} sx={{ color: 'white' }}>
-                {filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-              </IconButton>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                {/* 빠른 기간 버튼 */}
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    size="small"
+                    variant={this.state.quickRange === 'today' ? 'contained' : 'outlined'}
+                    onClick={() => this.setQuickRange('today')}
+                    sx={{
+                      borderColor: 'white',
+                      color: 'white',
+                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+                    }}
+                  >
+                    금일
+                  </Button>
+                  <Button
+                    size="small"
+                    variant={this.state.quickRange === 'week' ? 'contained' : 'outlined'}
+                    onClick={() => this.setQuickRange('week')}
+                    sx={{
+                      borderColor: 'white',
+                      color: 'white',
+                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+                    }}
+                  >
+                    주간
+                  </Button>
+                  <Button
+                    size="small"
+                    variant={this.state.quickRange === 'month' ? 'contained' : 'outlined'}
+                    onClick={() => this.setQuickRange('month')}
+                    sx={{
+                      borderColor: 'white',
+                      color: 'white',
+                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+                    }}
+                  >
+                    월간
+                  </Button>
+                  <Button
+                    size="small"
+                    variant={this.state.quickRange === 'year' ? 'contained' : 'outlined'}
+                    onClick={() => this.setQuickRange('year')}
+                    sx={{
+                      borderColor: 'white',
+                      color: 'white',
+                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+                    }}
+                  >
+                    년간
+                  </Button>
+                </Box>
+
+                {/* 구분자 파이프(옵션) */}
+                <Typography sx={{ color: 'white', opacity: 0.8, mx: 0.5 }}>|</Typography>
+
+                {/* 기간선택 + 날짜 필드 */}
+                <Typography sx={{ color: 'white' }}>기간선택</Typography>
+                <TextField
+                  type="date"
+                  value={filters.basic_start_date}
+                  onChange={(e) => this.handleFilterChange('basic_start_date', e.target.value)}
+                  size="small"
+                  variant="outlined"
+                  sx={{ backgroundColor: 'white', borderRadius: 1, minWidth: 150 }}
+                />
+                <Typography sx={{ color: 'white' }}>~</Typography>
+                <TextField
+                  type="date"
+                  value={filters.basic_end_date}
+                  onChange={(e) => this.handleFilterChange('basic_end_date', e.target.value)}
+                  size="small"
+                  variant="outlined"
+                  sx={{ backgroundColor: 'white', borderRadius: 1, minWidth: 150 }}
+                />
+
+                {/* 확장/축소 버튼 */}
+                <IconButton onClick={this.toggleFilterExpansion} sx={{ color: 'white' }}>
+                  {filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                </IconButton>
+              </Box>
             }
-            sx={{ 
+            sx={{
               backgroundColor: '#ff8f00',
               color: 'white',
               borderRadius: 1,
-              mb: 2
+              mb: 2,
             }}
           />
 
-          {/* 기본 필터 */}
+          {/* 기본 필터 (8개) - 항상 보이는 주요 검색 필드들 */}
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={3}>
+            {/* 플랜트 */}
+            <Grid item xs={12} sm={6} md={2}>
               <TextField
-                fullWidth label="검색 시작일" type="date"
-                value={filters.startDate}
-                onChange={(e) => this.handleFilterChange('startDate', e.target.value)}
-                InputLabelProps={{ shrink: true }} size="small" variant="outlined"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth label="검색 종료일" type="date"
-                value={filters.endDate}
-                onChange={(e) => this.handleFilterChange('endDate', e.target.value)}
-                InputLabelProps={{ shrink: true }} size="small" variant="outlined"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth label="플랜트" type="number"
+                select
+                fullWidth
+                label="공장"
                 value={filters.plant}
                 onChange={(e) => this.handleFilterChange('plant', e.target.value)}
-                size="small" variant="outlined"
-              />
+                size="small"
+                variant="outlined"
+              >
+              <MenuItem value="아진산업-경산(본사)">아진산업-본사(경산)</MenuItem>
+              <MenuItem value="아진산업-1공장(경산)">아진산업-1공장(경산)</MenuItem>
+              <MenuItem value="아진산업-구어공장(경주)">아진산업-구어공장(경주)</MenuItem>
+              <MenuItem value="아진산업-하양공장(예정)">아진산업-하양공장(예정)</MenuItem>
+              </TextField>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+
+            {/* 책임자 */}
+            <Grid item xs={12} sm={6} md={2}>
               <TextField
-                fullWidth label="설비유형"
-                value={filters.equipment_type}
-                onChange={(e) => this.handleFilterChange('equipment_type', e.target.value)}
-                size="small" variant="outlined"
-              />
+                select
+                fullWidth
+                label="작업자"
+                value={filters.worker}
+                onChange={(e) => this.handleFilterChange('worker', e.target.value)}
+                size="small"
+                variant="outlined"
+               >
+               <MenuItem value="프레스">프레스</MenuItem>
+                          <MenuItem value="금형">금형</MenuItem>
+                          <MenuItem value="블랭크">블랭크</MenuItem>
+              </TextField>
             </Grid>
+
+            {/* 작업장 */}
+            <Grid item xs={12} sm={6} md={2}>
+              <TextField
+                select
+                fullWidth
+                label="라인"
+                value={filters.line}
+                onChange={(e) => this.handleFilterChange('line', e.target.value)}
+                size="small"
+                variant="outlined"
+                >
+                <MenuItem value="1500T">1500T(E라인) </MenuItem>
+                            <MenuItem value="1200T">1200T(D라인)</MenuItem>
+                            <MenuItem value="1000T">1000T(F라인)</MenuItem>
+                            <MenuItem value="1000T-PRO">1000T-PRO(G라인)</MenuItem>
+              </TextField>
+            </Grid>
+
+            {/* 자재번호 */}
+            <Grid item xs={12} sm={6} md={2}>
+            <TextField
+              fullWidth
+              label="품번"
+              value={filters.itemCode}
+              onClick={this.openItemCodeModal}
+              onSelect={this.handleItemCodeSelect}
+              size="small"
+              variant="outlined"
+              InputProps={{
+                readOnly: true,
+                style: { cursor: 'pointer' },
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                )
+              }}
+              sx={{
+                '& .MuiInputBase-root': {
+                  cursor: 'pointer',
+                  '&:hover': { backgroundColor: '#f5f5f5' }
+                }
+              }}
+            />
           </Grid>
 
-          {/* 확장 필터 */}
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              fullWidth
+              label="품목명"
+              value={filters.itemName}
+              onClick={this.openItemCodeModal}
+              onSelect={this.handleItemCodeSelect}
+              onChange={(e) => this.handleFilterChange('itemName', e.target.value)}
+              size="small"
+              variant="outlined"
+               InputProps={{
+                readOnly: true,
+                style: { cursor: 'pointer' },
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                )
+              }}
+              sx={{
+                '& .MuiInputBase-root': {
+                  cursor: 'pointer',
+                  '&:hover': { backgroundColor: '#f5f5f5' }
+                }
+              }}
+            />
+          </Grid>
+          </Grid>
+
+          {/* 확장된 필터 - 화살표 클릭 시 펼쳐지는 추가 검색 필드들 */}
           <Collapse in={filterExpanded} timeout="auto" unmountOnExit>
+            {/* 구분선 추가 */}
             <Divider sx={{ my: 2 }} />
+            
             <Grid container spacing={2}>
+              {/* 금형세척주기 검색 조건 */}
+              <Grid item xs={12}>
+                <Typography variant="subtitle1" sx={{ mb: 2, color: '#ff8f00', fontWeight: 'bold' }}>
+                  금형세척주기 검색 조건
+                </Typography>
+              </Grid>
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
-                  fullWidth label="금형번호" type="number"
+                  fullWidth
+                  label="설비내역"
+                  value={filters.equipment_detail}
+                  onChange={(e) => this.handleFilterChange('equipment_detail', e.target.value)}
+                  size="small"
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="오더유형"
+                  value={filters.order_type}
+                  onChange={(e) => this.handleFilterChange('order_type', e.target.value)}
+                  size="small"
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="조치내용"
+                  value={filters.action_content}
+                  onChange={(e) => this.handleFilterChange('action_content', e.target.value)}
+                  size="small"
+                  variant="outlined"
+                />
+              </Grid>
+
+              {/* 금형타발수관리 검색 조건 */}
+              <Grid item xs={12}>
+                <Typography variant="subtitle1" sx={{ mb: 2, color: '#ff8f00', fontWeight: 'bold', mt: 2 }}>
+                  금형타발수관리 검색 조건
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="금형번호"
                   value={filters.mold_no}
                   onChange={(e) => this.handleFilterChange('mold_no', e.target.value)}
-                  size="small" variant="outlined"
+                  size="small"
+                  variant="outlined"
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
-                  fullWidth label="금형내역"
-                  value={filters.mold_name}
-                  onChange={(e) => this.handleFilterChange('mold_name', e.target.value)}
-                  size="small" variant="outlined"
-                  InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon /></InputAdornment>) }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth label="측정지점" type="number"
+                  fullWidth
+                  label="측정지점"
                   value={filters.measuring_point}
                   onChange={(e) => this.handleFilterChange('measuring_point', e.target.value)}
-                  size="small" variant="outlined"
+                  size="small"
+                  variant="outlined"
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
-                  fullWidth label="측정위치"
+                  fullWidth
+                  label="측정위치"
                   value={filters.measuring_position}
                   onChange={(e) => this.handleFilterChange('measuring_position', e.target.value)}
-                  size="small" variant="outlined"
+                  size="small"
+                  variant="outlined"
                 />
               </Grid>
 
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
-                  fullWidth label="누적 Shot 수 (이상)" type="number"
+                  fullWidth
+                  label="누적 Shot 수 (이상)"
+                  type="number"
                   value={filters.cum_shot_min}
                   onChange={(e) => this.handleFilterChange('cum_shot_min', e.target.value)}
-                  size="small" variant="outlined"
+                  size="small"
+                  variant="outlined"
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
-                  fullWidth label="누적 Shot 수 (이하)" type="number"
+                  fullWidth
+                  label="누적 Shot 수 (이하)"
+                  type="number"
                   value={filters.cum_shot_max}
                   onChange={(e) => this.handleFilterChange('cum_shot_max', e.target.value)}
-                  size="small" variant="outlined"
+                  size="small"
+                  variant="outlined"
                 />
               </Grid>
 
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
-                  fullWidth label="점검타발수" type="number"
+                  fullWidth
+                  label="점검타발수"
+                  type="number"
                   value={filters.inspection_hit_count}
                   onChange={(e) => this.handleFilterChange('inspection_hit_count', e.target.value)}
-                  size="small" variant="outlined"
+                  size="small"
+                  variant="outlined"
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
-                  fullWidth label="유지보수주기" type="number"
+                  fullWidth
+                  label="유지보수주기"
+                  type="number"
                   value={filters.maintenance_cycle}
                   onChange={(e) => this.handleFilterChange('maintenance_cycle', e.target.value)}
-                  size="small" variant="outlined"
+                  size="small"
+                  variant="outlined"
                 />
               </Grid>
 
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
-                  fullWidth label="주기단위"
-                  value={filters.maintenance_cycle_unit}
-                  onChange={(e) => this.handleFilterChange('maintenance_cycle_unit', e.target.value)}
-                  size="small" variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth label="진행률(%) (이상)" type="number"
+                  fullWidth
+                  label="진행률(%) (이상)"
+                  type="number"
                   value={filters.progress_min}
                   onChange={(e) => this.handleFilterChange('progress_min', e.target.value)}
-                  size="small" variant="outlined" inputProps={{ step: '0.01' }}
+                  size="small"
+                  variant="outlined"
+                  inputProps={{ step: '0.01' }}
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
-                  fullWidth label="진행률(%) (이하)" type="number"
+                  fullWidth
+                  label="진행률(%) (이하)"
+                  type="number"
                   value={filters.progress_max}
                   onChange={(e) => this.handleFilterChange('progress_max', e.target.value)}
-                  size="small" variant="outlined" inputProps={{ step: '0.01' }}
+                  size="small"
+                  variant="outlined"
+                  inputProps={{ step: '0.01' }}
                 />
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth label="기능위치"
-                  value={filters.functional_location}
-                  onChange={(e) => this.handleFilterChange('functional_location', e.target.value)}
-                  size="small" variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth label="기능위치 내역"
-                  value={filters.functional_location_desc}
-                  onChange={(e) => this.handleFilterChange('functional_location_desc', e.target.value)}
-                  size="small" variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth label="계획자그룹"
-                  value={filters.planner_group}
-                  onChange={(e) => this.handleFilterChange('planner_group', e.target.value)}
-                  size="small" variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth label="유지보수계획"
-                  value={filters.maintenance_plan}
-                  onChange={(e) => this.handleFilterChange('maintenance_plan', e.target.value)}
-                  size="small" variant="outlined"
-                />
-              </Grid>
-
-              {/* 품번 1~5 */}
-              <Grid item xs={12} sm={6} md={2.4}>
-                <TextField fullWidth label="품번1"
-                  value={filters.part_no1}
-                  onChange={(e) => this.handleFilterChange('part_no1', e.target.value)}
-                  size="small" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6} md={2.4}>
-                <TextField fullWidth label="품번2"
-                  value={filters.part_no2}
-                  onChange={(e) => this.handleFilterChange('part_no2', e.target.value)}
-                  size="small" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6} md={2.4}>
-                <TextField fullWidth label="품번3"
-                  value={filters.part_no3}
-                  onChange={(e) => this.handleFilterChange('part_no3', e.target.value)}
-                  size="small" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6} md={2.4}>
-                <TextField fullWidth label="품번4"
-                  value={filters.part_no4}
-                  onChange={(e) => this.handleFilterChange('part_no4', e.target.value)}
-                  size="small" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6} md={2.4}>
-                <TextField fullWidth label="품번5"
-                  value={filters.part_no5}
-                  onChange={(e) => this.handleFilterChange('part_no5', e.target.value)}
-                  size="small" variant="outlined" />
               </Grid>
             </Grid>
           </Collapse>
 
-          {/* 버튼 */}
+          {/* 버튼 행 - 필터 초기화와 검색 버튼 */}
           <Grid item xs={12} sx={{ mt: 2 }}>
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+              {/* 필터 초기화 버튼 */}
               <Button
                 variant="outlined"
                 startIcon={<ClearIcon />}
@@ -558,11 +780,18 @@ class MoldShotCheck extends Component {
               >
                 필터 초기화
               </Button>
+              
+              {/* 검색 버튼 */}
               <Button
                 variant="contained"
                 startIcon={<SearchIcon />}
                 size="large"
-                sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}
+                sx={{ 
+                  backgroundColor: '#ff8f00',
+                  '&:hover': {
+                    backgroundColor: '#f57c00'
+                  }
+                }}
                 onClick={this.handleSearch}
               >
                 검색
@@ -602,6 +831,14 @@ class MoldShotCheck extends Component {
                 pageSizeOptions={[10, 25, 50, 100]}
                 initialState={{
                   pagination: { paginationModel: { page: 0, pageSize: 10 } },
+                  columns: {
+                      columnVisibilityModel: {
+                        id: false,       
+                        shot_plant: false,
+                        mold_no: false, // hide:true 대신 여기서 숨김
+                        measuring_point: false,
+                        measuring_position: false
+                      }}
                 }}
                 disableRowSelectionOnClick
                 density="compact"
@@ -610,6 +847,7 @@ class MoldShotCheck extends Component {
                   toolbar: { showQuickFilter: true, quickFilterProps: { debounceMs: 500 } },
                 }}
                 sx={{
+                  height: '600px',
                   '& .super-app-theme--header': {
                     backgroundColor: '#ff8f00',
                     color: 'white',
@@ -635,9 +873,20 @@ class MoldShotCheck extends Component {
             )}
           </Box>
         </Paper>
+        <ItemCodeModal
+          open={this.state.itemCodeModalOpen}
+          onClose={this.closeItemCodeModal}
+          onSelect={this.handleItemCodeSelect}
+          selectedItemCode={this.state.filters.itemCode}
+          plant={this.state.filters.plant}
+          worker={this.state.filters.worker}
+          line={this.state.filters.line}
+        />
       </Box>
     );
+    
   }
+
 }
 
 export default MoldShotCheck;
