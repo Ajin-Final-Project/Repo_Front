@@ -22,6 +22,23 @@
   border-radius: 6px;
   color: #b91c1c;
   font-weight: 500;
+
+  // 처음 등장 시 서서히 나타남 + 이후 무한 pulse
+  animation: fadeIn 0.8s ease-in-out, pulse 2s infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    background-color: #ffe5e5;
+  }
+  50% {
+    background-color: #ffc0c0;
+  }
 }
 
 .insight {
@@ -31,6 +48,21 @@
   margin-bottom: 20px;
   border-radius: 6px;
   color: #1e3a8a;
+  font-weight: 500;
+
+  // pulse 애니메이션 추가
+  animation: pulseInsight 2s infinite;
+}
+
+@keyframes pulseInsight {
+  0%, 100% {
+    background-color: #e0f2fe;
+    border-color: #3b82f6;
+  }
+  50% {
+    background-color: #bae6fd;
+    border-color: #2563eb;
+  }
 }
 
 .grid {
@@ -108,6 +140,20 @@
     text-align: center;
     flex: 1;
     color: #b91c1c;
+
+    // pulse 애니메이션 추가
+    animation: pulseStage 1.5s infinite;
+  }
+
+  @keyframes pulseStage {
+    0%, 100% {
+      background-color: #fee2e2;
+      border-color: #fca5a5;
+    }
+    50% {
+      background-color: #fecaca; // 더 진하게
+      border-color: #f87171;
+    }
   }
 
   .wide {

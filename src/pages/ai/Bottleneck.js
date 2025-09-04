@@ -19,29 +19,28 @@ const Bottleneck = () => {
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // ✅ 검색 필터 상태
+  const [animatedHeatmapData, setAnimatedHeatmapData] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [quickRange, setQuickRange] = useState("month");
   const [filters, setFilters] = useState({
     start_work_date: "2024-01-01",
     end_work_date: "2025-06-30",
   });
+  const [showPastLabel, setShowPastLabel] = useState(false);
+  const [showFutureLabel, setShowFutureLabel] = useState(false);
 
   const handleFilterChange = (field, value) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
   };
 
-  // ✅ 소수점 둘째 자리까지 포맷
   const formatNumber = (value) => {
     if (value === null || value === undefined) return 0;
     return Number(value).toFixed(2);
   };
 
-  // ✅ 병목 이름 변환 함수
   const translateBottleneck = (value, isCellOnly = false) => {
     if (!value) return "-";
     const val = value.toLowerCase();
-
     if (val.includes("forklift") && val.includes("blank")) return "블랭킹 지게차";
     if (val.includes("forklift") && val.includes("press")) return "프레스 지게차";
     if (val.includes("blanking")) {
@@ -59,10 +58,8 @@ const Bottleneck = () => {
     return value;
   };
 
-  // ✅ 오늘 날짜
   const today = "2025-06-27";
 
-  // ✅ 과거 4일 자동 계산
   const getPastDates = (todayStr, days) => {
     const base = new Date(todayStr);
     const dates = [];
@@ -75,7 +72,6 @@ const Bottleneck = () => {
   };
   const pastDates = getPastDates(today, 4);
 
-  // ✅ 미래 3일
   const getFutureDates = (todayStr, days) => {
     const base = new Date(todayStr);
     const dates = [];
@@ -88,7 +84,7 @@ const Bottleneck = () => {
   };
   const futureDates = getFutureDates(today, 3);
 
-  // ✅ API 호출
+  // API 호출
   useEffect(() => {
     fetch("http://localhost:8000/smartFactory/bottleneck/overview", {
       method: "POST",
@@ -109,38 +105,115 @@ const Bottleneck = () => {
       .finally(() => setLoading(false));
   }, [filters]);
 
+  // 히트맵 데이터 준비
+  const stages = ["조립셀", "프레스 지게차", "프레스", "블랭킹 지게차", "블랭킹"];
+  const allDates = [...pastDates, today, ...futureDates];
+  const fullHeatmapData = [];
+
+  // 날짜별 매핑
+  const byDate = {};
+  data.forEach((row) => {
+    const dateKey = row.Time_Now?.split("T")[0];
+    if (dateKey) byDate[dateKey] = row;
+  });
+
+  [...pastDates, today].forEach((d, xIdx) => {
+    const row = byDate[d];
+    if (!row || !row.Bottleneck_actual) return;
+    const actual = row.Bottleneck_actual.toLowerCase();
+    if (actual.includes("forklift") && actual.includes("blank"))
+      fullHeatmapData.push([xIdx, stages.indexOf("블랭킹 지게차"), 1]);
+    else if (actual.includes("forklift") && actual.includes("press"))
+      fullHeatmapData.push([xIdx, stages.indexOf("프레스 지게차"), 1]);
+    else if (actual.includes("cell"))
+      fullHeatmapData.push([xIdx, stages.indexOf("조립셀"), 1]);
+    else if (actual.includes("press"))
+      fullHeatmapData.push([xIdx, stages.indexOf("프레스"), 1]);
+    else if (actual.includes("blank"))
+      fullHeatmapData.push([xIdx, stages.indexOf("블랭킹"), 1]);
+  });
+
+  futureDates.forEach((d, idx) => {
+    const xIdx = pastDates.length + 1 + idx;
+    const row = byDate[today];
+    if (!row || !row.Bottleneck_pred) return;
+    const pred = row.Bottleneck_pred.toLowerCase();
+    if (pred.includes("forklift") && pred.includes("blank"))
+      fullHeatmapData.push([xIdx, stages.indexOf("블랭킹 지게차"), 2]);
+    else if (pred.includes("forklift") && pred.includes("press"))
+      fullHeatmapData.push([xIdx, stages.indexOf("프레스 지게차"), 2]);
+    else if (pred.includes("cell"))
+      fullHeatmapData.push([xIdx, stages.indexOf("조립셀"), 2]);
+    else if (pred.includes("press"))
+      fullHeatmapData.push([xIdx, stages.indexOf("프레스"), 2]);
+    else if (pred.includes("blank"))
+      fullHeatmapData.push([xIdx, stages.indexOf("블랭킹"), 2]);
+  });
+
+  // 애니메이션 효과
+  useEffect(() => {
+    if (loading || !data || data.length === 0) {
+      setAnimatedHeatmapData([]);
+      setCurrentIndex(0);
+      setShowPastLabel(false);
+      setShowFutureLabel(false);
+      return;
+    }
+    if (currentIndex >= fullHeatmapData.length) return;
+    const timer = setTimeout(() => {
+      setAnimatedHeatmapData((prev) => {
+        const newData = [...prev, fullHeatmapData[currentIndex]];
+        const currentData = fullHeatmapData[currentIndex];
+        if (currentData[2] === 1) {
+          setShowPastLabel(true);
+        } else if (currentData[2] === 2) {
+          setShowFutureLabel(true);
+        }
+        return newData;
+      });
+      setCurrentIndex((prev) => prev + 1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [currentIndex, fullHeatmapData, loading, data]);
+
+  // 조건부 렌더링
   if (loading) return <div>로딩중...</div>;
   if (!data || data.length === 0) return <div>데이터 없음</div>;
 
-  // ✅ 날짜별 매핑
-  const byDate = {};
-  data.forEach((row) => {
-    const dateKey = row.Time_Now.split("T")[0];
-    byDate[dateKey] = row;
-  });
-
-  // ✅ 최신 데이터
+  // 최신 데이터
   const latest = byDate[today] || byDate[pastDates.at(-1)];
 
-  // ✅ Radar 차트 최대치
+  // Radar 차트 최대치
   const maxQueueValue = Math.max(
-    (latest?.Cell1_Queue || 0) + (latest?.Cell2_Queue || 0) + (latest?.Cell3_Queue || 0) + (latest?.Cell4_Queue || 0),
-    (latest?.Press1_Queue || 0) + (latest?.Press2_Queue || 0) + (latest?.Press3_Queue || 0) + (latest?.Press4_Queue || 0),
-    (latest?.Blanking_SKU1_Queue || 0) + (latest?.Blanking_SKU2_Queue || 0) + (latest?.Blanking_SKU3_Queue || 0) + (latest?.Blanking_SKU4_Queue || 0),
+    (latest?.Cell1_Queue || 0) +
+      (latest?.Cell2_Queue || 0) +
+      (latest?.Cell3_Queue || 0) +
+      (latest?.Cell4_Queue || 0),
+    (latest?.Press1_Queue || 0) +
+      (latest?.Press2_Queue || 0) +
+      (latest?.Press3_Queue || 0) +
+      (latest?.Press4_Queue || 0),
+    (latest?.Blanking_SKU1_Queue || 0) +
+      (latest?.Blanking_SKU2_Queue || 0) +
+      (latest?.Blanking_SKU3_Queue || 0) +
+      (latest?.Blanking_SKU4_Queue || 0),
     latest?.Forklift_Blanking_Queue || 0,
     latest?.Forklift_Press_Queue || 0
   );
   const radarMax = Math.ceil(maxQueueValue * 1.1);
 
-  // ✅ Radar 차트 옵션
+  // Radar 차트 옵션
   const radarOption = {
     tooltip: {
-      formatter: (params) => {
-        return params.name + "<br/>" +
-          params.value
-            .map((v, i) => `${radarOption.radar.indicator[i].name}: ${Number(v).toFixed(2)}`)
-            .join("<br/>");
-      }
+      formatter: (params) =>
+        params.name +
+        "<br/>" +
+        params.value
+          .map(
+            (v, i) =>
+              `${radarOption.radar.indicator[i].name}: ${Number(v).toFixed(2)}`
+          )
+          .join("<br/>"),
     },
     legend: { data: ["실시간 병목 현황"], top: "bottom" },
     radar: {
@@ -159,11 +232,20 @@ const Bottleneck = () => {
         data: [
           {
             value: [
-              (latest?.Blanking_SKU1_Queue || 0) + (latest?.Blanking_SKU2_Queue || 0) + (latest?.Blanking_SKU3_Queue || 0) + (latest?.Blanking_SKU4_Queue || 0),
+              (latest?.Blanking_SKU1_Queue || 0) +
+                (latest?.Blanking_SKU2_Queue || 0) +
+                (latest?.Blanking_SKU3_Queue || 0) +
+                (latest?.Blanking_SKU4_Queue || 0),
               latest?.Forklift_Blanking_Queue || 0,
-              (latest?.Press1_Queue || 0) + (latest?.Press2_Queue || 0) + (latest?.Press3_Queue || 0) + (latest?.Press4_Queue || 0),
+              (latest?.Press1_Queue || 0) +
+                (latest?.Press2_Queue || 0) +
+                (latest?.Press3_Queue || 0) +
+                (latest?.Press4_Queue || 0),
               latest?.Forklift_Press_Queue || 0,
-              (latest?.Cell1_Queue || 0) + (latest?.Cell2_Queue || 0) + (latest?.Cell3_Queue || 0) + (latest?.Cell4_Queue || 0),
+              (latest?.Cell1_Queue || 0) +
+                (latest?.Cell2_Queue || 0) +
+                (latest?.Cell3_Queue || 0) +
+                (latest?.Cell4_Queue || 0),
             ],
             name: "실시간 병목 현황",
           },
@@ -173,7 +255,7 @@ const Bottleneck = () => {
     ],
   };
 
-  // ✅ Pie 차트 데이터
+  // Pie 차트 데이터
   const past7Dates = getPastDates(today, 7);
   let pieData = [
     {
@@ -188,7 +270,13 @@ const Bottleneck = () => {
         0
       ),
     },
-    { name: "블랭킹 지게차", value: past7Dates.reduce((s, d) => s + (byDate[d]?.Forklift_Blanking_Queue || 0), 0) },
+    {
+      name: "블랭킹 지게차",
+      value: past7Dates.reduce(
+        (s, d) => s + (byDate[d]?.Forklift_Blanking_Queue || 0),
+        0
+      ),
+    },
     {
       name: "프레스",
       value: past7Dates.reduce(
@@ -201,7 +289,13 @@ const Bottleneck = () => {
         0
       ),
     },
-    { name: "프레스 지게차", value: past7Dates.reduce((s, d) => s + (byDate[d]?.Forklift_Press_Queue || 0), 0) },
+    {
+      name: "프레스 지게차",
+      value: past7Dates.reduce(
+        (s, d) => s + (byDate[d]?.Forklift_Press_Queue || 0),
+        0
+      ),
+    },
     {
       name: "조립셀",
       value: past7Dates.reduce(
@@ -220,7 +314,7 @@ const Bottleneck = () => {
   const pieOption = {
     tooltip: {
       trigger: "item",
-      formatter: (p) => `${p.name}: ${Number(p.value).toFixed(2)} (${p.percent}%)`
+      formatter: (p) => `${p.name}: ${Number(p.value).toFixed(2)} (${p.percent}%)`,
     },
     series: [
       {
@@ -233,32 +327,7 @@ const Bottleneck = () => {
     ],
   };
 
-  // ✅ Heatmap 데이터
-  const stages = ["조립셀", "프레스 지게차", "프레스", "블랭킹 지게차", "블랭킹"];
-  const allDates = [...pastDates, today, ...futureDates];
-  const heatmapData = [];
-  [...pastDates, today].forEach((d, xIdx) => {
-    const row = byDate[d];
-    if (!row || !row.Bottleneck_actual) return;
-    const actual = row.Bottleneck_actual.toLowerCase();
-    if (actual.includes("forklift") && actual.includes("blank")) heatmapData.push([xIdx, stages.indexOf("블랭킹 지게차"), 1]);
-    else if (actual.includes("forklift") && actual.includes("press")) heatmapData.push([xIdx, stages.indexOf("프레스 지게차"), 1]);
-    else if (actual.includes("cell")) heatmapData.push([xIdx, stages.indexOf("조립셀"), 1]);
-    else if (actual.includes("press")) heatmapData.push([xIdx, stages.indexOf("프레스"), 1]);
-    else if (actual.includes("blank")) heatmapData.push([xIdx, stages.indexOf("블랭킹"), 1]);
-  });
-  futureDates.forEach((d, idx) => {
-    const xIdx = pastDates.length + 1 + idx;
-    const row = byDate[today];
-    if (!row || !row.Bottleneck_pred) return;
-    const pred = row.Bottleneck_pred.toLowerCase();
-    if (pred.includes("forklift") && pred.includes("blank")) heatmapData.push([xIdx, stages.indexOf("블랭킹 지게차"), 2]);
-    else if (pred.includes("forklift") && pred.includes("press")) heatmapData.push([xIdx, stages.indexOf("프레스 지게차"), 2]);
-    else if (pred.includes("cell")) heatmapData.push([xIdx, stages.indexOf("조립셀"), 2]);
-    else if (pred.includes("press")) heatmapData.push([xIdx, stages.indexOf("프레스"), 2]);
-    else if (pred.includes("blank")) heatmapData.push([xIdx, stages.indexOf("블랭킹"), 2]);
-  });
-
+  // 히트맵 옵션
   const blockOption = {
     tooltip: {
       formatter: (p) => {
@@ -266,13 +335,27 @@ const Bottleneck = () => {
         const stage = stages[p.data[1]];
         const type = p.data[2] === 1 ? "실제 병목" : "예측 병목";
         return `${date}<br/>${stage} : ${type}`;
-      }
+      },
     },
     grid: { top: 60, bottom: 20, left: 110, right: 20 },
-    xAxis: { type: "category", data: allDates.map((d) => d.slice(5)), splitLine: { show: true } },
-    yAxis: { type: "category", data: stages, axisLabel: { margin: 20 }, splitLine: { show: true } },
-    visualMap: { show: false, min: 1, max: 2, inRange: { color: ["#ef4444", "#3b82f6"] } }, // ✅ themeHex 제거
-    series: [{ type: "heatmap", data: heatmapData }],
+    xAxis: {
+      type: "category",
+      data: allDates.map((d) => d.slice(5)),
+      splitLine: { show: true },
+    },
+    yAxis: {
+      type: "category",
+      data: stages,
+      axisLabel: { margin: 20 },
+      splitLine: { show: true },
+    },
+    visualMap: {
+      show: false,
+      min: 1,
+      max: 2,
+      inRange: { color: ["#ef4444", "#3b82f6"] },
+    },
+    series: [{ type: "heatmap", data: animatedHeatmapData }],
   };
 
   return (
@@ -291,7 +374,7 @@ const Bottleneck = () => {
         </Typography>
       </Box>
 
-      {/* ✅ 검색 필터 섹션 (제목/부제 아래로 이동) */}
+      {/* 검색 필터 섹션 */}
       <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
         <CardHeader
           title={
@@ -316,7 +399,6 @@ const Bottleneck = () => {
           }}
         />
         <Grid container spacing={2} alignItems="center">
-          {/* 주간/월간 버튼 */}
           <Grid item>
             <Box sx={{ display: "flex", gap: 1 }}>
               {["week", "month"].map((range) => (
@@ -339,8 +421,6 @@ const Bottleneck = () => {
               ))}
             </Box>
           </Grid>
-
-          {/* 기간 선택 */}
           <Grid item>
             <Typography sx={{ mr: 1 }}>기간선택</Typography>
           </Grid>
@@ -369,9 +449,6 @@ const Bottleneck = () => {
           </Grid>
         </Grid>
       </Paper>
-
-
-      {/* 원래 있던 UI들 (Header, 차트, 테이블 등) */}
 
       {/* 경고 박스 */}
       <div className={styles.alert}>
@@ -418,29 +495,71 @@ const Bottleneck = () => {
           </div>
         </div>
 
-        {/* 공정도 */}
         <div className={styles.card}>
           <h2>공정도</h2>
           <div className={styles.flow}>
             <div className={styles.row}>
-              {[1,2,3,4].map(i=>(
-                <div key={`blanking${i}`} className={`${styles.stage} ${latest?.Bottleneck_actual?.toLowerCase().includes(`blanking${i}`)?styles.stageRed:""}`}>블랭킹{i}</div>
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={`blanking${i}`}
+                  className={`${styles.stage} ${
+                    latest?.Bottleneck_actual?.toLowerCase().includes(`blanking${i}`)
+                      ? styles.stageRed
+                      : ""
+                  }`}
+                >
+                  블랭킹{i}
+                </div>
               ))}
             </div>
             <div className={styles.row}>
-              <div className={`${styles.stage} ${styles.wide} ${latest?.Bottleneck_actual?.toLowerCase().includes("forklift_blank")?styles.stageRed:""}`}>블랭킹 지게차</div>
+              <div
+                className={`${styles.stage} ${styles.wide} ${
+                  latest?.Bottleneck_actual?.toLowerCase().includes("forklift_blank")
+                    ? styles.stageRed
+                    : ""
+                }`}
+              >
+                블랭킹 지게차
+              </div>
             </div>
             <div className={styles.row}>
-              {[1,2,3,4].map(i=>(
-                <div key={`press${i}`} className={`${styles.stage} ${latest?.Bottleneck_actual?.toLowerCase().includes(`press${i}`)?styles.stageRed:""}`}>프레스{i}</div>
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={`press${i}`}
+                  className={`${styles.stage} ${
+                    latest?.Bottleneck_actual?.toLowerCase().includes(`press${i}`)
+                      ? styles.stageRed
+                      : ""
+                  }`}
+                >
+                  프레스{i}
+                </div>
               ))}
             </div>
             <div className={styles.row}>
-              <div className={`${styles.stage} ${styles.wide} ${latest?.Bottleneck_actual?.toLowerCase().includes("forklift_press")?styles.stageRed:""}`}>프레스 지게차</div>
+              <div
+                className={`${styles.stage} ${styles.wide} ${
+                  latest?.Bottleneck_actual?.toLowerCase().includes("forklift_press")
+                    ? styles.stageRed
+                    : ""
+                }`}
+              >
+                프레스 지게차
+              </div>
             </div>
             <div className={styles.row}>
-              {[1,2,3,4].map(i=>(
-                <div key={`cell${i}`} className={`${styles.stage} ${latest?.Bottleneck_actual?.toLowerCase().includes(`cell${i}`)?styles.stageRed:""}`}>조립셀{i}</div>
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={`cell${i}`}
+                  className={`${styles.stage} ${
+                    latest?.Bottleneck_actual?.toLowerCase().includes(`cell${i}`)
+                      ? styles.stageRed
+                      : ""
+                  }`}
+                >
+                  조립셀{i}
+                </div>
               ))}
             </div>
           </div>
@@ -460,8 +579,39 @@ const Bottleneck = () => {
         </div>
         <div className={styles.card}>
           <h2>날짜별 병목 기록 및 예측</h2>
-          <div className={styles.subHeader}><span>과거 병목 기록</span><span>미래 병목 예측</span></div>
-          <ReactECharts option={blockOption} style={{ height: "280px" }} />
+          <div style={{ position: "relative", height: "280px" }}>
+            <ReactECharts option={blockOption} style={{ height: "280px" }} />
+            {showPastLabel && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "10px",
+                  left: "20px",
+                  color: "#ef4444",
+                  fontWeight: "bold",
+                  fontSize: "14px",
+                  zIndex: 10,
+                }}
+              >
+                과거 병목 기록
+              </div>
+            )}
+            {showFutureLabel && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "10px",
+                  right: "20px",
+                  color: "#3b82f6",
+                  fontWeight: "bold",
+                  fontSize: "14px",
+                  zIndex: 10,
+                }}
+              >
+                미래 병목 예측
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -472,7 +622,9 @@ const Bottleneck = () => {
           <thead>
             <tr>
               <th>SKU</th>
-              {pastDates.map((d) => (<th key={d}>{d}</th>))}
+              {pastDates.map((d) => (
+                <th key={d}>{d}</th>
+              ))}
               <th>오늘 예측 ({today})</th>
             </tr>
           </thead>
@@ -504,7 +656,6 @@ const Bottleneck = () => {
         </table>
       </div>
 
-
       {/* StageGroup별 병목 예측 */}
       <div className={`${styles.cardWide} ${styles.section}`}>
         <h2>과거의 공정별 실제 병목과 예측병목 표시 / 오늘의 공정별 병목 예측 (✔: 일치, ✘: 불일치)</h2>
@@ -512,25 +663,36 @@ const Bottleneck = () => {
           <thead>
             <tr>
               <th>공정</th>
-              {pastDates.map((d) => (<th key={d}>{d}</th>))}
+              {pastDates.map((d) => (
+                <th key={d}>{d}</th>
+              ))}
               <th>오늘 예측 ({today})</th>
             </tr>
           </thead>
           <tbody>
             {["Blanking", "Press", "Cell"].map((stage) => (
               <tr key={stage}>
-                <td>{stage === "Blanking" ? "블랭킹" : stage === "Press" ? "프레스" : "조립셀"}</td>
+                <td>
+                  {stage === "Blanking" ? "블랭킹" : stage === "Press" ? "프레스" : "조립셀"}
+                </td>
                 {pastDates.map((d) => {
                   const actual = byDate[d]?.[`Bottleneck_actual_${stage}`];
                   const pred = byDate[d]?.[`Bottleneck_pred_${stage}`];
                   const match = actual && pred && actual === pred;
-                  const displayActual = stage === "Cell"
-                    ? translateBottleneck(actual, true) // ✅ 공정별에서만 "SKU1"
-                    : translateBottleneck(actual);
+                  const displayActual =
+                    stage === "Cell"
+                      ? translateBottleneck(actual, true)
+                      : translateBottleneck(actual);
                   return (
                     <td key={d}>
                       {displayActual}{" "}
-                      {actual && pred ? (match ? <span style={{ color: "#2563eb" }}>✔</span> : <span style={{ color: "#dc2626" }}>✘</span>) : null}
+                      {actual && pred ? (
+                        match ? (
+                          <span style={{ color: "#2563eb" }}>✔</span>
+                        ) : (
+                          <span style={{ color: "#dc2626" }}>✘</span>
+                        )
+                      ) : null}
                     </td>
                   );
                 })}
@@ -547,7 +709,8 @@ const Bottleneck = () => {
 
       {/* 인사이트 */}
       <div className={`${styles.insight} ${styles.section}`}>
-        병목 집중 지점: <b>{translateBottleneck(latest?.Bottleneck_actual)}</b> → SKU 분산 재배치를 통한 부하 균형 조정이 요구됨.
+        병목 집중 지점: <b>{translateBottleneck(latest?.Bottleneck_actual)}</b> → SKU 분산
+        재배치를 통한 부하 균형 조정이 요구됨.
       </div>
 
       {/* 원래 vs 제안 + Queue 변화 */}
@@ -555,19 +718,59 @@ const Bottleneck = () => {
         <div className={styles.card}>
           <h2>원래 vs 제안 비율</h2>
           <div className={styles.cardList}>
-            <div className={styles.skuCard}><h3>SKU1</h3><span className={styles.tagRed}>48.20%</span> → <span className={styles.tagBlue}>100.00%</span></div>
-            <div className={styles.skuCard}><h3>SKU2</h3><span className={styles.tagRed}>37.90%</span> → <span className={styles.tagBlue}>0.00%</span></div>
-            <div className={styles.skuCard}><h3>SKU3</h3><span className={styles.tagRed}>0.00%</span> → <span className={styles.tagBlue}>50.00%</span></div>
-            <div className={styles.skuCard}><h3>SKU4</h3><span className={styles.tagRed}>13.90%</span> → <span className={styles.tagBlue}>30.00%</span></div>
+            <div className={styles.skuCard}>
+              <h3>SKU1</h3>
+              <span className={styles.tagRed}>48.20%</span> →{" "}
+              <span className={styles.tagBlue}>100.00%</span>
+            </div>
+            <div className={styles.skuCard}>
+              <h3>SKU2</h3>
+              <span className={styles.tagRed}>37.90%</span> →{" "}
+              <span className={styles.tagBlue}>0.00%</span>
+            </div>
+            <div className={styles.skuCard}>
+              <h3>SKU3</h3>
+              <span className={styles.tagRed}>0.00%</span> →{" "}
+              <span className={styles.tagBlue}>50.00%</span>
+            </div>
+            <div className={styles.skuCard}>
+              <h3>SKU4</h3>
+              <span className={styles.tagRed}>13.90%</span> →{" "}
+              <span className={styles.tagBlue}>30.00%</span>
+            </div>
           </div>
         </div>
         <div className={styles.card}>
           <h2>재분배 전후 Cell별 Queue 변화</h2>
           <div className={styles.cardList}>
-            <div className={styles.skuCard}><h3>Cell1</h3><span className={styles.tagRed}>Before {formatNumber(latest?.Cell1_Queue)}</span> → <span className={styles.tagBlue}>After {formatNumber((latest?.Cell1_Queue || 0) / 2)}</span></div>
-            <div className={styles.skuCard}><h3>Cell2</h3><span className={styles.tagRed}>Before {formatNumber(latest?.Cell2_Queue)}</span> → <span className={styles.tagBlue}>After {formatNumber((latest?.Cell2_Queue || 0) * 2)}</span></div>
-            <div className={styles.skuCard}><h3>Cell3</h3><span className={styles.tagRed}>Before {formatNumber(latest?.Cell3_Queue)}</span> → <span className={styles.tagBlue}>After {formatNumber((latest?.Cell3_Queue || 0) * 2)}</span></div>
-            <div className={styles.skuCard}><h3>Cell4</h3><span className={styles.tagRed}>Before {formatNumber(latest?.Cell4_Queue)}</span> → <span className={styles.tagBlue}>After {formatNumber((latest?.Cell4_Queue || 0) * 1.1)}</span></div>
+            <div className={styles.skuCard}>
+              <h3>Cell1</h3>
+              <span className={styles.tagRed}>Before {formatNumber(latest?.Cell1_Queue)}</span> →{" "}
+              <span className={styles.tagBlue}>
+                After {formatNumber((latest?.Cell1_Queue || 0) / 2)}
+              </span>
+            </div>
+            <div className={styles.skuCard}>
+              <h3>Cell2</h3>
+              <span className={styles.tagRed}>Before {formatNumber(latest?.Cell2_Queue)}</span> →{" "}
+              <span className={styles.tagBlue}>
+                After {formatNumber((latest?.Cell2_Queue || 0) * 2)}
+              </span>
+            </div>
+            <div className={styles.skuCard}>
+              <h3>Cell3</h3>
+              <span className={styles.tagRed}>Before {formatNumber(latest?.Cell3_Queue)}</span> →{" "}
+              <span className={styles.tagBlue}>
+                After {formatNumber((latest?.Cell3_Queue || 0) * 2)}
+              </span>
+            </div>
+            <div className={styles.skuCard}>
+              <h3>Cell4</h3>
+              <span className={styles.tagRed}>Before {formatNumber(latest?.Cell4_Queue)}</span> →{" "}
+              <span className={styles.tagBlue}>
+                After {formatNumber((latest?.Cell4_Queue || 0) * 1.1)}
+              </span>
+            </div>
           </div>
         </div>
       </div>
