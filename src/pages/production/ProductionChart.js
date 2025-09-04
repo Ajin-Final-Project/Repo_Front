@@ -10,9 +10,7 @@ import {
   Card,
   CardContent,
   CardHeader,
-  Select,
   MenuItem,
-  FormControl,
   TextField,
   CircularProgress,
   Button,
@@ -100,7 +98,10 @@ class ProductionChart extends Component {
       },
       filterExpanded: false,
       quickRange: 'month',
-      itemCodeModalOpen: false     // 품목 코드 선택 모달 열림/닫힘 상태
+      itemCodeModalOpen: false,     // 품목 코드 선택 모달 열림/닫힘 상태
+      // UPH 데이터 상태 추가
+      uphData: [],
+      uphLoading: false
     };
     this.liveChartInterval = null;
     this.dataAnimationInterval = null;
@@ -110,27 +111,42 @@ class ProductionChart extends Component {
     this.fetchItemList(); 
     this.fetchProductionData();
     this.fetchBarChartData();
-    this.fetchLiveChartData();
-    this.liveChartInterval = setInterval(() => {
-      if (!this.isAnimating) this.fetchLiveChartData();
-    }, 1000000000);
+    // this.fetchLiveChartData();
+    if(this.state.filters.itemCode != ''){
+    this.fetchUphData();
+    }
+
+    // this.liveChartInterval = setInterval(() => {
+    //   if (!this.isAnimating) this.fetchLiveChartData();
+    // }, 1000000000);
   }
 
   componentWillUnmount() {
     if (this.liveChartInterval) clearInterval(this.liveChartInterval);
     if (this.dataAnimationInterval) clearInterval(this.dataAnimationInterval);
+    if (this.fetchTimeout) clearTimeout(this.fetchTimeout);
   }
 
   componentDidUpdate(prevProps, prevState) {
-    if (
+    // 필터 변경 시에만 API 호출 (디바운싱 적용)
+    const filtersChanged = 
       prevState.filters.start_work_date !== this.state.filters.start_work_date ||
       prevState.filters.end_work_date !== this.state.filters.end_work_date ||
       prevState.filters.line !== this.state.filters.line ||
-      prevState.filters.itemName !== this.state.filters.itemName
-    ) {
-      this.fetchProductionData();
-      this.fetchBarChartData();
-      this.fetchLiveChartData();
+      prevState.filters.itemName !== this.state.filters.itemName;
+
+    if (filtersChanged) {
+      // 디바운싱을 위해 기존 타이머 클리어
+      if (this.fetchTimeout) {
+        clearTimeout(this.fetchTimeout);
+      }
+      
+      // 300ms 후에 API 호출
+      this.fetchTimeout = setTimeout(() => {
+        this.fetchProductionData();
+        this.fetchBarChartData();
+        this.fetchUphData();
+      }, 300);
     }
   }
 
@@ -205,50 +221,88 @@ class ProductionChart extends Component {
   };
 
   // 실시간 차트 데이터 가져오기
-  fetchLiveChartData = async () => {
+  // fetchLiveChartData = async () => {
+  //   try {
+  //     const response = await fetch(`${API_BASE}/smartFactory/production_chart/live-chart`, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ 
+  //         start_date: this.state.filters.start_work_date, 
+  //         end_date: this.state.filters.end_work_date 
+  //       })
+  //     });
+  //     if (!response.ok) throw new Error('Network response was not ok');
+  //     const result = await response.json();
+  //     if (result.message === 'productionGrid live list 조회 성공' && result.data) {
+  //       const chartData = result.data.map((item) => ({
+  //         date: item.근무일자,
+  //         production: parseInt(item['sum(생산수량)']) || 0
+  //       }));
+  //       this.setState({
+  //         liveChartData: chartData,
+  //         liveLoading: false,
+  //         currentDataIndex: 0,
+  //         displayData: []
+  //       });
+  //       this.startDataAnimation(chartData);
+  //     } else {
+  //       throw new Error('API 응답 형식이 올바르지 않습니다.');
+  //     }
+  //   } catch (error) {
+  //     const defaultData = [
+  //       { date: '2024-01-01', production: 15000 },
+  //       { date: '2024-01-02', production: 18000 },
+  //       { date: '2024-01-03', production: 22000 },
+  //       { date: '2024-01-04', production: 19000 },
+  //       { date: '2024-01-05', production: 25000 },
+  //       { date: '2024-01-06', production: 21000 },
+  //       { date: '2024-01-07', production: 28000 }
+  //     ];
+  //     this.setState({
+  //       liveChartData: defaultData,
+  //       liveLoading: false,
+  //       currentDataIndex: 0,
+  //       displayData: []
+  //     });
+  //     this.startDataAnimation(defaultData);
+  //   }
+  // };
+
+  // UPH 데이터 가져오기
+  fetchUphData = async () => {
+    this.setState({ uphLoading: true });
     try {
-      const response = await fetch(`${API_BASE}/smartFactory/production_chart/live-chart`, {
+      const response = await fetch(`${API_BASE}/smartFactory/production_chart/uph-production`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          start_date: this.state.filters.start_work_date, 
-          end_date: this.state.filters.end_work_date 
+        body: JSON.stringify({
+          start_date: this.state.filters.start_work_date,
+          end_date: this.state.filters.end_work_date,
+          itemCd: this.state.filters.itemCode || undefined
         })
       });
       if (!response.ok) throw new Error('Network response was not ok');
       const result = await response.json();
-      if (result.message === 'productionGrid live list 조회 성공' && result.data) {
-        const chartData = result.data.map((item) => ({
-          date: item.근무일자,
-          production: parseInt(item['sum(생산수량)']) || 0
-        }));
-        this.setState({
-          liveChartData: chartData,
-          liveLoading: false,
-          currentDataIndex: 0,
-          displayData: []
-        });
-        this.startDataAnimation(chartData);
-      } else {
-        throw new Error('API 응답 형식이 올바르지 않습니다.');
+      
+      // 다양한 응답 구조에 대응
+      let uphData = [];
+      if (result.success && result.data) {
+        uphData = result.data;
+      } else if (result.data) {
+        uphData = result.data;
+      } else if (Array.isArray(result)) {
+        uphData = result;
+      } else if (result.message && result.data) {
+        uphData = result.data;
       }
+
+      this.setState({ uphData, uphLoading: false });
     } catch (error) {
-      const defaultData = [
-        { date: '2024-01-01', production: 15000 },
-        { date: '2024-01-02', production: 18000 },
-        { date: '2024-01-03', production: 22000 },
-        { date: '2024-01-04', production: 19000 },
-        { date: '2024-01-05', production: 25000 },
-        { date: '2024-01-06', production: 21000 },
-        { date: '2024-01-07', production: 28000 }
-      ];
-      this.setState({
-        liveChartData: defaultData,
-        liveLoading: false,
-        currentDataIndex: 0,
-        displayData: []
+      console.error('UPH 데이터 로드 오류:', error);
+      this.setState({ 
+        uphData: [], 
+        uphLoading: false 
       });
-      this.startDataAnimation(defaultData);
     }
   };
 
@@ -456,7 +510,7 @@ class ProductionChart extends Component {
                   )}
 
                   <Typography variant="h4" component="div" sx={{ color: data.color, fontWeight: 700, fontSize: '1.8rem' }}>
-                    {index < 2 ? `${toPercent(data.value)}%` : Number(data.value || 0).toLocaleString()}
+                    {index < 2 ? `${toPercent(data.value)}%` : Number(data.value / 60 || 0).toLocaleString()}
                   </Typography>
 
                   {index >= 2 && (
@@ -472,7 +526,7 @@ class ProductionChart extends Component {
   };
 
   renderBarChart = (themeHex) => {
-    const { barChartData, itemList, summaryData } = this.state;
+    const { barChartData,  summaryData } = this.state;
 
     return (
       <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
@@ -524,82 +578,314 @@ class ProductionChart extends Component {
     );
   };
 
-  renderLiveChart = (themeHex) => {
-    const { liveLoading, displayData, currentDataIndex } = this.state;
+  // UPH 차트 렌더링
+  renderUphCharts = (themeHex) => {
+    const { uphData, uphLoading } = this.state;
+
+    if (uphLoading) {
+      return (
+        <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: themeHex, mb: 2 }}>
+            <BarChartIcon /> UPH 분석
+          </Typography>
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <CircularProgress size={40} sx={{ color: themeHex }} />
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>UPH 데이터를 불러오는 중...</Typography>
+          </Box>
+        </Paper>
+      );
+    }
+
+    if (!uphData || uphData.length === 0) {
+      return (
+        <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: themeHex, mb: 2 }}>
+            <BarChartIcon /> UPH 분석
+          </Typography>
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="body1" color="text.secondary">표시할 UPH 데이터가 없습니다.</Typography>
+          </Box>
+        </Paper>
+      );
+    }
+
+    // 차트 데이터 변환 - 최적화된 버전
+    const parseDecimal = (value) => {
+      if (value == null || value === '') return 0;
+      if (typeof value === 'object' && value.toString) {
+        return parseFloat(value.toString()) || 0;
+      }
+      return parseFloat(value) || 0;
+    };
+
+    // 원본 데이터를 그대로 사용 (년월별 표시) - 메모이제이션 적용
+    const chartData = uphData.map(item => ({
+      년월: item.년월 || '',
+      자재번호: item.자재번호 || '',
+      자재명: item.자재명 || '',
+      작업장: item.작업장 || '',
+      uphProduction: parseDecimal(item.UPH_생산),
+      uphGood: parseDecimal(item.UPH_양품),
+      totalProduction: parseDecimal(item.월총생산),
+      totalGood: parseDecimal(item.월총양품),
+      totalRuntime: parseDecimal(item.월총가동분)
+    }));
 
     return (
-      <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2, background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)', border: `2px solid ${themeHex}20` }}>
-        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: themeHex, mb: 2, fontSize: '1.3rem', fontWeight: 'bold' }}>
-          <MonitorIcon sx={{ fontSize: '1.5rem' }} /> 실시간 생산량 모니터링
+      <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: themeHex, mb: 2 }}>
+          <BarChartIcon /> UPH 분석
         </Typography>
 
-        <Box sx={{ height: 400, backgroundColor: '#f8f9fa', borderRadius: 2, border: `1px solid ${themeHex}30`, position: 'relative' }}>
-          {liveLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
-              <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
-            </Box>
-          ) : displayData && displayData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={displayData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                <defs>
-                  <linearGradient id="colorProduction" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={themeHex} stopOpacity={0.8} />
-                    <stop offset="95%" stopColor={themeHex} stopOpacity={0.1} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#666' }} tickFormatter={(value) => { const date = new Date(value); return `${date.getMonth() + 1}/${date.getDate()}`; }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#666' }} tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`} />
-                <Tooltip formatter={(value) => [Number(value).toLocaleString(), '생산량']} labelFormatter={(label) => `날짜: ${label}` } contentStyle={{ backgroundColor: 'white', border: `2px solid ${themeHex}`, borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                <Area type="monotone" dataKey="production" stroke={themeHex} strokeWidth={3} fill="url(#colorProduction)" name="생산량" animationDuration={300} animationBegin={0} />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : (
-             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
-              <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
-            </Box>
-          )}
-        </Box>
+        <Grid container spacing={3}>
+          {/* 자재별 양품수량 UPH */}
+          <Grid item xs={12} md={6}>
+            <Card elevation={1} sx={{ height: '100%', border: '1px solid #e0e0e0', borderRadius: 2 }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ color: '#4CAF50', mb: 2, textAlign: 'center', fontWeight: 'bold' }}>
+                  년월별 양품수량 UPH
+                </Typography>
+                <Box sx={{ height: 300 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis 
+                        dataKey="년월" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fontSize: 10, fill: '#666' }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                        interval={0}
+                      />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#666' }} />
+                      <Tooltip 
+                        formatter={(value, name, props) => [
+                          `${Number(value).toFixed(2)} UPH`, 
+                          name
+                        ]} 
+                        labelFormatter={(label, payload) => {
+                          if (payload && payload[0]) {
+                            const data = payload[0].payload;
+                            return `${data.년월} - ${data.자재명} (${data.자재번호})`;
+                          }
+                          return label;
+                        }}
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          border: '1px solid #e0e0e0', 
+                          borderRadius: '8px', 
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                          maxWidth: 300
+                        }} 
+                      />
+                      <Bar 
+                        dataKey="uphGood" 
+                        fill="#4CAF50" 
+                        radius={[4, 4, 0, 0]} 
+                        name="양품 UPH"
+                        isAnimationActive={false}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
 
-        {/* 하단 통계 정보 */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: `1px solid ${themeHex}20` }}>
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>총 데이터 포인트</Typography>
-            <Typography variant="h6" sx={{ color: themeHex, fontWeight: 'bold' }}>{displayData ? displayData.length : 0}</Typography>
-          </Box>
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>최고 생산량</Typography>
-            <Typography variant="h6" sx={{ color: '#4CAF50', fontWeight: 'bold' }}>{displayData && displayData.length > 0 ? Math.max(...displayData.map((d) => d.production)).toLocaleString() : '0'}</Typography>
-          </Box>
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>평균 생산량</Typography>
-            <Typography variant="h6" sx={{ color: '#FF9800', fontWeight: 'bold' }}>{displayData && displayData.length > 0 ? Math.round(displayData.reduce((sum, d) => sum + d.production, 0) / displayData.length).toLocaleString() : '0'}</Typography>
-          </Box>
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>현재 인덱스</Typography>
-            <Typography variant="h6" sx={{ color: '#9C27B0', fontWeight: 'bold' }}>{currentDataIndex + 1}</Typography>
-          </Box>
+          {/* 자재별 생산수량 UPH */}
+          <Grid item xs={12} md={6}>
+            <Card elevation={1} sx={{ height: '100%', border: '1px solid #e0e0e0', borderRadius: 2 }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ color: '#2196F3', mb: 2, textAlign: 'center', fontWeight: 'bold' }}>
+                  년월별 생산수량 UPH
+                </Typography>
+                <Box sx={{ height: 300 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis 
+                        dataKey="년월" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fontSize: 10, fill: '#666' }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                        interval={0}
+                      />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#666' }} />
+                      <Tooltip 
+                        formatter={(value, name, props) => [
+                          `${Number(value).toFixed(2)} UPH`, 
+                          name
+                        ]} 
+                        labelFormatter={(label, payload) => {
+                          if (payload && payload[0]) {
+                            const data = payload[0].payload;
+                            return `${data.년월} - ${data.자재명} (${data.자재번호})`;
+                          }
+                          return label;
+                        }}
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          border: '1px solid #e0e0e0', 
+                          borderRadius: '8px', 
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                          maxWidth: 300
+                        }} 
+                      />
+                      <Bar 
+                        dataKey="uphProduction" 
+                        fill="#2196F3" 
+                        radius={[4, 4, 0, 0]} 
+                        name="생산 UPH"
+                        isAnimationActive={false}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* UPH 데이터 테이블 - 최적화된 버전 */}
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="h6" sx={{ color: themeHex, mb: 2, fontWeight: 'bold' }}>
+            UPH 상세 데이터 ({chartData.length}건)
+          </Typography>
+          <Paper elevation={1} sx={{ overflow: 'auto', maxHeight: 400 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f5f5f5', position: 'sticky', top: 0 }}>
+                  <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>년월</th>
+                  <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>자재번호</th>
+                  <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>자재명</th>
+                  <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>작업장</th>
+                  <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'right' }}>UPH 생산</th>
+                  <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'right' }}>UPH 양품</th>
+                  <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'right' }}>월총생산</th>
+                  <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'right' }}>월총양품</th>
+                  <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'right' }}>월총가동분</th>
+                </tr>
+              </thead>
+              <tbody>
+                {chartData.slice(0, 100).map((item, index) => (
+                  <tr key={`${item.년월}-${item.자재번호}-${index}`} style={{ backgroundColor: index % 2 === 0 ? '#fff' : '#f9f9f9' }}>
+                    <td style={{ padding: '12px', border: '1px solid #ddd' }}>{item.년월}</td>
+                    <td style={{ padding: '12px', border: '1px solid #ddd' }}>{item.자재번호}</td>
+                    <td style={{ padding: '12px', border: '1px solid #ddd' }}>{item.자재명}</td>
+                    <td style={{ padding: '12px', border: '1px solid #ddd' }}>{item.작업장}</td>
+                    <td style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'right' }}>
+                      {item.uphProduction > 0 ? item.uphProduction.toFixed(2) : '-'}
+                    </td>
+                    <td style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'right' }}>
+                      {item.uphGood > 0 ? item.uphGood.toFixed(2) : '-'}
+                    </td>
+                    <td style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'right' }}>
+                      {item.totalProduction.toLocaleString()}
+                    </td>
+                    <td style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'right' }}>
+                      {item.totalGood.toLocaleString()}
+                    </td>
+                    <td style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'right' }}>
+                      {item.totalRuntime.toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+                {chartData.length > 100 && (
+                  <tr style={{ backgroundColor: '#f0f0f0' }}>
+                    <td colSpan="9" style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center', fontStyle: 'italic' }}>
+                      ... 및 {chartData.length - 100}건 더 (처음 100건만 표시)
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </Paper>
         </Box>
       </Paper>
     );
   };
 
-  // 데이터 애니메이션(라이브영역만 사용)
-  startDataAnimation = (data) => {
-    if (this.dataAnimationInterval) clearInterval(this.dataAnimationInterval);
-    this.dataAnimationInterval = setInterval(() => {
-      this.setState((prevState) => {
-        if (prevState.displayData.length >= data.length) {
-          clearInterval(this.dataAnimationInterval);
-          return prevState;
-        }
-        const newIndex = prevState.currentDataIndex + 1;
-        const newDisplayData = [...prevState.displayData];
-        newDisplayData.push(data[prevState.currentDataIndex]);
-        return { currentDataIndex: newIndex, displayData: newDisplayData };
-      });
-    }, 500);
-  };
+  // renderLiveChart = (themeHex) => {
+  //   const { liveLoading, displayData, currentDataIndex } = this.state;
+
+  //   return (
+  //     <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2, background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)', border: `2px solid ${themeHex}20` }}>
+  //       <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: themeHex, mb: 2, fontSize: '1.3rem', fontWeight: 'bold' }}>
+  //         <MonitorIcon sx={{ fontSize: '1.5rem' }} /> 실시간 생산량 모니터링
+  //       </Typography>
+
+  //       <Box sx={{ height: 400, backgroundColor: '#f8f9fa', borderRadius: 2, border: `1px solid ${themeHex}30`, position: 'relative' }}>
+  //         {liveLoading ? (
+  //           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
+  //             <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
+  //           </Box>
+  //         ) : displayData && displayData.length > 0 ? (
+  //           <ResponsiveContainer width="100%" height="100%">
+  //             <AreaChart data={displayData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+  //               <defs>
+  //                 <linearGradient id="colorProduction" x1="0" y1="0" x2="0" y2="1">
+  //                   <stop offset="5%" stopColor={themeHex} stopOpacity={0.8} />
+  //                   <stop offset="95%" stopColor={themeHex} stopOpacity={0.1} />
+  //                 </linearGradient>
+  //               </defs>
+  //               <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+  //               <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#666' }} tickFormatter={(value) => { const date = new Date(value); return `${date.getMonth() + 1}/${date.getDate()}`; }} />
+  //               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#666' }} tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`} />
+  //               <Tooltip formatter={(value) => [Number(value).toLocaleString(), '생산량']} labelFormatter={(label) => `날짜: ${label}` } contentStyle={{ backgroundColor: 'white', border: `2px solid ${themeHex}`, borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+  //               <Area type="monotone" dataKey="production" stroke={themeHex} strokeWidth={3} fill="url(#colorProduction)" name="생산량" animationDuration={300} animationBegin={0} />
+  //             </AreaChart>
+  //           </ResponsiveContainer>
+  //         ) : (
+  //            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
+  //             <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
+  //           </Box>
+  //         )}
+  //       </Box>
+
+  //       {/* 하단 통계 정보 */}
+  //       <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: `1px solid ${themeHex}20` }}>
+  //         <Box sx={{ textAlign: 'center' }}>
+  //           <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>총 데이터 포인트</Typography>
+  //           <Typography variant="h6" sx={{ color: themeHex, fontWeight: 'bold' }}>{displayData ? displayData.length : 0}</Typography>
+  //         </Box>
+  //         <Box sx={{ textAlign: 'center' }}>
+  //           <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>최고 생산량</Typography>
+  //           <Typography variant="h6" sx={{ color: '#4CAF50', fontWeight: 'bold' }}>{displayData && displayData.length > 0 ? Math.max(...displayData.map((d) => d.production)).toLocaleString() : '0'}</Typography>
+  //         </Box>
+  //         <Box sx={{ textAlign: 'center' }}>
+  //           <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>평균 생산량</Typography>
+  //           <Typography variant="h6" sx={{ color: '#FF9800', fontWeight: 'bold' }}>{displayData && displayData.length > 0 ? Math.round(displayData.reduce((sum, d) => sum + d.production, 0) / displayData.length).toLocaleString() : '0'}</Typography>
+  //         </Box>
+  //         <Box sx={{ textAlign: 'center' }}>
+  //           <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>현재 인덱스</Typography>
+  //           <Typography variant="h6" sx={{ color: '#9C27B0', fontWeight: 'bold' }}>{currentDataIndex + 1}</Typography>
+  //         </Box>
+  //       </Box>
+  //     </Paper>
+  //   );
+  // };
+
+  // // 데이터 애니메이션(라이브영역만 사용)
+  // startDataAnimation = (data) => {
+  //   if (this.dataAnimationInterval) clearInterval(this.dataAnimationInterval);
+  //   this.dataAnimationInterval = setInterval(() => {
+  //     this.setState((prevState) => {
+  //       if (prevState.displayData.length >= data.length) {
+  //         clearInterval(this.dataAnimationInterval);
+  //         return prevState;
+  //       }
+  //       const newIndex = prevState.currentDataIndex + 1;
+  //       const newDisplayData = [...prevState.displayData];
+  //       newDisplayData.push(data[prevState.currentDataIndex]);
+  //       return { currentDataIndex: newIndex, displayData: newDisplayData };
+  //     });
+  //   }, 500);
+  // };
 
   render() {
     const { themeHex } = this.props;
@@ -837,11 +1123,13 @@ class ProductionChart extends Component {
         </Box>
 
         {/* 실시간 생산량 차트 */}
-        {this.renderLiveChart(themeHex)}
+        {/* {this.renderLiveChart(themeHex)} */}
         {/* 파이차트 */}
         {this.renderPieCharts(themeHex)}
         {/* 막대 그래프 */}
         {this.renderBarChart(themeHex)}
+        {/* UPH 차트 */}
+        {this.renderUphCharts(themeHex)}
 
                  {/* 품목 코드 선택 모달 */}
          <ItemCodeModal
