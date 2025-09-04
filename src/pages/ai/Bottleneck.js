@@ -1,10 +1,35 @@
 import React, { useEffect, useState } from "react";
 import ReactECharts from "echarts-for-react";
 import styles from "./Bottleneck.module.scss";
+import { useSelector } from "react-redux";
+import { selectThemeHex } from "../../reducers/layout";
+import {
+  Grid,
+  Paper,
+  Typography,
+  Box,
+  Button,
+  TextField,
+  CardHeader,
+} from "@mui/material";
+import { Search as SearchIcon } from "@mui/icons-material";
 
 const Bottleneck = () => {
+  const themeHex = useSelector(selectThemeHex);
+
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // ✅ 검색 필터 상태
+  const [quickRange, setQuickRange] = useState("month");
+  const [filters, setFilters] = useState({
+    start_work_date: "2024-01-01",
+    end_work_date: "2025-06-30",
+  });
+
+  const handleFilterChange = (field, value) => {
+    setFilters((prev) => ({ ...prev, [field]: value }));
+  };
 
   // ✅ 소수점 둘째 자리까지 포맷
   const formatNumber = (value) => {
@@ -28,13 +53,9 @@ const Bottleneck = () => {
       return match ? `프레스${match[0]}` : "프레스";
     }
     if (val.includes("cell")) {
-      // ✅ DB에서 Cell1~4 들어올 때 처리
       const match = value.match(/cell(\d+)/i);
-      if (match) {
-        return `조립셀${match[1]}`;
-      }
+      if (match) return `조립셀${match[1]}`;
     }
-
     return value;
   };
 
@@ -73,8 +94,8 @@ const Bottleneck = () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        Time_Start: pastDates[0],
-        Time_End: today,
+        Time_Start: filters.start_work_date,
+        Time_End: filters.end_work_date,
       }),
     })
       .then((res) => res.json())
@@ -86,7 +107,7 @@ const Bottleneck = () => {
       })
       .catch((err) => console.error("API 호출 에러:", err))
       .finally(() => setLoading(false));
-  }, [today]);
+  }, [filters]);
 
   if (loading) return <div>로딩중...</div>;
   if (!data || data.length === 0) return <div>데이터 없음</div>;
@@ -103,9 +124,9 @@ const Bottleneck = () => {
 
   // ✅ Radar 차트 최대치
   const maxQueueValue = Math.max(
-    latest?.Cell1_Queue || 0,
-    latest?.Press1_Queue || 0,
-    latest?.Blanking_SKU1_Queue || 0,
+    (latest?.Cell1_Queue || 0) + (latest?.Cell2_Queue || 0) + (latest?.Cell3_Queue || 0) + (latest?.Cell4_Queue || 0),
+    (latest?.Press1_Queue || 0) + (latest?.Press2_Queue || 0) + (latest?.Press3_Queue || 0) + (latest?.Press4_Queue || 0),
+    (latest?.Blanking_SKU1_Queue || 0) + (latest?.Blanking_SKU2_Queue || 0) + (latest?.Blanking_SKU3_Queue || 0) + (latest?.Blanking_SKU4_Queue || 0),
     latest?.Forklift_Blanking_Queue || 0,
     latest?.Forklift_Press_Queue || 0
   );
@@ -113,7 +134,14 @@ const Bottleneck = () => {
 
   // ✅ Radar 차트 옵션
   const radarOption = {
-    tooltip: {},
+    tooltip: {
+      formatter: (params) => {
+        return params.name + "<br/>" +
+          params.value
+            .map((v, i) => `${radarOption.radar.indicator[i].name}: ${Number(v).toFixed(2)}`)
+            .join("<br/>");
+      }
+    },
     legend: { data: ["실시간 병목 현황"], top: "bottom" },
     radar: {
       indicator: [
@@ -131,15 +159,16 @@ const Bottleneck = () => {
         data: [
           {
             value: [
-              Number(latest?.Blanking_SKU1_Queue || 0),
-              Number(latest?.Forklift_Blanking_Queue || 0),
-              Number(latest?.Press1_Queue || 0),
-              Number(latest?.Forklift_Press_Queue || 0),
-              Number(latest?.Cell1_Queue || 0),
+              (latest?.Blanking_SKU1_Queue || 0) + (latest?.Blanking_SKU2_Queue || 0) + (latest?.Blanking_SKU3_Queue || 0) + (latest?.Blanking_SKU4_Queue || 0),
+              latest?.Forklift_Blanking_Queue || 0,
+              (latest?.Press1_Queue || 0) + (latest?.Press2_Queue || 0) + (latest?.Press3_Queue || 0) + (latest?.Press4_Queue || 0),
+              latest?.Forklift_Press_Queue || 0,
+              (latest?.Cell1_Queue || 0) + (latest?.Cell2_Queue || 0) + (latest?.Cell3_Queue || 0) + (latest?.Cell4_Queue || 0),
             ],
             name: "실시간 병목 현황",
           },
         ],
+        itemStyle: { color: themeHex },
       },
     ],
   };
@@ -147,17 +176,61 @@ const Bottleneck = () => {
   // ✅ Pie 차트 데이터
   const past7Dates = getPastDates(today, 7);
   let pieData = [
-    { name: "블랭킹", value: past7Dates.reduce((s, d) => s + (byDate[d]?.Blanking_SKU1_Queue || 0), 0) },
+    {
+      name: "블랭킹",
+      value: past7Dates.reduce(
+        (s, d) =>
+          s +
+          (byDate[d]?.Blanking_SKU1_Queue || 0) +
+          (byDate[d]?.Blanking_SKU2_Queue || 0) +
+          (byDate[d]?.Blanking_SKU3_Queue || 0) +
+          (byDate[d]?.Blanking_SKU4_Queue || 0),
+        0
+      ),
+    },
     { name: "블랭킹 지게차", value: past7Dates.reduce((s, d) => s + (byDate[d]?.Forklift_Blanking_Queue || 0), 0) },
-    { name: "프레스", value: past7Dates.reduce((s, d) => s + (byDate[d]?.Press1_Queue || 0), 0) },
+    {
+      name: "프레스",
+      value: past7Dates.reduce(
+        (s, d) =>
+          s +
+          (byDate[d]?.Press1_Queue || 0) +
+          (byDate[d]?.Press2_Queue || 0) +
+          (byDate[d]?.Press3_Queue || 0) +
+          (byDate[d]?.Press4_Queue || 0),
+        0
+      ),
+    },
     { name: "프레스 지게차", value: past7Dates.reduce((s, d) => s + (byDate[d]?.Forklift_Press_Queue || 0), 0) },
-    { name: "조립셀", value: past7Dates.reduce((s, d) => s + (byDate[d]?.Cell1_Queue || 0), 0) },
+    {
+      name: "조립셀",
+      value: past7Dates.reduce(
+        (s, d) =>
+          s +
+          (byDate[d]?.Cell1_Queue || 0) +
+          (byDate[d]?.Cell2_Queue || 0) +
+          (byDate[d]?.Cell3_Queue || 0) +
+          (byDate[d]?.Cell4_Queue || 0),
+        0
+      ),
+    },
   ];
   pieData = pieData.sort((a, b) => b.value - a.value);
 
   const pieOption = {
-    tooltip: { trigger: "item" },
-    series: [{ name: "주간 병목 빈도", type: "pie", radius: "70%", label: { formatter: "{b}: {d}%" }, data: pieData }],
+    tooltip: {
+      trigger: "item",
+      formatter: (p) => `${p.name}: ${Number(p.value).toFixed(2)} (${p.percent}%)`
+    },
+    series: [
+      {
+        name: "주간 병목 빈도",
+        type: "pie",
+        radius: "70%",
+        label: { formatter: "{b}: {d}%" },
+        data: pieData,
+      },
+    ],
   };
 
   // ✅ Heatmap 데이터
@@ -193,22 +266,112 @@ const Bottleneck = () => {
         const stage = stages[p.data[1]];
         const type = p.data[2] === 1 ? "실제 병목" : "예측 병목";
         return `${date}<br/>${stage} : ${type}`;
-      },
+      }
     },
     grid: { top: 60, bottom: 20, left: 110, right: 20 },
     xAxis: { type: "category", data: allDates.map((d) => d.slice(5)), splitLine: { show: true } },
     yAxis: { type: "category", data: stages, axisLabel: { margin: 20 }, splitLine: { show: true } },
-    visualMap: { show: false, min: 1, max: 2, inRange: { color: ["#ef4444", "#3b82f6"] } },
+    visualMap: { show: false, min: 1, max: 2, inRange: { color: ["#ef4444", "#3b82f6"] } }, // ✅ themeHex 제거
     series: [{ type: "heatmap", data: heatmapData }],
   };
 
   return (
     <div className={styles.dashboard}>
-      {/* Header */}
-      <div className={styles.header}>
-        <h1>병목 공정 예측</h1>
-        <span>{pastDates[0]} ~ {today}</span>
-      </div>
+      {/* 제목 + 설명 */}
+      <Box sx={{ mb: 3 }}>
+        <Typography
+          variant="h4"
+          gutterBottom
+          sx={{ fontWeight: "bold", color: themeHex }}
+        >
+          병목 공정 예측
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          주요 공정의 병목 현황과 예측 결과를 시각화합니다.
+        </Typography>
+      </Box>
+
+      {/* ✅ 검색 필터 섹션 (제목/부제 아래로 이동) */}
+      <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+        <CardHeader
+          title={
+            <Typography
+              variant="h6"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                color: "white",
+              }}
+            >
+              <SearchIcon />
+              검색 조건
+            </Typography>
+          }
+          sx={{
+            backgroundColor: themeHex,
+            color: "white",
+            borderRadius: 1,
+            mb: 2,
+          }}
+        />
+        <Grid container spacing={2} alignItems="center">
+          {/* 주간/월간 버튼 */}
+          <Grid item>
+            <Box sx={{ display: "flex", gap: 1 }}>
+              {["week", "month"].map((range) => (
+                <Button
+                  key={range}
+                  size="small"
+                  variant={quickRange === range ? "contained" : "outlined"}
+                  onClick={() => setQuickRange(range)}
+                  sx={{
+                    borderColor: themeHex,
+                    color: quickRange === range ? "white" : themeHex,
+                    backgroundColor: quickRange === range ? themeHex : "transparent",
+                    "&:hover": {
+                      backgroundColor: quickRange === range ? themeHex : "rgba(255,143,0,0.08)",
+                    },
+                  }}
+                >
+                  {range === "week" ? "주간" : "월간"}
+                </Button>
+              ))}
+            </Box>
+          </Grid>
+
+          {/* 기간 선택 */}
+          <Grid item>
+            <Typography sx={{ mr: 1 }}>기간선택</Typography>
+          </Grid>
+          <Grid item>
+            <TextField
+              type="date"
+              value={filters.start_work_date}
+              onChange={(e) => handleFilterChange("start_work_date", e.target.value)}
+              size="small"
+              variant="outlined"
+              sx={{ backgroundColor: "white", borderRadius: 1, minWidth: 150 }}
+            />
+          </Grid>
+          <Grid item>
+            <Typography>~</Typography>
+          </Grid>
+          <Grid item>
+            <TextField
+              type="date"
+              value={filters.end_work_date}
+              onChange={(e) => handleFilterChange("end_work_date", e.target.value)}
+              size="small"
+              variant="outlined"
+              sx={{ backgroundColor: "white", borderRadius: 1, minWidth: 150 }}
+            />
+          </Grid>
+        </Grid>
+      </Paper>
+
+
+      {/* 원래 있던 UI들 (Header, 차트, 테이블 등) */}
 
       {/* 경고 박스 */}
       <div className={styles.alert}>
@@ -222,11 +385,36 @@ const Bottleneck = () => {
           <h2>실시간 병목 현황</h2>
           <ReactECharts option={radarOption} style={{ height: "240px" }} />
           <div className={styles.percentTable}>
-            <div>블랭킹 : {formatNumber(latest?.Blanking_SKU1_Queue)}</div>
-            <div>블랭킹 지게차 : {formatNumber(latest?.Forklift_Blanking_Queue)}</div>
-            <div>프레스 : {formatNumber(latest?.Press1_Queue)}</div>
-            <div>프레스 지게차 : {formatNumber(latest?.Forklift_Press_Queue)}</div>
-            <div>조립셀 : {formatNumber(latest?.Cell1_Queue)}</div>
+            <div>
+              블랭킹 : {formatNumber(
+                (latest?.Blanking_SKU1_Queue || 0) +
+                (latest?.Blanking_SKU2_Queue || 0) +
+                (latest?.Blanking_SKU3_Queue || 0) +
+                (latest?.Blanking_SKU4_Queue || 0)
+              )}
+            </div>
+            <div>
+              블랭킹 지게차 : {formatNumber(latest?.Forklift_Blanking_Queue || 0)}
+            </div>
+            <div>
+              프레스 : {formatNumber(
+                (latest?.Press1_Queue || 0) +
+                (latest?.Press2_Queue || 0) +
+                (latest?.Press3_Queue || 0) +
+                (latest?.Press4_Queue || 0)
+              )}
+            </div>
+            <div>
+              프레스 지게차 : {formatNumber(latest?.Forklift_Press_Queue || 0)}
+            </div>
+            <div>
+              조립셀 : {formatNumber(
+                (latest?.Cell1_Queue || 0) +
+                (latest?.Cell2_Queue || 0) +
+                (latest?.Cell3_Queue || 0) +
+                (latest?.Cell4_Queue || 0)
+              )}
+            </div>
           </div>
         </div>
 

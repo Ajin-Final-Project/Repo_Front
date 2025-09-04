@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { selectThemeHex } from "../../reducers/layout";
 import {
   Grid,
   Card,
@@ -40,7 +42,29 @@ import {
 } from "@mui/icons-material";
 import styles from "./ProductForecast.module.scss";
 
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    // label이 NaN 같은 경우는 출력 안 함
+    const showLabel = label && label !== "NaN" && label !== "NaN~NaN" && label !== "-";
+
+    return (
+      <div style={{ background: "white", border: "1px solid #ccc", padding: "8px" }}>
+        {showLabel && <div><b>시간:</b> {label}</div>}
+        {payload.map((entry, index) => (
+          <div key={index}>
+            {entry.name}: {Number(entry.value).toFixed(2)}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function ProductForecast() {
+  // ✅ Redux에서 themeHex 가져오기
+  const themeHex = useSelector(selectThemeHex);
+
   const [selectedSku, setSelectedSku] = useState("SKU1");
   const [hourlyData, setHourlyData] = useState([]);
   const [dailyData, setDailyData] = useState([]);
@@ -93,12 +117,16 @@ export default function ProductForecast() {
     fetchData();
   }, [selectedSku]);
 
-  // ✅ recharts용 데이터 변환
-  const timeData = hourlyData.map((d) => ({
-    time: `${secondsToHHMM(d.slot_start)}~${secondsToHHMM(d.slot_end)}`,
-    actual: d.actual,
-    predicted: d.prediction,
-  }));
+  // ✅ recharts용 데이터 변환 (문자열 보장)
+  const timeData = hourlyData.map((d) => {
+    const start = secondsToHHMM(d.slot_start);
+    const end = secondsToHHMM(d.slot_end);
+    return {
+      time: start && end ? `${start}~${end}` : "-",   // ✅ fallback 추가
+      actual: d.actual,
+      predicted: d.prediction,
+    };
+  });
 
   const visibleTimeData = timeData;
 
@@ -206,12 +234,12 @@ export default function ProductForecast() {
         <Typography
           variant="h4"
           gutterBottom
-          sx={{ fontWeight: "bold", color: "#ff8f00" }}
+          sx={{ fontWeight: "bold", color: themeHex }}
         >
           생산량 예측
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          생산 현황을 차트로 한눈에 파악할 수 있습니다.
+          생산 예측 결과를 시각화하여 계획과 실적을 쉽게 비교할 수 있습니다.
         </Typography>
       </Box>
 
@@ -234,7 +262,7 @@ export default function ProductForecast() {
             </Typography>
           }
           sx={{
-            backgroundColor: "#ff8f00",
+            backgroundColor: themeHex,
             color: "white",
             borderRadius: 1,
             mb: 2,
@@ -253,12 +281,12 @@ export default function ProductForecast() {
                   variant={quickRange === range ? "contained" : "outlined"}
                   onClick={() => setQuickRange(range)}
                   sx={{
-                    borderColor: "#ff8f00",
-                    color: quickRange === range ? "white" : "#ff8f00",
-                    backgroundColor: quickRange === range ? "#ff8f00" : "transparent",
+                    borderColor: themeHex,
+                    color: quickRange === range ? "white" : themeHex,
+                    backgroundColor: quickRange === range ? themeHex : "transparent",
                     "&:hover": {
                       backgroundColor:
-                        quickRange === range ? "#e67600" : "rgba(255,143,0,0.08)",
+                        quickRange === range ? themeHex : "rgba(255,143,0,0.08)",
                     },
                   }}
                 >
@@ -328,11 +356,13 @@ export default function ProductForecast() {
                 <ComposedChart data={visibleDailyData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
-                  <YAxis domain={['dataMin - 10', 'dataMax + 10']} />   {/* ✅ y축 범위 축소 */}
-                  <Tooltip />
+                  <YAxis domain={['dataMin - 10', 'dataMax + 10']} />
+                  <Tooltip
+                    formatter={(value, name) => [Number(value).toFixed(2), name]}  // ✅ 소수점 2자리
+                  />
                   <Legend verticalAlign="top" align="right" wrapperStyle={{ marginBottom: 10 }} />
-                  <Line type="monotone" dataKey="predicted" stroke="#ff7300" strokeWidth={3} name="예측" />
-                  <Area type="monotone" dataKey="actual" fill="rgba(130, 202, 157, 0.7)" stroke="#82ca9d" name="실제" />
+                  <Line type="monotone" dataKey="predicted" stroke="#1E3A8A" strokeWidth={3} name="예측" />
+                  <Area type="monotone" dataKey="actual" fill={themeHex} stroke={themeHex} name="실제" />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -357,11 +387,11 @@ export default function ProductForecast() {
                   <ComposedChart data={visibleTimeData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="time" />
-                    <YAxis />
-                    <Tooltip />
+                    <YAxis domain={['dataMin - 10', 'dataMax + 10']} />
+                    <Tooltip content={<CustomTooltip />} />   {/* ✅ 커스텀 Tooltip */}
                     <Legend verticalAlign="top" align="right" wrapperStyle={{ marginBottom: 10 }} />
-                    <Line type="monotone" dataKey="actual" stroke="#82ca9d" name="실제" />
-                    <Scatter dataKey="predicted" fill="#ff7300" name="예측" />
+                    <Line type="monotone" dataKey="actual" stroke={themeHex} strokeWidth={3} name="실제" />
+                    <Scatter dataKey="predicted" fill="#1E3A8A" name="예측" />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -386,7 +416,7 @@ export default function ProductForecast() {
                       </Typography>
                       <Typography variant="body1">정미 UPH: <b>{kpi.uph}</b></Typography>
                       <Typography variant="body1">실적 UPH: <b>{kpi.actual}</b></Typography>
-                      <Typography variant="h6" fontWeight="bold" color="success.main" sx={{ mt: 1 }}>
+                      <Typography variant="h6" fontWeight="bold" color="#1E3A8A" sx={{ mt: 1 }}>
                         달성률 {kpi.uphAchievement}%
                       </Typography>
                     </CardContent>
@@ -402,7 +432,7 @@ export default function ProductForecast() {
                       </Typography>
                       <Typography variant="body1">목표 생산량: <b>{kpi.target}</b></Typography>
                       <Typography variant="body1">누적 생산량: <b>{kpi.cumActual}</b></Typography>
-                      <Typography variant="h6" fontWeight="bold" color="success.main" sx={{ mt: 1 }}>
+                      <Typography variant="h6" fontWeight="bold" color="#1E3A8A" sx={{ mt: 1 }}>
                         달성률 {kpi.achievement}%
                       </Typography>
                     </CardContent>
@@ -422,22 +452,22 @@ export default function ProductForecast() {
           </Typography>
           <Grid container spacing={2} marginTop={1}>
             <Grid item xs={4}>
-              <Box className={styles.infoBox}>
-                <Typography variant="subtitle2">블랭킹 가동률</Typography>
-                <Typography variant="h6" fontWeight="bold">{avgUtil.blanking}%</Typography>
-              </Box>
+                <Box className={styles.infoBox} sx={{ backgroundColor: themeHex }}>
+                    <Typography variant="subtitle2">블랭킹 가동률</Typography>
+                    <Typography variant="h6" fontWeight="bold">{avgUtil.blanking}%</Typography>
+                </Box>
             </Grid>
             <Grid item xs={4}>
-              <Box className={styles.infoBox}>
-                <Typography variant="subtitle2">프레스 가동률</Typography>
-                <Typography variant="h6" fontWeight="bold">{avgUtil.press}%</Typography>
-              </Box>
+                <Box className={styles.infoBox} sx={{ backgroundColor: themeHex }}>
+                    <Typography variant="subtitle2">프레스 가동률</Typography>
+                    <Typography variant="h6" fontWeight="bold">{avgUtil.press}%</Typography>
+                </Box>
             </Grid>
             <Grid item xs={4}>
-              <Box className={styles.infoBox}>
-                <Typography variant="subtitle2">조립셀 가동률</Typography>
-                <Typography variant="h6" fontWeight="bold">{avgUtil.assembly}%</Typography>
-              </Box>
+                <Box className={styles.infoBox} sx={{ backgroundColor: themeHex }}>
+                    <Typography variant="subtitle2">조립셀 가동률</Typography>
+                    <Typography variant="h6" fontWeight="bold">{avgUtil.assembly}%</Typography>
+                </Box>
             </Grid>
           </Grid>
         </CardContent>
