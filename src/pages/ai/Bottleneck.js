@@ -13,19 +13,30 @@ import {
   CardHeader,
 } from "@mui/material";
 import { Search as SearchIcon } from "@mui/icons-material";
+import config from "../../config";
 
 const Bottleneck = () => {
   const themeHex = useSelector(selectThemeHex);
 
+  // ✅ 데이터 상태
   const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [animatedHeatmapData, setAnimatedHeatmapData] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  // ✅ 로딩/에러 상태
+  const [pageLoading, setPageLoading] = useState(true);
+  const [pageError, setPageError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState({ overview: null });
+
+  // ✅ 검색 필터
   const [quickRange, setQuickRange] = useState("month");
   const [filters, setFilters] = useState({
     start_work_date: "2024-01-01",
     end_work_date: "2025-06-30",
   });
+
+  // ✅ 라벨 표시용
   const [showPastLabel, setShowPastLabel] = useState(false);
   const [showFutureLabel, setShowFutureLabel] = useState(false);
 
@@ -33,11 +44,13 @@ const Bottleneck = () => {
     setFilters((prev) => ({ ...prev, [field]: value }));
   };
 
+  // ✅ 숫자 포맷
   const formatNumber = (value) => {
     if (value === null || value === undefined) return 0;
     return Number(value).toFixed(2);
   };
 
+  // ✅ 병목 이름 변환
   const translateBottleneck = (value, isCellOnly = false) => {
     if (!value) return "-";
     const val = value.toLowerCase();
@@ -58,6 +71,7 @@ const Bottleneck = () => {
     return value;
   };
 
+  // ✅ 날짜 계산
   const today = "2025-06-27";
 
   const getPastDates = (todayStr, days) => {
@@ -84,28 +98,55 @@ const Bottleneck = () => {
   };
   const futureDates = getFutureDates(today, 3);
 
-  // API 호출
+  // ✅ fetchJson 유틸
+  const fetchJson = async (url, options = {}, key = "API") => {
+    const res = await fetch(url, options);
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      throw new Error(`${key} 실패: HTTP ${res.status} ${txt}`);
+    }
+    return res.json();
+  };
+
+  // ✅ API 경로
+  const API = (path) => `${config.baseURLApi}/smartFactory${path}`;
+
+  // ✅ 개별 API 호출 함수
+  const fetchBottleneckOverview = async () => {
+    setLoading((s) => ({ ...s, overview: true }));
+    setError((s) => ({ ...s, overview: null }));
+    try {
+      const json = await fetchJson(
+        API("/bottleneck/overview"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            Time_Start: filters.start_work_date,
+            Time_End: filters.end_work_date,
+          }),
+        },
+        "bottleneck-overview"
+      );
+      setData(Array.isArray(json?.data) ? json.data : []);
+    } catch (e) {
+      console.error("[fetchBottleneckOverview]", e);
+      setError((s) => ({ ...s, overview: e.message || "조회 실패" }));
+      setData([]);
+    } finally {
+      setLoading((s) => ({ ...s, overview: false }));
+      setPageLoading(false);
+    }
+  };
+
+  // ✅ 초기 및 필터 변경 시 호출
   useEffect(() => {
-    fetch("http://localhost:8000/smartFactory/bottleneck/overview", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        Time_Start: filters.start_work_date,
-        Time_End: filters.end_work_date,
-      }),
-    })
-      .then((res) => res.json())
-      .then((res) => {
-        console.log("📊 API 응답:", res);
-        if (res.data && res.data.length > 0) {
-          setData(res.data);
-        }
-      })
-      .catch((err) => console.error("API 호출 에러:", err))
-      .finally(() => setLoading(false));
+    setPageError(null);
+    setPageLoading(true);
+    fetchBottleneckOverview();
   }, [filters]);
 
-  // 히트맵 데이터 준비
+  // ✅ 히트맵 데이터 준비
   const stages = ["조립셀", "프레스 지게차", "프레스", "블랭킹 지게차", "블랭킹"];
   const allDates = [...pastDates, today, ...futureDates];
   const fullHeatmapData = [];
@@ -150,9 +191,9 @@ const Bottleneck = () => {
       fullHeatmapData.push([xIdx, stages.indexOf("블랭킹"), 2]);
   });
 
-  // 애니메이션 효과
+  // ✅ 애니메이션 효과
   useEffect(() => {
-    if (loading || !data || data.length === 0) {
+    if (pageLoading || !data || data.length === 0) {
       setAnimatedHeatmapData([]);
       setCurrentIndex(0);
       setShowPastLabel(false);
@@ -164,20 +205,25 @@ const Bottleneck = () => {
       setAnimatedHeatmapData((prev) => {
         const newData = [...prev, fullHeatmapData[currentIndex]];
         const currentData = fullHeatmapData[currentIndex];
-        if (currentData[2] === 1) {
-          setShowPastLabel(true);
-        } else if (currentData[2] === 2) {
-          setShowFutureLabel(true);
-        }
+        if (currentData[2] === 1) setShowPastLabel(true);
+        else if (currentData[2] === 2) setShowFutureLabel(true);
         return newData;
       });
       setCurrentIndex((prev) => prev + 1);
     }, 500);
     return () => clearTimeout(timer);
-  }, [currentIndex, fullHeatmapData, loading, data]);
+  }, [currentIndex, fullHeatmapData, pageLoading, data]);
 
-  // 조건부 렌더링
-  if (loading) return <div>로딩중...</div>;
+  // ✅ 조건부 렌더링
+  if (pageLoading) return <div>⏳ 로딩중...</div>;
+  if (pageError || error.overview) {
+    return (
+      <div>
+        <p style={{ color: "red" }}>❌ {pageError || error.overview}</p>
+        <Button onClick={fetchBottleneckOverview}>다시 시도</Button>
+      </div>
+    );
+  }
   if (!data || data.length === 0) return <div>데이터 없음</div>;
 
   // 최신 데이터

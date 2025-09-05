@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { selectThemeHex } from "../../reducers/layout";
 import {
@@ -21,6 +21,7 @@ import {
   TextField,
   CardHeader,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 import {
   ComposedChart,
@@ -41,12 +42,25 @@ import {
   ExpandMore as ExpandMoreIcon,
 } from "@mui/icons-material";
 import styles from "./ProductForecast.module.scss";
+import config from "../../config";
 
+
+// ✅ fetchJson 유틸
+const fetchJson = async (url, options = {}, key = "API") => {
+  const res = await fetch(url, options);
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(`${key} 실패: HTTP ${res.status} ${txt}`);
+  }
+  return res.json();
+};
+
+const API = (path) => `${config.baseURLApi}/smartFactory${path}`;
+
+// ✅ CustomTooltip
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
-    // label이 NaN 같은 경우는 출력 안 함
     const showLabel = label && label !== "NaN" && label !== "NaN~NaN" && label !== "-";
-
     return (
       <div style={{ background: "white", border: "1px solid #ccc", padding: "8px" }}>
         {showLabel && <div><b>시간:</b> {label}</div>}
@@ -68,7 +82,12 @@ export default function ProductForecast() {
   const [selectedSku, setSelectedSku] = useState("SKU1");
   const [hourlyData, setHourlyData] = useState([]);
   const [dailyData, setDailyData] = useState([]);
-  const [loading, setLoading] = useState(false);
+
+  // ✅ 로딩/에러 상태
+  const [pageLoading, setPageLoading] = useState(true);
+  const [pageError, setPageError] = useState(null);
+  const [loading, setLoading] = useState({ hourly: false, daily: false });
+  const [error, setError] = useState({ hourly: null, daily: null });
 
   // ✅ 검색 필터 상태
   const [quickRange, setQuickRange] = useState("month");
@@ -76,9 +95,125 @@ export default function ProductForecast() {
     start_work_date: "2024-01-01",
     end_work_date: "2025-06-30",
   });
-  const [filterExpanded, setFilterExpanded] = useState(false);
+  
+  
+  
+  
+  
+  // const [filterExpanded, setFilterExpanded] = useState(false);
 
-  // ✅ 초 → HH:MM 변환 함수
+  // // ✅ 초 → HH:MM 변환 함수
+  // const secondsToHHMM = (sec) => {
+  //   if (sec === null || sec === undefined) return "";
+  //   const h = Math.floor(sec / 3600);
+  //   const m = Math.floor((sec % 3600) / 60);
+  //   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  // };
+
+  // // ✅ 시간별/일별 데이터 API 호출
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     setLoading(true);
+  //     try {
+  //       const hourlyRes = await fetch("http://localhost:8000/smartFactory/forecast/hourly", {
+  //         method: "POST",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({ sku: selectedSku }),
+  //       });
+  //       const hourlyJson = await hourlyRes.json();
+
+  //       const dailyRes = await fetch("http://localhost:8000/smartFactory/forecast/daily", {
+  //         method: "POST",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({ sku: selectedSku }),
+  //       });
+  //       const dailyJson = await dailyRes.json();
+
+  //       setHourlyData(hourlyJson.data || []);
+  //       setDailyData(dailyJson.data || []);
+  //     } catch (err) {
+  //       console.error("❌ 데이터 가져오기 실패:", err);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchData();
+  // }, [selectedSku]);
+
+
+
+
+
+
+
+
+
+
+  // ✅ fetchHourly
+  const fetchHourly = async () => {
+    setLoading((s) => ({ ...s, hourly: true }));
+    setError((s) => ({ ...s, hourly: null }));
+    try {
+      const json = await fetchJson(
+        API("/forecast/hourly"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sku: selectedSku }),
+        },
+        "hourly-forecast"
+      );
+      setHourlyData(Array.isArray(json?.data) ? json.data : []);
+    } catch (e) {
+      setError((s) => ({ ...s, hourly: e.message || "시간별 데이터 조회 실패" }));
+      setHourlyData([]);
+    } finally {
+      setLoading((s) => ({ ...s, hourly: false }));
+    }
+  };
+
+  // ✅ fetchDaily
+  const fetchDaily = async () => {
+    setLoading((s) => ({ ...s, daily: true }));
+    setError((s) => ({ ...s, daily: null }));
+    try {
+      const json = await fetchJson(
+        API("/forecast/daily"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sku: selectedSku }),
+        },
+        "daily-forecast"
+      );
+      setDailyData(Array.isArray(json?.data) ? json.data : []);
+    } catch (e) {
+      setError((s) => ({ ...s, daily: e.message || "일별 데이터 조회 실패" }));
+      setDailyData([]);
+    } finally {
+      setLoading((s) => ({ ...s, daily: false }));
+    }
+  };
+
+  // ✅ fetchAll
+  const fetchAll = useCallback(async () => {
+    setPageError(null);
+    setPageLoading(true);
+    try {
+      await Promise.all([fetchHourly(), fetchDaily()]);
+    } catch {
+      setPageError("데이터를 불러오는 중 오류가 발생했습니다.");
+    } finally {
+      setPageLoading(false);
+    }
+  }, [selectedSku, filters]);
+
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  // ✅ 초 → HH:MM 변환
   const secondsToHHMM = (sec) => {
     if (sec === null || sec === undefined) return "";
     const h = Math.floor(sec / 3600);
@@ -86,48 +221,23 @@ export default function ProductForecast() {
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   };
 
-  // ✅ 시간별/일별 데이터 API 호출
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const hourlyRes = await fetch("http://localhost:8000/smartFactory/forecast/hourly", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sku: selectedSku }),
-        });
-        const hourlyJson = await hourlyRes.json();
 
-        const dailyRes = await fetch("http://localhost:8000/smartFactory/forecast/daily", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sku: selectedSku }),
-        });
-        const dailyJson = await dailyRes.json();
 
-        setHourlyData(hourlyJson.data || []);
-        setDailyData(dailyJson.data || []);
-      } catch (err) {
-        console.error("❌ 데이터 가져오기 실패:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchData();
-  }, [selectedSku]);
+
+
+
 
   // ✅ recharts용 데이터 변환 (문자열 보장)
   const timeData = hourlyData.map((d) => {
     const start = secondsToHHMM(d.slot_start);
     const end = secondsToHHMM(d.slot_end);
     return {
-      time: start && end ? `${start}~${end}` : "-",   // ✅ fallback 추가
+      time: start && end ? `${start}~${end}` : "-",
       actual: d.actual,
       predicted: d.prediction,
     };
   });
-
   const visibleTimeData = timeData;
 
   const visibleDailyData = dailyData.map((d) => ({
@@ -157,6 +267,19 @@ export default function ProductForecast() {
     { field: "acc", headerName: "예측 정확도", flex: 1 },
     { field: "uph", headerName: "시간당 생산량", flex: 1 },
   ];
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   // ✅ 공정 단계별 현황
   const avgUtil = {
@@ -226,6 +349,40 @@ export default function ProductForecast() {
   const handleFilterChange = (field, value) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
   };
+
+
+
+
+
+
+
+
+  // ✅ 조건부 렌더링
+  if (pageLoading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
+        <CircularProgress size={60} sx={{ color: themeHex }} />
+      </Box>
+    );
+  }
+  if (pageError || error.hourly || error.daily) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Typography color="error">
+          ❌ {pageError || error.hourly || error.daily}
+        </Typography>
+        <Button onClick={fetchAll} sx={{ mt: 2, backgroundColor: themeHex }} variant="contained">
+          다시 시도
+        </Button>
+      </Box>
+    );
+  }
+
+
+
+
+
+
 
   return (
     <Box className={styles.pageWrapper}>
