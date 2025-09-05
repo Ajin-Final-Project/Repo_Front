@@ -507,26 +507,43 @@ export default function ProductForecast() {
       <Card className={styles.sectionCard}>
         <CardContent>
           <Typography variant="h6" gutterBottom>일자별 실제 vs 예측</Typography>
-          <Box display="flex" justifyContent="center">
-            <div style={{ width: "80%", height: 400 }}>
-              <ResponsiveContainer>
-                <ComposedChart data={visibleDailyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis domain={['dataMin - 10', 'dataMax + 10']} />
-                  <Tooltip
-                    formatter={(value, name) => [Number(value).toFixed(2), name]}  // ✅ 소수점 2자리
-                  />
-                  <Legend verticalAlign="top" align="right" wrapperStyle={{ marginBottom: 10 }} />
-                  <Line type="monotone" dataKey="predicted" stroke="#1E3A8A" strokeWidth={3} name="예측" />
-                  <Area type="monotone" dataKey="actual" fill={themeHex} stroke={themeHex} name="실제" />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-          </Box>
-          <div style={{ height: 400, width: "100%", marginTop: 16 }}>
-            <DataGrid rows={tableRows} columns={tableColumns} pageSize={5} autoHeight />
-          </div>
+
+          {loading.daily ? (
+            // 🔄 로딩 박스
+            <Box sx={{ height: 400, display: "flex", justifyContent: "center", alignItems: "center" }}>
+              <CircularProgress size={60} sx={{ color: themeHex }} />
+            </Box>
+          ) : error.daily ? (
+            // ❌ 에러 표시
+            <Box sx={{ p: 2 }}>
+              <Typography color="error">{error.daily}</Typography>
+              <Button onClick={fetchDaily} sx={{ mt: 2, backgroundColor: themeHex }} variant="contained">
+                다시 시도
+              </Button>
+            </Box>
+          ) : (
+            // ✅ 정상 데이터 표시
+            <>
+              <Box display="flex" justifyContent="center">
+                <div style={{ width: "80%", height: 400 }}>
+                  <ResponsiveContainer>
+                    <ComposedChart data={visibleDailyData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis domain={['dataMin - 10', 'dataMax + 10']} />
+                      <Tooltip formatter={(value, name) => [Number(value).toFixed(2), name]} />
+                      <Legend verticalAlign="top" align="right" wrapperStyle={{ marginBottom: 10 }} />
+                      <Line type="monotone" dataKey="predicted" stroke="#1E3A8A" strokeWidth={3} name="예측" />
+                      <Area type="monotone" dataKey="actual" fill={themeHex} stroke={themeHex} name="실제" />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </Box>
+              <div style={{ height: 400, width: "100%", marginTop: 16 }}>
+                <DataGrid rows={tableRows} columns={tableColumns} pageSize={5} autoHeight />
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -539,19 +556,36 @@ export default function ProductForecast() {
               <Typography variant="h6" gutterBottom>
                 시간별 실제 vs 예측
               </Typography>
-              <div style={{ width: "100%", height: 300 }}>
-                <ResponsiveContainer>
-                  <ComposedChart data={visibleTimeData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="time" />
-                    <YAxis domain={['dataMin - 10', 'dataMax + 10']} />
-                    <Tooltip content={<CustomTooltip />} />   {/* ✅ 커스텀 Tooltip */}
-                    <Legend verticalAlign="top" align="right" wrapperStyle={{ marginBottom: 10 }} />
-                    <Line type="monotone" dataKey="actual" stroke={themeHex} strokeWidth={3} name="실제" />
-                    <Scatter dataKey="predicted" fill="#1E3A8A" name="예측" />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
+
+              {loading.hourly ? (
+                // 🔄 로딩 중
+                <Box sx={{ height: 300, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                  <CircularProgress size={60} sx={{ color: themeHex }} />
+                </Box>
+              ) : error.hourly ? (
+                // ❌ 에러
+                <Box sx={{ p: 2 }}>
+                  <Typography color="error">{error.hourly}</Typography>
+                  <Button onClick={fetchHourly} sx={{ mt: 2, backgroundColor: themeHex }} variant="contained">
+                    다시 시도
+                  </Button>
+                </Box>
+              ) : (
+                // ✅ 정상 데이터
+                <div style={{ width: "100%", height: 300 }}>
+                  <ResponsiveContainer>
+                    <ComposedChart data={visibleTimeData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="time" />
+                      <YAxis domain={['dataMin - 10', 'dataMax + 10']} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend verticalAlign="top" align="right" wrapperStyle={{ marginBottom: 10 }} />
+                      <Line type="monotone" dataKey="actual" stroke={themeHex} strokeWidth={3} name="실제" />
+                      <Scatter dataKey="predicted" fill="#1E3A8A" name="예측" />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </CardContent>
           </Card>
         </Grid>

@@ -11,6 +11,7 @@ import {
   Button,
   TextField,
   CardHeader,
+  CircularProgress,
 } from "@mui/material";
 import { Search as SearchIcon } from "@mui/icons-material";
 import config from "../../config";
@@ -215,16 +216,36 @@ const Bottleneck = () => {
   }, [currentIndex, fullHeatmapData, pageLoading, data]);
 
   // ✅ 조건부 렌더링
-  if (pageLoading) return <div>⏳ 로딩중...</div>;
-  if (pageError || error.overview) {
+  if (pageLoading) {
     return (
-      <div>
-        <p style={{ color: "red" }}>❌ {pageError || error.overview}</p>
-        <Button onClick={fetchBottleneckOverview}>다시 시도</Button>
-      </div>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 400 }}>
+        <CircularProgress size={60} sx={{ color: themeHex }} />
+      </Box>
     );
   }
-  if (!data || data.length === 0) return <div>데이터 없음</div>;
+
+  if (pageError || error.overview) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Typography color="error">❌ {pageError || error.overview}</Typography>
+        <Button
+          onClick={fetchBottleneckOverview}
+          sx={{ mt: 2, backgroundColor: themeHex }}
+          variant="contained"
+        >
+          다시 시도
+        </Button>
+      </Box>
+    );
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Typography color="text.secondary">데이터 없음</Typography>
+      </Box>
+    );
+  }
 
   // 최신 데이터
   const latest = byDate[today] || byDate[pastDates.at(-1)];
