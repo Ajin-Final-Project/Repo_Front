@@ -68,8 +68,13 @@
 .grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); // 최소 너비 증가
   margin-bottom: 20px;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 }
 
 .card,
@@ -257,4 +262,177 @@
 
 .section {
   margin-bottom: 24px;
+}
+
+.kpiCard {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  flex: 1;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+
+  h3 {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+
+  span {
+    font-size: 14px;
+    font-weight: 500;
+  }
+}
+
+.chartContainer {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  
+  h3 {
+    margin-bottom: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #374151;
+  }
+}
+
+:root {
+  --primary-color: #3b82f6;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+  --info-color: #06b6d4;
+}
+
+.modernTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  
+  th {
+    background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+    padding: 12px;
+    font-weight: 600;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  
+  td {
+    padding: 12px;
+    border-bottom: 1px solid #f1f5f9;
+    
+    &:hover {
+      background: #f8fafc;
+    }
+  }
+}
+
+h2 {
+  font-size: 20px;
+  @media (max-width: 600px) {
+    font-size: 18px;
+  }
+}
+.card, .cardWide {
+  font-size: 16px; /* 최소 폰트 크기 */
+}
+
+.highlightSection {
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid var(--primary-color);
+}
+
+
+
+
+
+
+
+.flow {
+  text-align: center;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.stage {
+  background: #f3f4f6;
+  padding: 8px 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  min-width: 80px;
+  text-align: center;
+  flex: 1;
+  cursor: pointer; /* 상호작용 가능 표시 */
+  transition: background-color 0.3s, transform 0.2s; /* 부드러운 전환 */
+
+  &:hover {
+    background: #e5e7eb;
+    transform: scale(1.05); /* 호버 시 약간 확대 */
+  }
+
+  &:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px; /* 키보드 포커스 표시 */
+  }
+}
+
+.stageRed {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  font-weight: 600;
+  color: #b91c1c;
+  animation: pulseStage 2s infinite; /* 주기 늘려 부드럽게 */
+}
+
+@keyframes pulseStage {
+  0%, 100% {
+    background-color: #fee2e2;
+    border-color: #fca5a5;
+  }
+  50% {
+    background-color: #fecaca;
+    border-color: #f87171;
+  }
+}
+
+.wide {
+  flex: 4;
+}
+
+.arrow {
+  text-align: center;
+  font-size: 24px;
+  color: #6b7280;
+  margin: 8px 0;
+  animation: fadeIn 0.8s ease-in-out; /* 화살표 페이드인 */
+}
+
+@media (max-width: 600px) {
+  .flow {
+    max-width: 100%;
+    padding: 0 10px;
+  }
+
+  .stage {
+    min-width: 60px;
+    font-size: 14px;
+    padding: 6px 8px;
+  }
+
+  .arrow {
+    font-size: 20px;
+  }
 }
