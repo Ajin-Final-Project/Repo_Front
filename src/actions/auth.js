@@ -103,6 +103,9 @@ export function receiveToken(token) {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
     axios.defaults.headers.common['Authorization'] = "Bearer " + token;
+
+    dispatch({ type: AUTH_INIT_SUCCESS, payload: { currentUser: user } });
+    
     dispatch(receiveLogin());
     dispatch(push('/app/dashboard/analytics'));
   }

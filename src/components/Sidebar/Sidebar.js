@@ -1768,7 +1768,6 @@ import Ai_icon_red from "../../images/theme-icons/red/Charts_outlined.svg";
 import Ai_icon_green from "../../images/theme-icons/green/Charts_outlined.svg";
 import Ai_icon_blue  from "../../images/theme-icons/blue/Charts_outlined.svg";
 
-
 class Sidebar extends React.Component {
   static propTypes = {
     sidebarStatic: PropTypes.bool,
@@ -2229,23 +2228,27 @@ class Sidebar extends React.Component {
           >
             <img src={this.themeIcons("inspection")} alt="inspection" width="24" height="24" />
           </LinksGroup>
-
-          <LinksGroup
-            onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
-            activeItem={this.props.activeItem}
-            header="관리자 시스템"
-            isHeader
-            link="/admin/users"
-            index="admin"
-            childrenLinks={[
-              { header: "회사/공장/공정 데이터", link: "/admin/users" },
-              { header: "공정코드 데이터", link: "/admin/users" },
-              { header: "품목 데이터", link: "/admin/users" },
-              { header: "사원 관리 데이터", link: "/app/admin/users" },
-            ]}
-          >
-            <img src={this.themeIcons("admin")} alt="admin" width="24" height="24" />
-          </LinksGroup>
+          
+          {this.props.role ==='시스템관리자' && (
+              <LinksGroup
+              onActiveSidebarItemChange={(nextActive) =>
+                this.props.dispatch(changeActiveSidebarItem(nextActive))
+              }
+              activeItem={this.props.activeItem}
+              header="관리자 시스템"
+              isHeader
+              link="/admin/users"
+              index="admin"
+              childrenLinks={[
+                { header: "회사/공장/공정 데이터", link: "/admin/users" },
+                { header: "공정코드 데이터",     link: "/admin/users" },
+                { header: "품목 데이터",         link: "/admin/users" },
+                { header: "사원 관리 데이터",     link: "/app/admin/users" },
+              ]}
+            >
+              <img src={this.themeIcons("admin")} alt="admin" width="24" height="24" />
+            </LinksGroup>
+          )}
 
           <LinksGroup
             onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
@@ -2322,6 +2325,7 @@ class Sidebar extends React.Component {
     // static 모드에선 접히지 않음
     const isCollapsed = !this.props.sidebarOpened && !this.props.sidebarStatic;
 
+    console.log("현재 사용자 역할:", this.props.role);
     return (
       <div
         className={`${isCollapsed ? s.sidebarClose : ""} ${s.sidebarWrapper} ${cx({
@@ -2359,6 +2363,28 @@ class Sidebar extends React.Component {
 }
 
 function mapStateToProps(store) {
+  // Redux → localStorage → (옵션) JWT 클레임 순서로 폴백
+  let role =
+    store.auth?.currentUser?.role ??
+    (() => {
+      try {
+        const raw = localStorage.getItem('user');
+        if (raw) return JSON.parse(raw)?.role;
+      } catch {}
+      return undefined;
+    })();
+
+  // (선택) 토큰에 role 클레임이 있을 때 마지막 폴백으로 사용
+  // import jwt from 'jsonwebtoken' 이 필요합니다.
+  if (!role) {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) role = (require('jsonwebtoken').decode(token) || {}).role;
+    } catch {}
+  }
+
+  if (!role) role = 'guest';
+
   return {
     sidebarOpened: store.navigation.sidebarOpened,
     sidebarStatic: store.navigation.sidebarStatic,
@@ -2368,6 +2394,7 @@ function mapStateToProps(store) {
     sidebarColor: store.layout.sidebarColor,
     sidebarType: store.layout.sidebarType,
     themeColor: store.layout.themeColor,
+    role,
   };
 }
 
