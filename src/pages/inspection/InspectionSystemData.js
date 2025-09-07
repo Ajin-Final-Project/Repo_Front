@@ -1,6 +1,1634 @@
+// // // // src/pages/inspection/InspectionSystemData.js
+// // // import config from '../../config';
+// // // import React, { Component } from 'react';
+
+// // // import {
+// // //   Box,
+// // //   Paper,
+// // //   TextField,
+// // //   Button,
+// // //   Typography,
+// // //   CardHeader,
+// // //   IconButton,
+// // //   Divider,
+// // //   Collapse,
+// // //   CircularProgress,
+// // //   Alert,
+// // //   Menu,
+// // //   MenuItem,
+// // //   InputAdornment,
+// // // } from '@mui/material';
+// // // import { Autocomplete } from '@mui/material';
+// // // import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+
+// // // import {
+// // //   Search as SearchIcon,
+// // //   Clear as ClearIcon,
+// // //   FilterList as FilterIcon,
+// // //   ExpandMore as ExpandMoreIcon,
+// // //   ExpandLess as ExpandLessIcon,
+// // //   KeyboardArrowDown as KeyboardArrowDownIcon,
+// // // } from '@mui/icons-material';
+
+// // // import InspectionItemModal from '../common/InspectionItemModal';
+// // // import s from './InspectionSystemData.module.scss';
+
+// // // /** ---------- helpers ---------- */
+// // // const iso = (d) => d.toLocaleDateString('sv-SE'); // YYYY-MM-DD
+// // // const today0 = () => {
+// // //   const t = new Date();
+// // //   return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+// // // };
+// // // const lastOfMonth = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0);
+
+// // // /** 버튼 기준 화면 좌표 → Menu anchorPosition */
+// // // const getAnchorPos = (el) => {
+// // //   if (!el) return null;
+// // //   const r = el.getBoundingClientRect();
+// // //   return { top: Math.round(r.bottom + window.scrollY), left: Math.round(r.left + window.scrollX) };
+// // // };
+// // // /** 월요일 시작 주간 */
+// // // const startOfWeek = (d) => {
+// // //   const day = d.getDay();
+// // //   const diff = (day === 0 ? -6 : 1) - day;
+// // //   const s = new Date(d);
+// // //   s.setDate(d.getDate() + diff);
+// // //   return new Date(s.getFullYear(), s.getMonth(), s.getDate());
+// // // };
+// // // const endOfWeek = (d) => {
+// // //   const s = startOfWeek(d);
+// // //   return new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6);
+// // // };
+// // // const getWeeksOfMonth = (year, month) => {
+// // //   const first = new Date(year, month - 1, 1);
+// // //   const last = lastOfMonth(first);
+// // //   let cur = startOfWeek(first);
+// // //   const out = [];
+// // //   let idx = 1;
+// // //   while (cur <= last) {
+// // //     const s = new Date(cur), e = endOfWeek(cur);
+// // //     const clipS = new Date(Math.max(s, first));
+// // //     const clipE = new Date(Math.min(e, last));
+// // //     out.push({ label: `${idx}주차`, start: clipS, end: clipE });
+// // //     idx += 1;
+// // //     cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 7);
+// // //   }
+// // //   return out;
+// // // };
+
+// // // /** ▶ 기본값을 '전체' 상태로 변경 (start_date/end_date/equipment = "") */
+// // // const getDefaultFilters = () => ({
+// // //   start_date: '',   // 전체기간
+// // //   end_date: '',     // 전체기간
+// // //   factory: '아진산업-본사(경산)',
+// // //   process: '프레스',
+// // //   equipment: '',    // 전체 설비
+// // //   partNo: '',
+// // //   item: '',
+// // //   inspType: '',
+// // //   workType: '',
+// // //   shiftType: '',
+// // //   topN: 5,
+// // // });
+
+// // // /* ====== 키/값 정규화 유틸 ====== */
+// // // /* eslint-disable no-control-regex */
+// // // const INVISIBLE = /[\u00A0\u200B-\u200F\u202A-\u202E\u2060]/g; // NBSP & zero-width & bidi
+// // // const CTRL_IN_KEYS = /[\u0000-\u001F\u007F]/g;                 // control chars (키 전용)
+// // // const CTRL_IN_VALUES = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g; // 값에서만 제거(탭/개행/CR 허용)
+// // // /* eslint-enable no-control-regex */
+// // // const MULTI_SPACE = / {2,}/g;
+
+// // // /** 키: 제어문자/제로폭/여러 공백 제거 */
+// // // function normalizeKey(k) {
+// // //   if (k == null) return '';
+// // //   return String(k)
+// // //     .replace(INVISIBLE, '')
+// // //     .replace(CTRL_IN_KEYS, '')
+// // //     .trim()
+// // //     .replace(MULTI_SPACE, ' ');
+// // // }
+// // // /** 값: 눈에 보이지 않는 제어문자만 제거 (한글/영문/숫자/기호 보존) */
+// // // function sanitizeValue(v) {
+// // //   if (v == null) return v;
+// // //   if (typeof v === 'string') return v.replace(CTRL_IN_VALUES, '');
+// // //   return v;
+// // // }
+// // // /** 행 키 정규화 */
+// // // function normalizeRowKeys(row) {
+// // //   const out = {};
+// // //   Object.keys(row || {}).forEach((k) => {
+// // //     const nk = normalizeKey(k);
+// // //     if (out[nk] == null || out[nk] === '') out[nk] = sanitizeValue(row[k]);
+// // //   });
+// // //   return out;
+// // // }
+
+// // // /** 컬럼 정렬 우선순위 */
+// // // const PREFERRED_ORDER = [
+// // //   'work_date', '보고일',
+// // //   'plant', '공장', '플랜트',
+// // //   'process', '공정',
+// // //   'equipment', '설비',
+// // //   '책임자', '작업장', '자재번호', '자재명', '실적번호', '차종',
+// // //   '양품수량', '생산수량', '불량합계',
+// // //   '검사구분', '주야구분', '작업순번', '작업구분', '검사순번',
+// // //   '검사항목명', '검사내용', '생산',
+// // //   '사업장',
+// // //   'id'
+// // // ];
+
+// // // export default class InspectionGrid extends Component {
+// // //   state = {
+// // //     // 필터
+// // //     filters: getDefaultFilters(),
+
+// // //     // 옵션
+// // //     factories: [],
+// // //     processes: [],
+// // //     equipments: [],
+// // //     parts: [],
+// // //     items: [],
+// // //     optionsLoading: false,
+
+// // //     // UI
+// // //     loading: false,
+// // //     error: '',
+// // //     filterExpanded: false,
+
+// // //     // 프리셋 상태/앵커
+// // //     selectedYear: new Date().getFullYear(),
+// // //     selectedMonth: new Date().getMonth() + 1,
+// // //     yearAnchorPos: null,
+// // //     monthAnchorPos: null,
+// // //     weekAnchorPos: null,
+
+// // //     years: [],
+
+// // //     // 모달
+// // //     itemCodeModalOpen: false,
+
+// // //     // 그리드
+// // //     rows: [],
+// // //     columns: [],
+// // //   };
+
+// // //   componentDidMount() {
+// // //     const base = getDefaultFilters();
+// // //     const saved = localStorage.getItem('inspectionFilters');
+// // //     if (saved) {
+// // //       try {
+// // //         const parsed = JSON.parse(saved);
+// // //         const merged = { ...base, ...parsed };
+// // //         // 설비는 저장값이 유효하지 않을 수 있으므로 비워서 '전체'
+// // //         merged.equipment = merged.equipment || '';
+// // //         // 날짜도 전체기간 유지
+// // //         merged.start_date = merged.start_date ?? '';
+// // //         merged.end_date = merged.end_date ?? '';
+// // //         this.setState({ filters: merged });
+// // //       } catch {
+// // //         this.setState({ filters: base });
+// // //       }
+// // //     } else {
+// // //       this.setState({ filters: base });
+// // //     }
+// // //     this.bootstrap();
+// // //   }
+
+// // //   /** 공통 POST (그리드 엔드포인트) */
+// // //   post = async (path, body) => {
+// // //     const headers = { 'Content-Type': 'application/json' };
+// // //     const url = `${(config.baseURLApi || '').replace(/\/$/, '')}/smartFactory/inspection_grid${path}`;
+// // //     const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body || {}) });
+// // //     if (!res.ok) {
+// // //       const t = await res.text().catch(() => '');
+// // //       throw new Error(`${path} 호출 실패: ${res.status} ${t}`);
+// // //     }
+// // //     const json = await res.json();
+// // //     return json.data || [];
+// // //   };
+
+// // //   /** 초기 부트스트랩 */
+// // //   bootstrap = async () => {
+// // //     await this.loadYears();
+// // //     await this.loadOptions();
+// // //     this.loadList();
+// // //   };
+
+// // //   /** 연도 목록 (fallback) */
+// // //   loadYears = async () => {
+// // //     const y = new Date().getFullYear();
+// // //     const years = [y, y - 1, y - 2, y - 3, y - 4];
+// // //     this.setState({ years, selectedYear: y });
+// // //   };
+
+// // //   /** 프론트 → 백엔드 요청 매핑 (빈 문자열은 undefined로 넘겨 필터 해제) */
+// // //   mapFiltersToRequest = (f) => ({
+// // //     start_work_date: f.start_date || undefined,
+// // //     end_work_date: f.end_date || undefined,
+// // //     plant: f.factory || undefined,
+// // //     process: f.process || undefined,
+// // //     equipment: f.equipment || undefined,
+// // //     itemNumber: f.partNo || undefined,
+// // //     inspectionType: f.inspType || undefined,
+// // //     workType: f.workType || undefined,
+// // //     shiftType: f.shiftType || undefined,
+// // //   });
+
+// // //   /** 옵션 로드 */
+// // //   loadOptions = async () => {
+// // //     const { filters } = this.state;
+// // //     this.setState({ optionsLoading: true });
+// // //     try {
+// // //       const reqBase = this.mapFiltersToRequest(filters);
+
+// // //       const [factories, processes, equipments, parts, items] = await Promise.all([
+// // //         this.post('/options/plants', {
+// // //           start_work_date: reqBase.start_work_date,
+// // //           end_work_date: reqBase.end_work_date,
+// // //         }),
+// // //         this.post('/options/processes', {
+// // //           start_work_date: reqBase.start_work_date,
+// // //           end_work_date: reqBase.end_work_date,
+// // //           plant: reqBase.plant || undefined,
+// // //         }),
+// // //         this.post('/options/equipments', {
+// // //           start_work_date: reqBase.start_work_date,
+// // //           end_work_date: reqBase.end_work_date,
+// // //           plant: reqBase.plant || undefined,
+// // //           process: reqBase.process || undefined,
+// // //         }),
+// // //         this.post('/options/partNos', reqBase),
+// // //         this.post('/options/partNames', reqBase),
+// // //       ]);
+
+// // //       // 현재 필터 값이 실제 옵션에 없으면 자동으로 비움
+// // //       const fixed = { ...this.state.filters };
+// // //       if (fixed.factory && factories.length && !factories.includes(fixed.factory)) fixed.factory = '';
+// // //       if (fixed.process && processes.length && !processes.includes(fixed.process)) fixed.process = '';
+// // //       if (fixed.equipment && equipments.length && !equipments.includes(fixed.equipment)) fixed.equipment = '';
+
+// // //       this.setState({
+// // //         factories,
+// // //         processes,
+// // //         equipments,
+// // //         parts,
+// // //         items,
+// // //         optionsLoading: false,
+// // //         filters: fixed,
+// // //       });
+// // //     } catch (e) {
+// // //       console.error(e);
+// // //       this.setState({ optionsLoading: false });
+// // //     }
+// // //   };
+
+// // //   /** 동적 컬럼 생성 */
+// // //   buildColumns = (rows) => {
+// // //     if (!rows?.length) return [];
+// // //     const keySet = new Set();
+// // //     const scanCount = Math.min(rows.length, 200);
+// // //     for (let i = 0; i < scanCount; i += 1) {
+// // //       Object.keys(rows[i] || {}).forEach((k) => keySet.add(k));
+// // //     }
+// // //     const allKeys = Array.from(keySet);
+// // //     const sortKey = (k) => {
+// // //       const idx = PREFERRED_ORDER.indexOf(k);
+// // //       return idx === -1 ? 1000 + allKeys.indexOf(k) : idx;
+// // //     };
+// // //     const ordered = allKeys.sort((a, b) => sortKey(a) - sortKey(b));
+
+// // //     const dateLike = /(^|_)(date|work_date|reportdate|보고일)$/i;
+// // //     const cols = ordered
+// // //       .filter((k) => k !== '')
+// // //       .map((k) => {
+// // //         const width = Math.min(340, Math.max(110, (k.length || 6) * 16));
+// // //         const isDate = dateLike.test(k);
+// // //         return {
+// // //           field: k,
+// // //           headerName: k,
+// // //           headerClassName: 'super-app-theme--header',
+// // //           cellClassName: 'super-app-theme--cell',
+// // //           width,
+// // //           type: isDate ? 'date' : undefined,
+// // //           valueGetter: isDate
+// // //             ? (p) => {
+// // //                 const v = p.value ?? p.row?.[k];
+// // //                 if (!v) return null;
+// // //                 const d = new Date(v);
+// // //                 return Number.isNaN(d.getTime()) ? null : d;
+// // //               }
+// // //             : undefined,
+// // //         };
+// // //       });
+
+// // //     // id 컬럼 앞으로
+// // //     const idIdx = cols.findIndex((c) => c.field === 'id');
+// // //     if (idIdx > 0) {
+// // //       const idCol = cols.splice(idIdx, 1)[0];
+// // //       cols.unshift({ ...idCol, width: 100 });
+// // //     }
+// // //     return cols;
+// // //   };
+
+// // //   /** 리스트 로드 */
+// // //   loadList = async () => {
+// // //     const { filters } = this.state;
+// // //     try {
+// // //       localStorage.setItem('inspectionFilters', JSON.stringify(filters));
+// // //     } catch {}
+// // //     this.setState({ loading: true, error: '' });
+// // //     try {
+// // //       const rawRows = await this.post('/list', this.mapFiltersToRequest(filters));
+
+// // //       // 디버깅: 첫 행 비교
+// // //       if (rawRows?.length) {
+// // //         // eslint-disable-next-line no-console
+// // //         console.log('[INSPECTION_GRID] raw sample =', rawRows[0]);
+// // //       }
+
+// // //       const normalized = (rawRows || []).map((r, i) => {
+// // //         const nr = normalizeRowKeys(r);
+// // //         const idVal = nr.id ?? r?.id ?? i + 1;
+// // //         return { id: idVal, ...nr };
+// // //       });
+
+// // //       // 디버깅: 정규화된 첫 행
+// // //       if (normalized?.length) {
+// // //         // eslint-disable-next-line no-console
+// // //         console.log('[INSPECTION_GRID] sample keys =', Object.keys(normalized[0]));
+// // //         // eslint-disable-next-line no-console
+// // //         console.log('[INSPECTION_GRID] normalized sample =', normalized[0]);
+// // //       }
+
+// // //       const columns = this.buildColumns(normalized);
+// // //       this.setState({ rows: normalized, columns, loading: false });
+// // //     } catch (e) {
+// // //       console.error(e);
+// // //       this.setState({ error: '데이터를 불러오지 못했습니다.', loading: false });
+// // //     }
+// // //   };
+
+// // //   /** 필터 변경 */
+// // //   handleFilterChange = async (field, value) => {
+// // //     this.setState(
+// // //       (prev) => {
+// // //         const f = { ...prev.filters, [field]: value };
+// // //         if (field === 'factory') {
+// // //           f.process = '';
+// // //           f.equipment = '';
+// // //           f.partNo = '';
+// // //           f.item = '';
+// // //         } else if (field === 'process') {
+// // //           f.equipment = '';
+// // //           f.partNo = '';
+// // //           f.item = '';
+// // //         } else if (field === 'equipment') {
+// // //           f.partNo = '';
+// // //           f.item = '';
+// // //         } else if (field === 'topN') {
+// // //           f.topN = Number(value) || 5;
+// // //         }
+// // //         return { filters: f };
+// // //       },
+// // //       async () => {
+// // //         await this.loadOptions();
+// // //         await this.loadList();
+// // //       }
+// // //     );
+// // //   };
+
+// // //   /** 날짜 프리셋/범위 */
+// // //   setDateRange = async (start, end) => {
+// // //     const start_date = start ? iso(start) : '';
+// // //     const end_date = end ? iso(end) : '';
+// // //     this.setState(
+// // //       (prev) => ({ filters: { ...prev.filters, start_date, end_date } }),
+// // //       async () => {
+// // //         try {
+// // //           localStorage.setItem('inspectionFilters', JSON.stringify(this.state.filters));
+// // //         } catch {}
+// // //         await this.loadOptions();
+// // //         this.loadList();
+// // //       }
+// // //     );
+// // //   };
+// // //   applyToday = () => {
+// // //     const t = today0();
+// // //     this.setDateRange(t, t);
+// // //   };
+// // //   selectYear = (y) => {
+// // //     const s = new Date(y, 0, 1);
+// // //     const e = new Date(y, 11, 31);
+// // //     this.setState({ selectedYear: y, yearAnchorPos: null });
+// // //     this.setDateRange(s, e);
+// // //   };
+// // //   selectMonth = (m) => {
+// // //     const y = this.state.selectedYear;
+// // //     const s = new Date(y, m - 1, 1);
+// // //     const e = lastOfMonth(s);
+// // //     this.setState({ monthAnchorPos: null, selectedMonth: m });
+// // //     this.setDateRange(s, e);
+// // //   };
+// // //   selectWeek = (w) => {
+// // //     this.setState({ weekAnchorPos: null });
+// // //     this.setDateRange(w.start, w.end);
+// // //   };
+
+// // //   /** ▶ 전체 초기화(전체기간/전체 옵션) */
+// // //   resetToAll = async () => {
+// // //     const filters = getDefaultFilters(); // 이미 전체기간/전체 설비
+// // //     this.setState({ filters, selectedYear: new Date().getFullYear(), selectedMonth: new Date().getMonth() + 1 }, async () => {
+// // //       try { localStorage.removeItem('inspectionFilters'); } catch {}
+// // //       await this.loadOptions();
+// // //       this.loadList();
+// // //     });
+// // //   };
+
+// // //   /** 품번/품명 모달 */
+// // //   openItemCodeModal = () => this.setState({ itemCodeModalOpen: true });
+// // //   closeItemCodeModal = () => this.setState({ itemCodeModalOpen: false });
+// // //   handleItemCodeSelect = ({ 품목번호, 품목명 }) => {
+// // //     this.setState(
+// // //       (prev) => ({
+// // //         filters: { ...prev.filters, partNo: 품목번호 || '', item: 품목명 || '' },
+// // //         itemCodeModalOpen: false,
+// // //       }),
+// // //       () => {
+// // //         this.loadOptions();
+// // //         this.loadList();
+// // //       }
+// // //     );
+// // //   };
+
+// // //   /** ---------- 필터 바 ---------- */
+// // //   renderFilterBar = () => {
+// // //     const { filters, factories, processes, equipments, itemCodeModalOpen } = this.state;
+
+// // //     const now = today0();
+// // //     const thisYear = now.getFullYear();
+// // //     const thisMonth = now.getMonth() + 1;
+// // //     const thisWeek = { start: startOfWeek(now), end: endOfWeek(now) };
+// // //     const weeks = getWeeksOfMonth(this.state.selectedYear, this.state.selectedMonth);
+
+// // //     return (
+// // //       <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+// // //         <CardHeader
+// // //           title={
+// // //             <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'white' }}>
+// // //               <FilterIcon /> 검색 조건
+// // //             </Typography>
+// // //           }
+// // //           action={
+// // //             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+// // //               {/* 연간 */}
+// // //               <Button
+// // //                 size="small"
+// // //                 variant="outlined"
+// // //                 color="success"
+// // //                 endIcon={<ExpandMoreIcon />}
+// // //                 onClick={(e) => this.setState({ yearAnchorPos: getAnchorPos(e.currentTarget) })}
+// // //                 sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+// // //               >
+// // //                 연간
+// // //               </Button>
+// // //               <Menu
+// // //                 open={!!this.state.yearAnchorPos}
+// // //                 onClose={() => this.setState({ yearAnchorPos: null })}
+// // //                 anchorReference="anchorPosition"
+// // //                 anchorPosition={this.state.yearAnchorPos || { top: 0, left: 0 }}
+// // //               >
+// // //                 <MenuItem dense onClick={() => this.selectYear(thisYear)}>올해</MenuItem>
+// // //                 {this.state.years.map((y) => (
+// // //                   <MenuItem key={y} dense onClick={() => this.selectYear(y)}>{y}년</MenuItem>
+// // //                 ))}
+// // //               </Menu>
+
+// // //               {/* 월간 */}
+// // //               <Button
+// // //                 size="small"
+// // //                 variant="outlined"
+// // //                 color="success"
+// // //                 endIcon={<ExpandMoreIcon />}
+// // //                 onClick={(e) => this.setState({ monthAnchorPos: getAnchorPos(e.currentTarget) })}
+// // //                 sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+// // //               >
+// // //                 월간
+// // //               </Button>
+// // //               <Menu
+// // //                 open={!!this.state.monthAnchorPos}
+// // //                 onClose={() => this.setState({ monthAnchorPos: null })}
+// // //                 anchorReference="anchorPosition"
+// // //                 anchorPosition={this.state.monthAnchorPos || { top: 0, left: 0 }}
+// // //               >
+// // //                 <MenuItem
+// // //                   dense
+// // //                   onClick={() => { this.setState({ selectedYear: thisYear }, () => this.selectMonth(thisMonth)); }}
+// // //                 >
+// // //                   이번달
+// // //                 </MenuItem>
+// // //                 {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+// // //                   <MenuItem key={m} dense onClick={() => this.selectMonth(m)}>
+// // //                     {this.state.selectedYear}년 {m}월
+// // //                   </MenuItem>
+// // //                 ))}
+// // //               </Menu>
+
+// // //               {/* 주간 */}
+// // //               <Button
+// // //                 size="small"
+// // //                 variant="outlined"
+// // //                 color="success"
+// // //                 endIcon={<ExpandMoreIcon />}
+// // //                 onClick={(e) => this.setState({ weekAnchorPos: getAnchorPos(e.currentTarget) })}
+// // //                 sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+// // //               >
+// // //                 주간
+// // //               </Button>
+// // //               <Menu
+// // //                 open={!!this.state.weekAnchorPos}
+// // //                 onClose={() => this.setState({ weekAnchorPos: null })}
+// // //                 anchorReference="anchorPosition"
+// // //                 anchorPosition={this.state.weekAnchorPos || { top: 0, left: 0 }}
+// // //               >
+// // //                 <MenuItem dense onClick={() => this.selectWeek(thisWeek)}>
+// // //                   이번주 ({iso(thisWeek.start)}~{iso(thisWeek.end)})
+// // //                 </MenuItem>
+// // //                 {weeks.map((w, i) => (
+// // //                   <MenuItem key={i} dense onClick={() => this.selectWeek(w)}>
+// // //                     {this.state.selectedYear}년 {this.state.selectedMonth}월 {w.label} ({iso(w.start)}~{iso(w.end)})
+// // //                   </MenuItem>
+// // //                 ))}
+// // //               </Menu>
+
+// // //               {/* 오늘 */}
+// // //               <Button
+// // //                 size="small"
+// // //                 variant="outlined"
+// // //                 color="success"
+// // //                 onClick={this.applyToday}
+// // //                 sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+// // //               >
+// // //                 오늘
+// // //               </Button>
+
+// // //               {/* 구분자 & 기간선택 직접 입력 */}
+// // //               <Typography sx={{ color: 'white', opacity: 0.8, mx: 0.5 }}>|</Typography>
+// // //               <Typography sx={{ color: 'white' }}>기간선택</Typography>
+// // //               <TextField
+// // //                 type="date"
+// // //                 value={filters.start_date}
+// // //                 onChange={(e) => this.handleFilterChange('start_date', e.target.value)}
+// // //                 size="small"
+// // //                 variant="outlined"
+// // //                 sx={{ backgroundColor: 'white', borderRadius: 1, minWidth: 150 }}
+// // //                 InputLabelProps={{ shrink: true }}
+// // //               />
+// // //               <Typography sx={{ color: 'white' }}>~</Typography>
+// // //               <TextField
+// // //                 type="date"
+// // //                 value={filters.end_date}
+// // //                 onChange={(e) => this.handleFilterChange('end_date', e.target.value)}
+// // //                 size="small"
+// // //                 variant="outlined"
+// // //                 sx={{ backgroundColor: 'white', borderRadius: 1, minWidth: 150 }}
+// // //                 InputLabelProps={{ shrink: true }}
+// // //               />
+
+// // //               {/* 확장/축소 */}
+// // //               <IconButton
+// // //                 onClick={() => this.setState((prev) => ({ filterExpanded: !prev.filterExpanded }))}
+// // //                 sx={{ color: 'white' }}
+// // //               >
+// // //                 {this.state.filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+// // //               </IconButton>
+// // //             </Box>
+// // //           }
+// // //           sx={{ backgroundColor: '#ff8f00', color: 'white', borderRadius: 1, mb: 2 }}
+// // //         />
+
+// // //         {/* === 1행: 공장/공정/설비/품번/품명 === */}
+// // //         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(160px, 1fr))', gap: 2, mb: 1 }}>
+// // //           <Autocomplete
+// // //             size="small"
+// // //             options={factories}
+// // //             value={filters.factory || null}
+// // //             onChange={(_, v) => this.handleFilterChange('factory', v || '')}
+// // //             renderInput={(params) => <TextField {...params} label="공장" />}
+// // //             clearOnEscape
+// // //           />
+// // //           <Autocomplete
+// // //             size="small"
+// // //             options={processes}
+// // //             value={filters.process || null}
+// // //             onChange={(_, v) => this.handleFilterChange('process', v || '')}
+// // //             renderInput={(params) => <TextField {...params} label="작업장(공정)" />}
+// // //             clearOnEscape
+// // //           />
+// // //           <Autocomplete
+// // //             size="small"
+// // //             options={equipments}
+// // //             value={filters.equipment || null}
+// // //             onChange={(_, v) => this.handleFilterChange('equipment', v || '')}
+// // //             renderInput={(params) => <TextField {...params} label="라인(설비)" />}
+// // //             clearOnEscape
+// // //           />
+
+// // //           <TextField
+// // //             fullWidth
+// // //             label="품번"
+// // //             value={filters.partNo}
+// // //             onClick={this.openItemCodeModal}
+// // //             size="small"
+// // //             variant="outlined"
+// // //             InputProps={{
+// // //               readOnly: true,
+// // //               style: { cursor: 'pointer' },
+// // //               endAdornment: (
+// // //                 <InputAdornment position="end">
+// // //                   <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
+// // //                 </InputAdornment>
+// // //               ),
+// // //             }}
+// // //             sx={{ '& .MuiInputBase-root': { cursor: 'pointer', '&:hover': { backgroundColor: '#f5f5f5' } } }}
+// // //           />
+
+// // //           <TextField
+// // //             fullWidth
+// // //             label="품명(검사항목)"
+// // //             value={filters.item}
+// // //             onClick={this.openItemCodeModal}
+// // //             size="small"
+// // //             variant="outlined"
+// // //             InputProps={{
+// // //               readOnly: true,
+// // //               style: { cursor: 'pointer' },
+// // //               endAdornment: (
+// // //                 <InputAdornment position="end">
+// // //                   <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
+// // //                 </InputAdornment>
+// // //               ),
+// // //             }}
+// // //             sx={{ '& .MuiInputBase-root': { cursor: 'pointer', '&:hover': { backgroundColor: '#f5f5f5' } } }}
+// // //           />
+// // //         </Box>
+
+// // //         {/* 확장 필터 */}
+// // //         <Collapse in={this.state.filterExpanded} timeout="auto" unmountOnExit>
+// // //           <Divider sx={{ my: 2 }} />
+// // //           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(160px, 1fr))', gap: 16 }}>
+// // //             <TextField
+// // //               fullWidth
+// // //               label="검사구분"
+// // //               value={filters.inspType}
+// // //               onChange={(e) => this.handleFilterChange('inspType', e.target.value)}
+// // //               size="small"
+// // //               variant="outlined"
+// // //             />
+// // //             <TextField
+// // //               fullWidth
+// // //               label="작업구분"
+// // //               value={filters.workType}
+// // //               onChange={(e) => this.handleFilterChange('workType', e.target.value)}
+// // //               size="small"
+// // //               variant="outlined"
+// // //             />
+// // //             <TextField
+// // //               fullWidth
+// // //               label="주야구분"
+// // //               value={filters.shiftType}
+// // //               onChange={(e) => this.handleFilterChange('shiftType', e.target.value)}
+// // //               size="small"
+// // //               variant="outlined"
+// // //             />
+// // //             <TextField
+// // //               fullWidth
+// // //               label="Top N"
+// // //               type="number"
+// // //               value={filters.topN ?? 5}
+// // //               onChange={(e) => this.handleFilterChange('topN', e.target.value)}
+// // //               size="small"
+// // //               variant="outlined"
+// // //             />
+// // //           </Box>
+// // //         </Collapse>
+
+// // //         {/* 버튼 */}
+// // //         <Box sx={{ mt: 2, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+// // //           <Button variant="outlined" startIcon={<ClearIcon />} onClick={this.resetToAll} size="large" color="secondary">
+// // //             필터 초기화
+// // //           </Button>
+// // //           <Button
+// // //             variant="contained"
+// // //             startIcon={<SearchIcon />}
+// // //             size="large"
+// // //             sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}
+// // //             onClick={() => {
+// // //               this.loadOptions();
+// // //               this.loadList();
+// // //             }}
+// // //           >
+// // //             검색
+// // //           </Button>
+// // //         </Box>
+
+// // //         {/* 품목 코드/명 선택 모달 */}
+// // //         <InspectionItemModal
+// // //           open={itemCodeModalOpen}
+// // //           onClose={this.closeItemCodeModal}
+// // //           onSelect={this.handleItemCodeSelect}
+// // //           selectedItemCode={filters.partNo}
+// // //           plant={filters.factory}
+// // //           worker={filters.process}
+// // //           line={filters.equipment}
+// // //           startDate={filters.start_date}
+// // //           endDate={filters.end_date}
+// // //         />
+// // //       </Paper>
+// // //     );
+// // //   };
+
+// // //   render() {
+// // //     const { error, loading, rows, columns } = this.state;
+
+// // //     return (
+// // //       <Box className={s.root} sx={{ height: '100vh', p: 3, display: 'flex', flexDirection: 'column', backgroundColor: '#f5f5f5' }}>
+// // //         {/* 필터 바 */}
+// // //         {this.renderFilterBar()}
+
+// // //         {/* 에러 */}
+// // //         {error && (
+// // //           <Box sx={{ mb: 2 }}>
+// // //             <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+// // //             <Button
+// // //               variant="contained"
+// // //               onClick={this.loadList}
+// // //               sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}
+// // //             >
+// // //               다시 시도
+// // //             </Button>
+// // //           </Box>
+// // //         )}
+
+// // //         {/* 그리드 */}
+// // //         <Paper elevation={3} sx={{ flex: 1, display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
+// // //           <Box sx={{ height: '100%', width: '100%' }}>
+// // //             {loading ? (
+// // //               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '220px' }}>
+// // //                 <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
+// // //               </Box>
+// // //             ) : (
+// // //               <DataGrid
+// // //                 rows={rows}
+// // //                 columns={columns}
+// // //                 getRowId={(r) => r.id}
+// // //                 pagination
+// // //                 paginationMode="client"
+// // //                 pageSizeOptions={[10, 25, 50, 100]}
+// // //                 initialState={{ pagination: { paginationModel: { page: 0, pageSize: 10 } } }}
+// // //                 disableRowSelectionOnClick
+// // //                 density="compact"
+// // //                 slots={{ toolbar: GridToolbar }}
+// // //                 slotProps={{ toolbar: { showQuickFilter: true, quickFilterProps: { debounceMs: 500 } } }}
+// // //                 sx={{
+// // //                   '& .super-app-theme--header': { backgroundColor: '#ff8f00', color: 'white', fontWeight: 'bold' },
+// // //                   '& .MuiDataGrid-cell': { borderBottom: '1px solid #e0e0e0' },
+// // //                   '& .MuiDataGrid-root': { border: 'none' },
+// // //                   '& .MuiDataGrid-virtualScroller': { backgroundColor: '#fafafa' },
+// // //                   '& .MuiDataGrid-footerContainer': { borderTop: '1px solid #e0e0e0' },
+// // //                 }}
+// // //               />
+// // //             )}
+// // //           </Box>
+// // //         </Paper>
+// // //       </Box>
+// // //     );
+// // //   }
+// // // }
+
+
+// // // src/pages/inspection/InspectionSystemData.js
+// // import config from '../../config';
+// // import React, { Component } from 'react';
+
+// // import {
+// //   Box,
+// //   Paper,
+// //   TextField,
+// //   Button,
+// //   Typography,
+// //   CardHeader,
+// //   IconButton,
+// //   Divider,
+// //   Collapse,
+// //   CircularProgress,
+// //   Alert,
+// //   Menu,
+// //   MenuItem,
+// //   InputAdornment,
+// // } from '@mui/material';
+// // import { Autocomplete } from '@mui/material';
+// // import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+
+// // import {
+// //   Search as SearchIcon,
+// //   Clear as ClearIcon,
+// //   FilterList as FilterIcon,
+// //   ExpandMore as ExpandMoreIcon,
+// //   ExpandLess as ExpandLessIcon,
+// //   KeyboardArrowDown as KeyboardArrowDownIcon,
+// // } from '@mui/icons-material';
+
+// // import InspectionItemModal from '../common/InspectionItemModal';
+// // import s from './InspectionSystemData.module.scss';
+
+// // /** ---------- helpers ---------- */
+// // const iso = (d) => d.toLocaleDateString('sv-SE'); // YYYY-MM-DD
+// // const today0 = () => {
+// //   const t = new Date();
+// //   return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+// // };
+// // const lastOfMonth = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0);
+
+// // /** 버튼 기준 화면 좌표 → Menu anchorPosition */
+// // const getAnchorPos = (el) => {
+// //   if (!el) return null;
+// //   const r = el.getBoundingClientRect();
+// //   return { top: Math.round(r.bottom + window.scrollY), left: Math.round(r.left + window.scrollX) };
+// // };
+// // /** 월요일 시작 주간 */
+// // const startOfWeek = (d) => {
+// //   const day = d.getDay();
+// //   const diff = (day === 0 ? -6 : 1) - day;
+// //   const s = new Date(d);
+// //   s.setDate(d.getDate() + diff);
+// //   return new Date(s.getFullYear(), s.getMonth(), s.getDate());
+// // };
+// // const endOfWeek = (d) => {
+// //   const s = startOfWeek(d);
+// //   return new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6);
+// // };
+// // const getWeeksOfMonth = (year, month) => {
+// //   const first = new Date(year, month - 1, 1);
+// //   const last = lastOfMonth(first);
+// //   let cur = startOfWeek(first);
+// //   const out = [];
+// //   let idx = 1;
+// //   while (cur <= last) {
+// //     const s = new Date(cur), e = endOfWeek(cur);
+// //     const clipS = new Date(Math.max(s, first));
+// //     const clipE = new Date(Math.min(e, last));
+// //     out.push({ label: `${idx}주차`, start: clipS, end: clipE });
+// //     idx += 1;
+// //     cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 7);
+// //   }
+// //   return out;
+// // };
+
+// // /** ▶ 기본값을 '전체' 상태로 변경 (start_date/end_date/equipment = "") */
+// // const getDefaultFilters = () => ({
+// //   start_date: '',   // 전체기간
+// //   end_date: '',     // 전체기간
+// //   factory: '아진산업-본사(경산)',
+// //   process: '프레스',
+// //   equipment: '',    // 전체 설비
+// //   partNo: '',
+// //   item: '',
+// //   inspType: '',
+// //   workType: '',
+// //   shiftType: '',
+// //   topN: 5,
+// // });
+
+// // /* ====== 키/값 정규화 유틸 ====== */
+// // /* eslint-disable no-control-regex */
+// // const INVISIBLE = /[\u00A0\u200B-\u200F\u202A-\u202E\u2060]/g; // NBSP & zero-width & bidi
+// // const CTRL_IN_KEYS = /[\u0000-\u001F\u007F]/g;                 // control chars (키 전용)
+// // const CTRL_IN_VALUES = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g; // 값에서만 제거(탭/개행/CR 허용)
+// // /* eslint-enable no-control-regex */
+// // const MULTI_SPACE = / {2,}/g;
+
+// // /** 키: 제어문자/제로폭/여러 공백 제거 */
+// // function normalizeKey(k) {
+// //   if (k == null) return '';
+// //   return String(k)
+// //     .replace(INVISIBLE, '')
+// //     .replace(CTRL_IN_KEYS, '')
+// //     .trim()
+// //     .replace(MULTI_SPACE, ' ');
+// // }
+// // /** 값: 눈에 보이지 않는 제어문자만 제거 (한글/영문/숫자/기호 보존) */
+// // function sanitizeValue(v) {
+// //   if (v == null) return v;
+// //   if (typeof v === 'string') return v.replace(CTRL_IN_VALUES, '');
+// //   return v;
+// // }
+// // /** 행 키 정규화 */
+// // function normalizeRowKeys(row) {
+// //   const out = {};
+// //   Object.keys(row || {}).forEach((k) => {
+// //     const nk = normalizeKey(k);
+// //     if (out[nk] == null || out[nk] === '') out[nk] = sanitizeValue(row[k]);
+// //   });
+// //   return out;
+// // }
+
+// // /** 컬럼 정렬 우선순위 */
+// // const PREFERRED_ORDER = [
+// //   'work_date', '보고일',
+// //   'plant', '공장', '플랜트',
+// //   'process', '공정',
+// //   'equipment', '설비',
+// //   '책임자', '작업장', '자재번호', '자재명', '실적번호', '차종',
+// //   '양품수량', '생산수량', '불량합계',
+// //   '검사구분', '주야구분', '작업순번', '작업구분', '검사순번',
+// //   '검사항목명', '검사내용', '생산',
+// //   '사업장',
+// //   'id'
+// // ];
+
+// // /** ✅ 모든 값이 채워져 있어야 하는 필드 */
+// // const MUST_HAVE_ALL = [
+// //   '검사구분', '주야구분', '작업순번', '작업구분', '검사순번',
+// //   '검사항목명', '검사내용', '생산'
+// // ];
+
+// // export default class InspectionGrid extends Component {
+// //   state = {
+// //     // 필터
+// //     filters: getDefaultFilters(),
+
+// //     // 옵션
+// //     factories: [],
+// //     processes: [],
+// //     equipments: [],
+// //     parts: [],
+// //     items: [],
+// //     optionsLoading: false,
+
+// //     // UI
+// //     loading: false,
+// //     error: '',
+// //     filterExpanded: false,
+
+// //     // 프리셋 상태/앵커
+// //     selectedYear: new Date().getFullYear(),
+// //     selectedMonth: new Date().getMonth() + 1,
+// //     yearAnchorPos: null,
+// //     monthAnchorPos: null,
+// //     weekAnchorPos: null,
+
+// //     years: [],
+
+// //     // 모달
+// //     itemCodeModalOpen: false,
+
+// //     // 그리드
+// //     rows: [],
+// //     columns: [],
+// //   };
+
+// //   componentDidMount() {
+// //     const base = getDefaultFilters();
+// //     const saved = localStorage.getItem('inspectionFilters');
+// //     if (saved) {
+// //       try {
+// //         const parsed = JSON.parse(saved);
+// //         const merged = { ...base, ...parsed };
+// //         // 설비는 저장값이 유효하지 않을 수 있으므로 비워서 '전체'
+// //         merged.equipment = merged.equipment || '';
+// //         // 날짜도 전체기간 유지
+// //         merged.start_date = merged.start_date ?? '';
+// //         merged.end_date = merged.end_date ?? '';
+// //         this.setState({ filters: merged });
+// //       } catch {
+// //         this.setState({ filters: base });
+// //       }
+// //     } else {
+// //       this.setState({ filters: base });
+// //     }
+// //     this.bootstrap();
+// //   }
+
+// //   /** 공통 POST (그리드 엔드포인트) */
+// //   post = async (path, body) => {
+// //     const headers = { 'Content-Type': 'application/json' };
+// //     const url = `${(config.baseURLApi || '').replace(/\/$/, '')}/smartFactory/inspection_grid${path}`;
+// //     const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body || {}) });
+// //     if (!res.ok) {
+// //       const t = await res.text().catch(() => '');
+// //       throw new Error(`${path} 호출 실패: ${res.status} ${t}`);
+// //     }
+// //     const json = await res.json();
+// //     return json.data || [];
+// //   };
+
+// //   /** 초기 부트스트랩 */
+// //   bootstrap = async () => {
+// //     await this.loadYears();
+// //     await this.loadOptions();
+// //     this.loadList();
+// //   };
+
+// //   /** 연도 목록 (fallback) */
+// //   loadYears = async () => {
+// //     const y = new Date().getFullYear();
+// //     const years = [y, y - 1, y - 2, y - 3, y - 4];
+// //     this.setState({ years, selectedYear: y });
+// //   };
+
+// //   /** 프론트 → 백엔드 요청 매핑 (빈 문자열은 undefined로 넘겨 필터 해제) */
+// //   mapFiltersToRequest = (f) => ({
+// //     start_work_date: f.start_date || undefined,
+// //     end_work_date: f.end_date || undefined,
+// //     plant: f.factory || undefined,
+// //     process: f.process || undefined,
+// //     equipment: f.equipment || undefined,
+// //     itemNumber: f.partNo || undefined,
+// //     inspectionType: f.inspType || undefined,
+// //     workType: f.workType || undefined,
+// //     shiftType: f.shiftType || undefined,
+// //   });
+
+// //   /** 옵션 로드 */
+// //   loadOptions = async () => {
+// //     const { filters } = this.state;
+// //     this.setState({ optionsLoading: true });
+// //     try {
+// //       const reqBase = this.mapFiltersToRequest(filters);
+
+// //       const [factories, processes, equipments, parts, items] = await Promise.all([
+// //         this.post('/options/plants', {
+// //           start_work_date: reqBase.start_work_date,
+// //           end_work_date: reqBase.end_work_date,
+// //         }),
+// //         this.post('/options/processes', {
+// //           start_work_date: reqBase.start_work_date,
+// //           end_work_date: reqBase.end_work_date,
+// //           plant: reqBase.plant || undefined,
+// //         }),
+// //         this.post('/options/equipments', {
+// //           start_work_date: reqBase.start_work_date,
+// //           end_work_date: reqBase.end_work_date,
+// //           plant: reqBase.plant || undefined,
+// //           process: reqBase.process || undefined,
+// //         }),
+// //         this.post('/options/partNos', reqBase),
+// //         this.post('/options/partNames', reqBase),
+// //       ]);
+
+// //       // 현재 필터 값이 실제 옵션에 없으면 자동으로 비움
+// //       const fixed = { ...this.state.filters };
+// //       if (fixed.factory && factories.length && !factories.includes(fixed.factory)) fixed.factory = '';
+// //       if (fixed.process && processes.length && !processes.includes(fixed.process)) fixed.process = '';
+// //       if (fixed.equipment && equipments.length && !equipments.includes(fixed.equipment)) fixed.equipment = '';
+
+// //       this.setState({
+// //         factories,
+// //         processes,
+// //         equipments,
+// //         parts,
+// //         items,
+// //         optionsLoading: false,
+// //         filters: fixed,
+// //       });
+// //     } catch (e) {
+// //       console.error(e);
+// //       this.setState({ optionsLoading: false });
+// //     }
+// //   };
+
+// //   /** 동적 컬럼 생성 */
+// //   buildColumns = (rows) => {
+// //     if (!rows?.length) return [];
+// //     const keySet = new Set();
+// //     const scanCount = Math.min(rows.length, 200);
+// //     for (let i = 0; i < scanCount; i += 1) {
+// //       Object.keys(rows[i] || {}).forEach((k) => keySet.add(k));
+// //     }
+// //     const allKeys = Array.from(keySet);
+// //     const sortKey = (k) => {
+// //       const idx = PREFERRED_ORDER.indexOf(k);
+// //       return idx === -1 ? 1000 + allKeys.indexOf(k) : idx;
+// //     };
+// //     const ordered = allKeys.sort((a, b) => sortKey(a) - sortKey(b));
+
+// //     const dateLike = /(^|_)(date|work_date|reportdate|보고일)$/i;
+// //     const cols = ordered
+// //       .filter((k) => k !== '')
+// //       .map((k) => {
+// //         const width = Math.min(340, Math.max(110, (k.length || 6) * 16));
+// //         const isDate = dateLike.test(k);
+// //         return {
+// //           field: k,
+// //           headerName: k,
+// //           headerClassName: 'super-app-theme--header',
+// //           cellClassName: 'super-app-theme--cell',
+// //           width,
+// //           type: isDate ? 'date' : undefined,
+// //           valueGetter: isDate
+// //             ? (p) => {
+// //                 const v = p.value ?? p.row?.[k];
+// //                 if (!v) return null;
+// //                 const d = new Date(v);
+// //                 return Number.isNaN(d.getTime()) ? null : d;
+// //               }
+// //             : undefined,
+// //         };
+// //       });
+
+// //     // id 컬럼 앞으로
+// //     const idIdx = cols.findIndex((c) => c.field === 'id');
+// //     if (idIdx > 0) {
+// //       const idCol = cols.splice(idIdx, 1)[0];
+// //       cols.unshift({ ...idCol, width: 100 });
+// //     }
+// //     return cols;
+// //   };
+
+// //   /** 리스트 로드 */
+// //   loadList = async () => {
+// //     const { filters } = this.state;
+// //     try {
+// //       localStorage.setItem('inspectionFilters', JSON.stringify(filters));
+// //     } catch {}
+// //     this.setState({ loading: true, error: '' });
+// //     try {
+// //       const rawRows = await this.post('/list', this.mapFiltersToRequest(filters));
+
+// //       // 디버깅: 첫 행 비교
+// //       if (rawRows?.length) {
+// //         // eslint-disable-next-line no-console
+// //         console.log('[INSPECTION_GRID] raw sample =', rawRows[0]);
+// //       }
+
+// //       const normalized = (rawRows || []).map((r, i) => {
+// //         const nr = normalizeRowKeys(r);
+// //         const idVal = nr.id ?? r?.id ?? i + 1;
+// //         return { id: idVal, ...nr };
+// //       });
+
+// //       /** ✅ 모든 필드가 채워진 행만 필터링 */
+// //       const filtered = normalized.filter((row) =>
+// //         MUST_HAVE_ALL.every((k) => row[k] !== null && row[k] !== undefined && String(row[k]).trim() !== '')
+// //       );
+
+// //       // 디버깅: 정규화/필터링된 첫 행
+// //       if (filtered?.length) {
+// //         // eslint-disable-next-line no-console
+// //         console.log('[INSPECTION_GRID] sample keys =', Object.keys(filtered[0]));
+// //         // eslint-disable-next-line no-console
+// //         console.log('[INSPECTION_GRID] filtered sample =', filtered[0]);
+// //       }
+
+// //       const columns = this.buildColumns(filtered);
+// //       this.setState({ rows: filtered, columns, loading: false });
+// //     } catch (e) {
+// //       console.error(e);
+// //       this.setState({ error: '데이터를 불러오지 못했습니다.', loading: false });
+// //     }
+// //   };
+
+// //   /** 필터 변경 */
+// //   handleFilterChange = async (field, value) => {
+// //     this.setState(
+// //       (prev) => {
+// //         const f = { ...prev.filters, [field]: value };
+// //         if (field === 'factory') {
+// //           f.process = '';
+// //           f.equipment = '';
+// //           f.partNo = '';
+// //           f.item = '';
+// //         } else if (field === 'process') {
+// //           f.equipment = '';
+// //           f.partNo = '';
+// //           f.item = '';
+// //         } else if (field === 'equipment') {
+// //           f.partNo = '';
+// //           f.item = '';
+// //         } else if (field === 'topN') {
+// //           f.topN = Number(value) || 5;
+// //         }
+// //         return { filters: f };
+// //       },
+// //       async () => {
+// //         await this.loadOptions();
+// //         await this.loadList();
+// //       }
+// //     );
+// //   };
+
+// //   /** 날짜 프리셋/범위 */
+// //   setDateRange = async (start, end) => {
+// //     const start_date = start ? iso(start) : '';
+// //     const end_date = end ? iso(end) : '';
+// //     this.setState(
+// //       (prev) => ({ filters: { ...prev.filters, start_date, end_date } }),
+// //       async () => {
+// //         try {
+// //           localStorage.setItem('inspectionFilters', JSON.stringify(this.state.filters));
+// //         } catch {}
+// //         await this.loadOptions();
+// //         this.loadList();
+// //       }
+// //     );
+// //   };
+// //   applyToday = () => {
+// //     const t = today0();
+// //     this.setDateRange(t, t);
+// //   };
+// //   selectYear = (y) => {
+// //     const s = new Date(y, 0, 1);
+// //     const e = new Date(y, 11, 31);
+// //     this.setState({ selectedYear: y, yearAnchorPos: null });
+// //     this.setDateRange(s, e);
+// //   };
+// //   selectMonth = (m) => {
+// //     const y = this.state.selectedYear;
+// //     const s = new Date(y, m - 1, 1);
+// //     const e = lastOfMonth(s);
+// //     this.setState({ monthAnchorPos: null, selectedMonth: m });
+// //     this.setDateRange(s, e);
+// //   };
+// //   selectWeek = (w) => {
+// //     this.setState({ weekAnchorPos: null });
+// //     this.setDateRange(w.start, w.end);
+// //   };
+
+// //   /** ▶ 전체 초기화(전체기간/전체 옵션) */
+// //   resetToAll = async () => {
+// //     const filters = getDefaultFilters(); // 이미 전체기간/전체 설비
+// //     this.setState({ filters, selectedYear: new Date().getFullYear(), selectedMonth: new Date().getMonth() + 1 }, async () => {
+// //       try { localStorage.removeItem('inspectionFilters'); } catch {}
+// //       await this.loadOptions();
+// //       this.loadList();
+// //     });
+// //   };
+
+// //   /** 품번/품명 모달 */
+// //   openItemCodeModal = () => this.setState({ itemCodeModalOpen: true });
+// //   closeItemCodeModal = () => this.setState({ itemCodeModalOpen: false });
+// //   handleItemCodeSelect = ({ 품목번호, 품목명 }) => {
+// //     this.setState(
+// //       (prev) => ({
+// //         filters: { ...prev.filters, partNo: 품목번호 || '', item: 품목명 || '' },
+// //         itemCodeModalOpen: false,
+// //       }),
+// //       () => {
+// //         this.loadOptions();
+// //         this.loadList();
+// //       }
+// //     );
+// //   };
+
+// //   /** ---------- 필터 바 ---------- */
+// //   renderFilterBar = () => {
+// //     const { filters, factories, processes, equipments, itemCodeModalOpen } = this.state;
+
+// //     const now = today0();
+// //     const thisYear = now.getFullYear();
+// //     const thisMonth = now.getMonth() + 1;
+// //     const thisWeek = { start: startOfWeek(now), end: endOfWeek(now) };
+// //     const weeks = getWeeksOfMonth(this.state.selectedYear, this.state.selectedMonth);
+
+// //     return (
+// //       <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+// //         <CardHeader
+// //           title={
+// //             <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'white' }}>
+// //               <FilterIcon /> 검색 조건
+// //             </Typography>
+// //           }
+// //           action={
+// //             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+// //               {/* 연간 */}
+// //               <Button
+// //                 size="small"
+// //                 variant="outlined"
+// //                 color="success"
+// //                 endIcon={<ExpandMoreIcon />}
+// //                 onClick={(e) => this.setState({ yearAnchorPos: getAnchorPos(e.currentTarget) })}
+// //                 sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+// //               >
+// //                 연간
+// //               </Button>
+// //               <Menu
+// //                 open={!!this.state.yearAnchorPos}
+// //                 onClose={() => this.setState({ yearAnchorPos: null })}
+// //                 anchorReference="anchorPosition"
+// //                 anchorPosition={this.state.yearAnchorPos || { top: 0, left: 0 }}
+// //               >
+// //                 <MenuItem dense onClick={() => this.selectYear(thisYear)}>올해</MenuItem>
+// //                 {this.state.years.map((y) => (
+// //                   <MenuItem key={y} dense onClick={() => this.selectYear(y)}>{y}년</MenuItem>
+// //                 ))}
+// //               </Menu>
+
+// //               {/* 월간 */}
+// //               <Button
+// //                 size="small"
+// //                 variant="outlined"
+// //                 color="success"
+// //                 endIcon={<ExpandMoreIcon />}
+// //                 onClick={(e) => this.setState({ monthAnchorPos: getAnchorPos(e.currentTarget) })}
+// //                 sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+// //               >
+// //                 월간
+// //               </Button>
+// //               <Menu
+// //                 open={!!this.state.monthAnchorPos}
+// //                 onClose={() => this.setState({ monthAnchorPos: null })}
+// //                 anchorReference="anchorPosition"
+// //                 anchorPosition={this.state.monthAnchorPos || { top: 0, left: 0 }}
+// //               >
+// //                 <MenuItem
+// //                   dense
+// //                   onClick={() => { this.setState({ selectedYear: thisYear }, () => this.selectMonth(thisMonth)); }}
+// //                 >
+// //                   이번달
+// //                 </MenuItem>
+// //                 {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+// //                   <MenuItem key={m} dense onClick={() => this.selectMonth(m)}>
+// //                     {this.state.selectedYear}년 {m}월
+// //                   </MenuItem>
+// //                 ))}
+// //               </Menu>
+
+// //               {/* 주간 */}
+// //               <Button
+// //                 size="small"
+// //                 variant="outlined"
+// //                 color="success"
+// //                 endIcon={<ExpandMoreIcon />}
+// //                 onClick={(e) => this.setState({ weekAnchorPos: getAnchorPos(e.currentTarget) })}
+// //                 sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+// //               >
+// //                 주간
+// //               </Button>
+// //               <Menu
+// //                 open={!!this.state.weekAnchorPos}
+// //                 onClose={() => this.setState({ weekAnchorPos: null })}
+// //                 anchorReference="anchorPosition"
+// //                 anchorPosition={this.state.weekAnchorPos || { top: 0, left: 0 }}
+// //               >
+// //                 <MenuItem dense onClick={() => this.selectWeek(thisWeek)}>
+// //                   이번주 ({iso(thisWeek.start)}~{iso(thisWeek.end)})
+// //                 </MenuItem>
+// //                 {weeks.map((w, i) => (
+// //                   <MenuItem key={i} dense onClick={() => this.selectWeek(w)}>
+// //                     {this.state.selectedYear}년 {this.state.selectedMonth}월 {w.label} ({iso(w.start)}~{iso(w.end)})
+// //                   </MenuItem>
+// //                 ))}
+// //               </Menu>
+
+// //               {/* 오늘 */}
+// //               <Button
+// //                 size="small"
+// //                 variant="outlined"
+// //                 color="success"
+// //                 onClick={this.applyToday}
+// //                 sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+// //               >
+// //                 오늘
+// //               </Button>
+
+// //               {/* 구분자 & 기간선택 직접 입력 */}
+// //               <Typography sx={{ color: 'white', opacity: 0.8, mx: 0.5 }}>|</Typography>
+// //               <Typography sx={{ color: 'white' }}>기간선택</Typography>
+// //               <TextField
+// //                 type="date"
+// //                 value={filters.start_date}
+// //                 onChange={(e) => this.handleFilterChange('start_date', e.target.value)}
+// //                 size="small"
+// //                 variant="outlined"
+// //                 sx={{ backgroundColor: 'white', borderRadius: 1, minWidth: 150 }}
+// //                 InputLabelProps={{ shrink: true }}
+// //               />
+// //               <Typography sx={{ color: 'white' }}>~</Typography>
+// //               <TextField
+// //                 type="date"
+// //                 value={filters.end_date}
+// //                 onChange={(e) => this.handleFilterChange('end_date', e.target.value)}
+// //                 size="small"
+// //                 variant="outlined"
+// //                 sx={{ backgroundColor: 'white', borderRadius: 1, minWidth: 150 }}
+// //                 InputLabelProps={{ shrink: true }}
+// //               />
+
+// //               {/* 확장/축소 */}
+// //               <IconButton
+// //                 onClick={() => this.setState((prev) => ({ filterExpanded: !prev.filterExpanded }))}
+// //                 sx={{ color: 'white' }}
+// //               >
+// //                 {this.state.filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+// //               </IconButton>
+// //             </Box>
+// //           }
+// //           sx={{ backgroundColor: '#ff8f00', color: 'white', borderRadius: 1, mb: 2 }}
+// //         />
+
+// //         {/* === 1행: 공장/공정/설비/품번/품명 === */}
+// //         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(160px, 1fr))', gap: 2, mb: 1 }}>
+// //           <Autocomplete
+// //             size="small"
+// //             options={this.state.factories}
+// //             value={filters.factory || null}
+// //             onChange={(_, v) => this.handleFilterChange('factory', v || '')}
+// //             renderInput={(params) => <TextField {...params} label="공장" />}
+// //             clearOnEscape
+// //           />
+// //           <Autocomplete
+// //             size="small"
+// //             options={this.state.processes}
+// //             value={filters.process || null}
+// //             onChange={(_, v) => this.handleFilterChange('process', v || '')}
+// //             renderInput={(params) => <TextField {...params} label="작업장(공정)" />}
+// //             clearOnEscape
+// //           />
+// //           <Autocomplete
+// //             size="small"
+// //             options={this.state.equipments}
+// //             value={filters.equipment || null}
+// //             onChange={(_, v) => this.handleFilterChange('equipment', v || '')}
+// //             renderInput={(params) => <TextField {...params} label="라인(설비)" />}
+// //             clearOnEscape
+// //           />
+
+// //           <TextField
+// //             fullWidth
+// //             label="품번"
+// //             value={filters.partNo}
+// //             onClick={this.openItemCodeModal}
+// //             size="small"
+// //             variant="outlined"
+// //             InputProps={{
+// //               readOnly: true,
+// //               style: { cursor: 'pointer' },
+// //               endAdornment: (
+// //                 <InputAdornment position="end">
+// //                   <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
+// //                 </InputAdornment>
+// //               ),
+// //             }}
+// //             sx={{ '& .MuiInputBase-root': { cursor: 'pointer', '&:hover': { backgroundColor: '#f5f5f5' } } }}
+// //           />
+
+// //           <TextField
+// //             fullWidth
+// //             label="품명(검사항목)"
+// //             value={filters.item}
+// //             onClick={this.openItemCodeModal}
+// //             size="small"
+// //             variant="outlined"
+// //             InputProps={{
+// //               readOnly: true,
+// //               style: { cursor: 'pointer' },
+// //               endAdornment: (
+// //                 <InputAdornment position="end">
+// //                   <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
+// //                 </InputAdornment>
+// //               ),
+// //             }}
+// //             sx={{ '& .MuiInputBase-root': { cursor: 'pointer', '&:hover': { backgroundColor: '#f5f5f5' } } }}
+// //           />
+// //         </Box>
+
+// //         {/* 확장 필터 */}
+// //         <Collapse in={this.state.filterExpanded} timeout="auto" unmountOnExit>
+// //           <Divider sx={{ my: 2 }} />
+// //           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(160px, 1fr))', gap: 16 }}>
+// //             <TextField
+// //               fullWidth
+// //               label="검사구분"
+// //               value={filters.inspType}
+// //               onChange={(e) => this.handleFilterChange('inspType', e.target.value)}
+// //               size="small"
+// //               variant="outlined"
+// //             />
+// //             <TextField
+// //               fullWidth
+// //               label="작업구분"
+// //               value={filters.workType}
+// //               onChange={(e) => this.handleFilterChange('workType', e.target.value)}
+// //               size="small"
+// //               variant="outlined"
+// //             />
+// //             <TextField
+// //               fullWidth
+// //               label="주야구분"
+// //               value={filters.shiftType}
+// //               onChange={(e) => this.handleFilterChange('shiftType', e.target.value)}
+// //               size="small"
+// //               variant="outlined"
+// //             />
+// //             <TextField
+// //               fullWidth
+// //               label="Top N"
+// //               type="number"
+// //               value={filters.topN ?? 5}
+// //               onChange={(e) => this.handleFilterChange('topN', e.target.value)}
+// //               size="small"
+// //               variant="outlined"
+// //             />
+// //           </Box>
+// //         </Collapse>
+
+// //         {/* 버튼 */}
+// //         <Box sx={{ mt: 2, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+// //           <Button variant="outlined" startIcon={<ClearIcon />} onClick={this.resetToAll} size="large" color="secondary">
+// //             필터 초기화
+// //           </Button>
+// //           <Button
+// //             variant="contained"
+// //             startIcon={<SearchIcon />}
+// //             size="large"
+// //             sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}
+// //             onClick={() => {
+// //               this.loadOptions();
+// //               this.loadList();
+// //             }}
+// //           >
+// //             검색
+// //           </Button>
+// //         </Box>
+
+// //         {/* 품목 코드/명 선택 모달 */}
+// //         <InspectionItemModal
+// //           open={itemCodeModalOpen}
+// //           onClose={this.closeItemCodeModal}
+// //           onSelect={this.handleItemCodeSelect}
+// //           selectedItemCode={filters.partNo}
+// //           plant={filters.factory}
+// //           worker={filters.process}
+// //           line={filters.equipment}
+// //           startDate={filters.start_date}
+// //           endDate={filters.end_date}
+// //         />
+// //       </Paper>
+// //     );
+// //   };
+
+// //   render() {
+// //     const { error, loading, rows, columns } = this.state;
+
+// //     return (
+// //       <Box className={s.root} sx={{ height: '100vh', p: 3, display: 'flex', flexDirection: 'column', backgroundColor: '#f5f5f5' }}>
+// //         {/* 필터 바 */}
+// //         {this.renderFilterBar()}
+
+// //         {/* 에러 */}
+// //         {error && (
+// //           <Box sx={{ mb: 2 }}>
+// //             <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+// //             <Button
+// //               variant="contained"
+// //               onClick={this.loadList}
+// //               sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}
+// //             >
+// //               다시 시도
+// //             </Button>
+// //           </Box>
+// //         )}
+
+// //         {/* 그리드 */}
+// //         <Paper elevation={3} sx={{ flex: 1, display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
+// //           <Box sx={{ height: '100%', width: '100%' }}>
+// //             {loading ? (
+// //               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '220px' }}>
+// //                 <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
+// //               </Box>
+// //             ) : (
+// //               <DataGrid
+// //                 rows={rows}
+// //                 columns={columns}
+// //                 getRowId={(r) => r.id}
+// //                 pagination
+// //                 paginationMode="client"
+// //                 pageSizeOptions={[10, 25, 50, 100]}
+// //                 initialState={{ pagination: { paginationModel: { page: 0, pageSize: 10 } } }}
+// //                 disableRowSelectionOnClick
+// //                 density="compact"
+// //                 slots={{ toolbar: GridToolbar }}
+// //                 slotProps={{ toolbar: { showQuickFilter: true, quickFilterProps: { debounceMs: 500 } } }}
+// //                 sx={{
+// //                   '& .super-app-theme--header': { backgroundColor: '#ff8f00', color: 'white', fontWeight: 'bold' },
+// //                   '& .MuiDataGrid-cell': { borderBottom: '1px solid #e0e0e0' },
+// //                   '& .MuiDataGrid-root': { border: 'none' },
+// //                   '& .MuiDataGrid-virtualScroller': { backgroundColor: '#fafafa' },
+// //                   '& .MuiDataGrid-footerContainer': { borderTop: '1px solid #e0e0e0' },
+// //                 }}
+// //               />
+// //             )}
+// //           </Box>
+// //         </Paper>
+// //       </Box>
+// //     );
+// //   }
+// // }
+
+
 // // src/pages/inspection/InspectionSystemData.js
 // import config from '../../config';
-
 // import React, { Component } from 'react';
 
 // import {
@@ -9,8 +1637,6 @@
 //   TextField,
 //   Button,
 //   Typography,
-//   Grid,
-//   Chip,
 //   CardHeader,
 //   IconButton,
 //   Divider,
@@ -19,11 +1645,11 @@
 //   Alert,
 //   Menu,
 //   MenuItem,
-//   Popover,
 //   InputAdornment,
 // } from '@mui/material';
 // import { Autocomplete } from '@mui/material';
 // import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+
 // import {
 //   Search as SearchIcon,
 //   Clear as ClearIcon,
@@ -33,19 +1659,24 @@
 //   KeyboardArrowDown as KeyboardArrowDownIcon,
 // } from '@mui/icons-material';
 
-// import ItemCodeModal from '../common/ItemCodeModal';
+// import InspectionItemModal from '../common/InspectionItemModal';
 // import s from './InspectionSystemData.module.scss';
 
-// /* ====== 기간 프리셋 유틸 ====== */
-// const iso = (d) => d.toLocaleDateString('sv-SE');
-// const today0 = () => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); };
+// /** ---------- helpers ---------- */
+// const iso = (d) => d.toLocaleDateString('sv-SE'); // YYYY-MM-DD
+// const today0 = () => {
+//   const t = new Date();
+//   return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+// };
 // const lastOfMonth = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0);
 
+// /** 버튼 기준 화면 좌표 → Menu anchorPosition */
 // const getAnchorPos = (el) => {
 //   if (!el) return null;
 //   const r = el.getBoundingClientRect();
 //   return { top: Math.round(r.bottom + window.scrollY), left: Math.round(r.left + window.scrollX) };
 // };
+// /** 월요일 시작 주간 */
 // const startOfWeek = (d) => {
 //   const day = d.getDay();
 //   const diff = (day === 0 ? -6 : 1) - day;
@@ -53,597 +1684,789 @@
 //   s.setDate(d.getDate() + diff);
 //   return new Date(s.getFullYear(), s.getMonth(), s.getDate());
 // };
-// const endOfWeek = (d) => { const s = startOfWeek(d); return new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6); };
-// /* ================================= */
-
-// const parseDate = (v) => (v ? new Date(v) : null);
-
-// class InspectionGrid extends Component {
-//   constructor(props) {
-//     super(props);
-
-//     const today = new Date().toLocaleDateString('sv-SE');
-//     const jan1 = new Date(new Date().getFullYear(), 0, 1).toLocaleDateString('sv-SE');
-
-//     this.state = {
-//       filters: {
-//         plant: '',
-//         process: '',
-//         equipment: '',
-//         itemNumber: '',
-//         itemName: '',
-//         businessPlace: '',
-//         inspectionType: '',
-//         start_work_date: jan1,
-//         end_work_date: today,
-//         shiftType: '',
-//         workSequence: null,
-//         workType: '',
-//         inspectionSequence: null,
-//         inspectionItemName: '',
-//         inspectionDetails: '',
-//         productionValue: null,
-//       },
-
-//       options: { plants: [], processes: [], equipments: [] },
-
-//       selectedYear: new Date().getFullYear(),
-//       selectedMonth: new Date().getMonth() + 1,
-//       yearAnchorPos: null,
-//       monthAnchorPos: null,
-//       weekAnchorPos: null,
-//       customAnchorPos: null,
-
-//       itemCodeModalOpen: false,
-//       filterExpanded: false,
-
-//       originalData: [],
-//       inspectionData: [],
-//       loading: false,
-//       error: null
-//     };
+// const endOfWeek = (d) => {
+//   const s = startOfWeek(d);
+//   return new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6);
+// };
+// const getWeeksOfMonth = (year, month) => {
+//   const first = new Date(year, month - 1, 1);
+//   const last = lastOfMonth(first);
+//   let cur = startOfWeek(first);
+//   const out = [];
+//   let idx = 1;
+//   while (cur <= last) {
+//     const s = new Date(cur), e = endOfWeek(cur);
+//     const clipS = new Date(Math.max(s, first));
+//     const clipE = new Date(Math.min(e, last));
+//     out.push({ label: `${idx}주차`, start: clipS, end: clipE });
+//     idx += 1;
+//     cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 7);
 //   }
+//   return out;
+// };
+
+// /** ▶ 기본값을 '전체' 상태로 변경 (start_date/end_date/equipment = "") */
+// const getDefaultFilters = () => ({
+//   start_date: '',   // 전체기간
+//   end_date: '',     // 전체기간
+//   factory: '아진산업-본사(경산)',
+//   process: '프레스',
+//   equipment: '',    // 전체 설비
+//   partNo: '',
+//   item: '',
+//   inspType: '',
+//   workType: '',
+//   shiftType: '',
+//   topN: 5,
+// });
+
+// /* ====== 키/값 정규화 유틸 ====== */
+// /* eslint-disable no-control-regex */
+// const INVISIBLE = /[\u00A0\u200B-\u200F\u202A-\u202E\u2060]/g; // NBSP & zero-width & bidi
+// const CTRL_IN_KEYS = /[\u0000-\u001F\u007F]/g;                 // control chars (키 전용)
+// const CTRL_IN_VALUES = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g; // 값에서만 제거(탭/개행/CR 허용)
+// /* eslint-enable no-control-regex */
+// const MULTI_SPACE = / {2,}/g;
+
+// /** 키: 제어문자/제로폭/여러 공백 제거 */
+// function normalizeKey(k) {
+//   if (k == null) return '';
+//   return String(k)
+//     .replace(INVISIBLE, '')
+//     .replace(CTRL_IN_KEYS, '')
+//     .trim()
+//     .replace(MULTI_SPACE, ' ');
+// }
+// /** 값: 눈에 보이지 않는 제어문자만 제거 (한글/영문/숫자/기호 보존) */
+// function sanitizeValue(v) {
+//   if (v == null) return v;
+//   if (typeof v === 'string') return v.replace(CTRL_IN_VALUES, '');
+//   return v;
+// }
+// /** 행 키 정규화 */
+// function normalizeRowKeys(row) {
+//   const out = {};
+//   Object.keys(row || {}).forEach((k) => {
+//     const nk = normalizeKey(k);
+//     if (out[nk] == null || out[nk] === '') out[nk] = sanitizeValue(row[k]);
+//   });
+//   return out;
+// }
+
+// /** 컬럼 정렬 우선순위 */
+// const PREFERRED_ORDER = [
+//   'work_date', '보고일',
+//   'plant', '공장', '플랜트',
+//   'process', '공정',
+//   'equipment', '설비',
+//   '책임자', '작업장', '자재번호', '자재명', '실적번호', '차종',
+//   '양품수량', '생산수량', '불량합계',
+//   '검사구분', '주야구분', '작업순번', '작업구분', '검사순번',
+//   '검사항목명', '검사내용', '생산',
+//   '사업장',
+//   'id'
+// ];
+
+// /** ✅ 모든 값이 채워져 있어야 하는 필드 */
+// const MUST_HAVE_ALL = [
+//   '검사구분', '주야구분', '작업순번', '작업구분', '검사순번',
+//   '검사항목명', '검사내용', '생산'
+// ];
+
+// /** ✅ 기본으로 숨길 컬럼(컬럼 패널 토글 OFF) */
+// const DEFAULT_COLUMN_VIS = {
+//   id: false,
+//   '보고일': false,
+//   '공장': false,
+//   '플랜트': false,
+//   '공정': false,
+//   '설비': false,
+//   '책임자': false,
+//   '작업장': false,
+//   '실적번호': false,
+//   '사업장': false,
+//   // 나머지는 표시(명시하지 않으면 보임)
+// };
+
+// export default class InspectionGrid extends Component {
+//   state = {
+//     // 필터
+//     filters: getDefaultFilters(),
+
+//     // 옵션
+//     factories: [],
+//     processes: [],
+//     equipments: [],
+//     parts: [],
+//     items: [],
+//     optionsLoading: false,
+
+//     // UI
+//     loading: false,
+//     error: '',
+//     filterExpanded: false,
+
+//     // 프리셋 상태/앵커
+//     selectedYear: new Date().getFullYear(),
+//     selectedMonth: new Date().getMonth() + 1,
+//     yearAnchorPos: null,
+//     monthAnchorPos: null,
+//     weekAnchorPos: null,
+
+//     years: [],
+
+//     // 모달
+//     itemCodeModalOpen: false,
+
+//     // 그리드
+//     rows: [],
+//     columns: [],
+//   };
 
 //   componentDidMount() {
-//     this.fetchAllDataOnce();
+//     const base = getDefaultFilters();
+//     const saved = localStorage.getItem('inspectionFilters');
+//     if (saved) {
+//       try {
+//         const parsed = JSON.parse(saved);
+//         const merged = { ...base, ...parsed };
+//         // 설비는 저장값이 유효하지 않을 수 있으므로 비워서 '전체'
+//         merged.equipment = merged.equipment || '';
+//         // 날짜도 전체기간 유지
+//         merged.start_date = merged.start_date ?? '';
+//         merged.end_date = merged.end_date ?? '';
+//         this.setState({ filters: merged });
+//       } catch {
+//         this.setState({ filters: base });
+//       }
+//     } else {
+//       this.setState({ filters: base });
+//     }
+//     this.bootstrap();
 //   }
 
-//   fetchAllDataOnce = async () => {
-//     this.setState({ loading: true, error: null });
+//   /** 공통 POST (그리드 엔드포인트) */
+//   post = async (path, body) => {
+//     const headers = { 'Content-Type': 'application/json' };
+//     const url = `${(config.baseURLApi || '').replace(/\/$/, '')}/smartFactory/inspection_grid${path}`;
+//     const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body || {}) });
+//     if (!res.ok) {
+//       const t = await res.text().catch(() => '');
+//       throw new Error(`${path} 호출 실패: ${res.status} ${t}`);
+//     }
+//     const json = await res.json();
+//     return json.data || [];
+//   };
+
+//   /** 초기 부트스트랩 */
+//   bootstrap = async () => {
+//     await this.loadYears();
+//     await this.loadOptions();
+//     this.loadList();
+//   };
+
+//   /** 연도 목록 (fallback) */
+//   loadYears = async () => {
+//     const y = new Date().getFullYear();
+//     const years = [y, y - 1, y - 2, y - 3, y - 4];
+//     this.setState({ years, selectedYear: y });
+//   };
+
+//   /** 프론트 → 백엔드 요청 매핑 (빈 문자열은 undefined로 넘겨 필터 해제) */
+//   mapFiltersToRequest = (f) => ({
+//     start_work_date: f.start_date || undefined,
+//     end_work_date: f.end_date || undefined,
+//     plant: f.factory || undefined,
+//     process: f.process || undefined,
+//     equipment: f.equipment || undefined,
+//     itemNumber: f.partNo || undefined,
+//     inspectionType: f.inspType || undefined,
+//     workType: f.workType || undefined,
+//     shiftType: f.shiftType || undefined,
+//   });
+
+//   /** 옵션 로드 */
+//   loadOptions = async () => {
+//     const { filters } = this.state;
+//     this.setState({ optionsLoading: true });
 //     try {
-//       const API_BASE = (config.baseURLApi || '').replace(/\/$/, '');
-//       const url = `${API_BASE}/smartFactory/inspection_grid/list`;
+//       const reqBase = this.mapFiltersToRequest(filters);
 
-//       const res = await fetch(url, {
-//         method: 'POST',
-//         headers: { 'Content-Type': 'application/json' },
-//         body: JSON.stringify({})
+//       const [factories, processes, equipments, parts, items] = await Promise.all([
+//         this.post('/options/plants', {
+//           start_work_date: reqBase.start_work_date,
+//           end_work_date: reqBase.end_work_date,
+//         }),
+//         this.post('/options/processes', {
+//           start_work_date: reqBase.start_work_date,
+//           end_work_date: reqBase.end_work_date,
+//           plant: reqBase.plant || undefined,
+//         }),
+//         this.post('/options/equipments', {
+//           start_work_date: reqBase.start_work_date,
+//           end_work_date: reqBase.end_work_date,
+//           plant: reqBase.plant || undefined,
+//           process: reqBase.process || undefined,
+//         }),
+//         this.post('/options/partNos', reqBase),
+//         this.post('/options/partNames', reqBase),
+//       ]);
+
+//       // 현재 필터 값이 실제 옵션에 없으면 자동으로 비움
+//       const fixed = { ...this.state.filters };
+//       if (fixed.factory && factories.length && !factories.includes(fixed.factory)) fixed.factory = '';
+//       if (fixed.process && processes.length && !processes.includes(fixed.process)) fixed.process = '';
+//       if (fixed.equipment && equipments.length && !equipments.includes(fixed.equipment)) fixed.equipment = '';
+
+//       this.setState({
+//         factories,
+//         processes,
+//         equipments,
+//         parts,
+//         items,
+//         optionsLoading: false,
+//         filters: fixed,
 //       });
-//       if (!res.ok) {
-//         const t = await res.text();
-//         throw new Error(`HTTP error! status: ${res.status}, message: ${t}`);
-//       }
-//       const json = await res.json();
-//       const all = this.formatApiData(json.data);
-
-//       this.setState(
-//         { originalData: all, loading: false, error: null },
-//         () => { this.recomputeOptions(); this.applyFilters(); }
-//       );
 //     } catch (e) {
-//       console.error('초기 데이터 로드 오류:', e);
-//       this.setState({ loading: false, error: `데이터 로드 오류: ${e.message || e}` });
+//       console.error(e);
+//       this.setState({ optionsLoading: false });
 //     }
 //   };
 
-//   formatApiData = (apiData) => {
-//     if (Array.isArray(apiData)) {
-//       return apiData.map((item, index) => ({
-//         id: item.id || index + 1,
-//         businessPlace: item.businessPlace || '',
-//         plant: item.plant || '',
-//         process: item.process || '',
-//         equipment: item.equipment || '',
-//         inspectionType: item.inspectionType || '',
-//         itemNumber: item.itemNumber || item.자재번호 || '',
-//         reportDate: item.reportDate ? new Date(item.reportDate) : (item.근무일자 ? new Date(item.근무일자) : null),
-//         shiftType: item.shiftType || '',
-//         workSequence: item.workSequence ?? null,
-//         workType: item.workType || '',
-//         inspectionSequence: item.inspectionSequence ?? null,
-//         inspectionItemName: item.inspectionItemName || '',
-//         inspectionDetails: item.inspectionDetails || '',
-//         productionValue: item.productionValue ?? null,
-//         itemName: item.itemName || item.자재명 || '',
-//       }));
+//   /** 동적 컬럼 생성 */
+//   buildColumns = (rows) => {
+//     if (!rows?.length) return [];
+//     const keySet = new Set();
+//     const scanCount = Math.min(rows.length, 200);
+//     for (let i = 0; i < scanCount; i += 1) {
+//       Object.keys(rows[i] || {}).forEach((k) => keySet.add(k));
 //     }
-//     return [];
-//   };
-
-//   applyFilters = () => {
-//     const { originalData, filters } = this.state;
-
-//     const sDate = parseDate(filters.start_work_date);
-//     const eDate = parseDate(filters.end_work_date);
-//     const str = (v) => String(v ?? '').trim();
-//     const numEq = (a, b) => (b === null || b === '' ? true : Number(a) === Number(b));
-
-//     const pass = (row) => {
-//       if (filters.plant && row.plant !== filters.plant) return false;
-//       if (filters.process && row.process !== filters.process) return false;
-//       if (filters.equipment && row.equipment !== filters.equipment) return false;
-//       if (filters.itemNumber && row.itemNumber !== filters.itemNumber) return false;
-
-//       if (filters.businessPlace && row.businessPlace !== filters.businessPlace) return false;
-//       if (filters.inspectionType && row.inspectionType !== filters.inspectionType) return false;
-//       if (filters.shiftType && row.shiftType !== filters.shiftType) return false;
-//       if (filters.workType && row.workType !== filters.workType) return false;
-
-//       if (!numEq(row.workSequence, filters.workSequence)) return false;
-//       if (!numEq(row.inspectionSequence, filters.inspectionSequence)) return false;
-//       if (!numEq(row.productionValue, filters.productionValue)) return false;
-
-//       if (str(filters.inspectionItemName)) {
-//         if (!str(row.inspectionItemName).includes(str(filters.inspectionItemName))) return false;
-//       }
-//       if (str(filters.inspectionDetails)) {
-//         if (!str(row.inspectionDetails).includes(str(filters.inspectionDetails))) return false;
-//       }
-
-//       if (sDate && row.reportDate && row.reportDate < sDate) return false;
-//       if (eDate && row.reportDate && row.reportDate > eDate) return false;
-
-//       return true;
+//     const allKeys = Array.from(keySet);
+//     const sortKey = (k) => {
+//       const idx = PREFERRED_ORDER.indexOf(k);
+//       return idx === -1 ? 1000 + allKeys.indexOf(k) : idx;
 //     };
+//     const ordered = allKeys.sort((a, b) => sortKey(a) - sortKey(b));
 
-//     this.setState({ inspectionData: originalData.filter(pass) });
-//   };
-
-//   recomputeOptions = () => {
-//     const { originalData, filters } = this.state;
-//     const uniq = (arr) => Array.from(new Set(arr.filter((v) => v !== null && v !== undefined && String(v).trim() !== '')));
-//     const plants = uniq(originalData.map((r) => r.plant)).sort();
-//     const scopeForProcess = filters.plant ? originalData.filter((r) => r.plant === filters.plant) : originalData;
-//     const processes = uniq(scopeForProcess.map((r) => r.process)).sort();
-//     const scopeForEquip = scopeForProcess.filter((r) => (filters.process ? r.process === filters.process : true));
-//     const equipments = uniq(scopeForEquip.map((r) => r.equipment)).sort();
-//     this.setState({ options: { plants, processes, equipments } });
-//   };
-
-//   handleFilterChange = (field, value) => {
-//     this.setState(
-//       (prev) => ({
-//         filters: {
-//           ...prev.filters,
-//           [field]: (field.includes('Sequence') || field === 'productionValue') && value === '' ? null : value,
-//         },
-//       }),
-//       () => {
-//         if (['plant', 'process', 'equipment'].includes(field)) {
-//           this.setState(
-//             (prev) => {
-//               const next = { ...prev.filters };
-//               if (field === 'plant') {
-//                 next.process = ''; next.equipment = ''; next.itemNumber = ''; next.itemName = '';
-//               } else if (field === 'process') {
-//                 next.equipment = ''; next.itemNumber = ''; next.itemName = '';
-//               } else if (field === 'equipment') {
-//                 next.itemNumber = ''; next.itemName = '';
+//     const dateLike = /(^|_)(date|work_date|reportdate|보고일)$/i;
+//     const cols = ordered
+//       .filter((k) => k !== '')
+//       .map((k) => {
+//         const width = Math.min(340, Math.max(110, (k.length || 6) * 16));
+//         const isDate = dateLike.test(k);
+//         return {
+//           field: k,
+//           headerName: k,
+//           headerClassName: 'super-app-theme--header',
+//           cellClassName: 'super-app-theme--cell',
+//           width,
+//           type: isDate ? 'date' : undefined,
+//           valueGetter: isDate
+//             ? (p) => {
+//                 const v = p.value ?? p.row?.[k];
+//                 if (!v) return null;
+//                 const d = new Date(v);
+//                 return Number.isNaN(d.getTime()) ? null : d;
 //               }
-//               return { filters: next };
-//             },
-//             () => { this.recomputeOptions(); this.applyFilters(); }
-//           );
-//         } else {
-//           this.applyFilters();
+//             : undefined,
+//         };
+//       });
+
+//     // id 컬럼 앞으로
+//     const idIdx = cols.findIndex((c) => c.field === 'id');
+//     if (idIdx > 0) {
+//       const idCol = cols.splice(idIdx, 1)[0];
+//       cols.unshift({ ...idCol, width: 100 });
+//     }
+//     return cols;
+//   };
+
+//   /** 리스트 로드 */
+//   loadList = async () => {
+//     const { filters } = this.state;
+//     try {
+//       localStorage.setItem('inspectionFilters', JSON.stringify(filters));
+//     } catch {}
+//     this.setState({ loading: true, error: '' });
+//     try {
+//       const rawRows = await this.post('/list', this.mapFiltersToRequest(filters));
+
+//       // 디버깅: 첫 행 비교
+//       if (rawRows?.length) {
+//         // eslint-disable-next-line no-console
+//         console.log('[INSPECTION_GRID] raw sample =', rawRows[0]);
+//       }
+
+//       const normalized = (rawRows || []).map((r, i) => {
+//         const nr = normalizeRowKeys(r);
+//         const idVal = nr.id ?? r?.id ?? i + 1;
+//         return { id: idVal, ...nr };
+//       });
+
+//       /** ✅ 모든 필드가 채워진 행만 필터링 */
+//       const filtered = normalized.filter((row) =>
+//         MUST_HAVE_ALL.every((k) => row[k] !== null && row[k] !== undefined && String(row[k]).trim() !== '')
+//       );
+
+//       // 디버깅: 정규화/필터링된 첫 행
+//       if (filtered?.length) {
+//         // eslint-disable-next-line no-console
+//         console.log('[INSPECTION_GRID] sample keys =', Object.keys(filtered[0]));
+//         // eslint-disable-next-line no-console
+//         console.log('[INSPECTION_GRID] filtered sample =', filtered[0]);
+//       }
+
+//       const columns = this.buildColumns(filtered);
+//       this.setState({ rows: filtered, columns, loading: false });
+//     } catch (e) {
+//       console.error(e);
+//       this.setState({ error: '데이터를 불러오지 못했습니다.', loading: false });
+//     }
+//   };
+
+//   /** 필터 변경 */
+//   handleFilterChange = async (field, value) => {
+//     this.setState(
+//       (prev) => {
+//         const f = { ...prev.filters, [field]: value };
+//         if (field === 'factory') {
+//           f.process = '';
+//           f.equipment = '';
+//           f.partNo = '';
+//           f.item = '';
+//         } else if (field === 'process') {
+//           f.equipment = '';
+//           f.partNo = '';
+//           f.item = '';
+//         } else if (field === 'equipment') {
+//           f.partNo = '';
+//           f.item = '';
+//         } else if (field === 'topN') {
+//           f.topN = Number(value) || 5;
 //         }
+//         return { filters: f };
+//       },
+//       async () => {
+//         await this.loadOptions();
+//         await this.loadList();
 //       }
 //     );
 //   };
 
-//   handleSearch = () => this.applyFilters();
-//   toggleFilterExpansion = () => this.setState((prev) => ({ filterExpanded: !prev.filterExpanded }));
-//   clearFilters = () => {
-//     const today = new Date().toLocaleDateString('sv-SE');
-//     const jan1 = new Date(new Date().getFullYear(), 0, 1).toLocaleDateString('sv-SE');
-//     this.setState({
-//       filters: {
-//         plant: '',
-//         process: '',
-//         equipment: '',
-//         itemNumber: '',
-//         itemName: '',
-//         businessPlace: '',
-//         inspectionType: '',
-//         start_work_date: jan1,
-//         end_work_date: today,
-//         shiftType: '',
-//         workSequence: null,
-//         workType: '',
-//         inspectionSequence: null,
-//         inspectionItemName: '',
-//         inspectionDetails: '',
-//         productionValue: null,
-//       },
-//     }, () => { this.recomputeOptions(); this.applyFilters(); });
+//   /** 날짜 프리셋/범위 */
+//   setDateRange = async (start, end) => {
+//     const start_date = start ? iso(start) : '';
+//     const end_date = end ? iso(end) : '';
+//     this.setState(
+//       (prev) => ({ filters: { ...prev.filters, start_date, end_date } }),
+//       async () => {
+//         try {
+//           localStorage.setItem('inspectionFilters', JSON.stringify(this.state.filters));
+//         } catch {}
+//         await this.loadOptions();
+//         this.loadList();
+//       }
+//     );
+//   };
+//   applyToday = () => {
+//     const t = today0();
+//     this.setDateRange(t, t);
+//   };
+//   selectYear = (y) => {
+//     const s = new Date(y, 0, 1);
+//     const e = new Date(y, 11, 31);
+//     this.setState({ selectedYear: y, yearAnchorPos: null });
+//     this.setDateRange(s, e);
+//   };
+//   selectMonth = (m) => {
+//     const y = this.state.selectedYear;
+//     const s = new Date(y, m - 1, 1);
+//     const e = lastOfMonth(s);
+//     this.setState({ monthAnchorPos: null, selectedMonth: m });
+//     this.setDateRange(s, e);
+//   };
+//   selectWeek = (w) => {
+//     this.setState({ weekAnchorPos: null });
+//     this.setDateRange(w.start, w.end);
 //   };
 
-//   /* ===== 기간 프리셋 동작 ===== */
-//   setDateRange = (start, end) => {
-//     const start_work_date = iso(start);
-//     const end_work_date = iso(end);
-//     this.setState((prev) => ({ filters: { ...prev.filters, start_work_date, end_work_date } }), this.applyFilters);
+//   /** ▶ 전체 초기화(전체기간/전체 옵션) */
+//   resetToAll = async () => {
+//     const filters = getDefaultFilters(); // 이미 전체기간/전체 설비
+//     this.setState({ filters, selectedYear: new Date().getFullYear(), selectedMonth: new Date().getMonth() + 1 }, async () => {
+//       try { localStorage.removeItem('inspectionFilters'); } catch {}
+//       await this.loadOptions();
+//       this.loadList();
+//     });
 //   };
-//   applyToday = () => { const t = today0(); this.setDateRange(t, t); };
-//   selectYear = (y) => { const s = new Date(y, 0, 1); const e = new Date(y, 11, 31); this.setState({ selectedYear: y, yearAnchorPos: null }); this.setDateRange(s, e); };
-//   selectMonth = (m) => { const y = this.state.selectedYear; const s = new Date(y, m - 1, 1); const e = lastOfMonth(s); this.setState({ monthAnchorPos: null, selectedMonth: m }); this.setDateRange(s, e); };
-//   selectWeek = (w) => { this.setState({ weekAnchorPos: null }); this.setDateRange(w.start, w.end); };
-//   /* ======================== */
 
+//   /** 품번/품명 모달 */
 //   openItemCodeModal = () => this.setState({ itemCodeModalOpen: true });
 //   closeItemCodeModal = () => this.setState({ itemCodeModalOpen: false });
 //   handleItemCodeSelect = ({ 품목번호, 품목명 }) => {
 //     this.setState(
 //       (prev) => ({
-//         filters: { ...prev.filters, itemNumber: 품목번호 || '', itemName: 품목명 || '' },
+//         filters: { ...prev.filters, partNo: 품목번호 || '', item: 품목명 || '' },
 //         itemCodeModalOpen: false,
 //       }),
-//       this.applyFilters
+//       () => {
+//         this.loadOptions();
+//         this.loadList();
+//       }
 //     );
 //   };
 
-//   columns = [
-//     { field: 'id', headerName: 'ID', width: 80, type: 'number', headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-//     { field: 'businessPlace', headerName: '사업장', width: 120, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-//     { field: 'plant', headerName: '공장', width: 120, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-//     { field: 'process', headerName: '공정', width: 120, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-//     { field: 'equipment', headerName: '설비', width: 150, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-//     { field: 'inspectionType', headerName: '검사구분', width: 100, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-//     { field: 'itemNumber', headerName: '품번', width: 120, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-//     { field: 'reportDate', headerName: '보고일', width: 120, type: 'date', headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell', valueGetter: (p)=> (p.value instanceof Date && !isNaN(p.value) ? p.value : null) },
-//     { field: 'shiftType', headerName: '주야구분', width: 100, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-//     { field: 'workSequence', headerName: '작업순번', width: 100, type: 'number', headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-//     { field: 'workType', headerName: '작업구분', width: 100, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-//     { field: 'inspectionSequence', headerName: '검사순번', width: 120, type: 'number', headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-//     { field: 'inspectionItemName', headerName: '검사항목명', width: 150, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-//     { field: 'inspectionDetails', headerName: '검사내용', width: 200, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-//     { field: 'productionValue', headerName: '생산', width: 100, type: 'number', headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
-//       renderCell: (p)=>(<Chip label={p.value ? p.value.toLocaleString() : '0'} color="primary" size="small" variant="outlined" sx={{ fontWeight: 'bold' }} />) },
-//   ];
-
-//   render() {
-//     const { filters, filterExpanded, inspectionData, loading, error, options } = this.state;
+//   /** ---------- 필터 바 ---------- */
+//   renderFilterBar = () => {
+//     const { filters, factories, processes, equipments, itemCodeModalOpen } = this.state;
 
 //     const now = today0();
-//     const thisYear  = now.getFullYear();
+//     const thisYear = now.getFullYear();
 //     const thisMonth = now.getMonth() + 1;
-//     const thisWeek  = { start: startOfWeek(now), end: endOfWeek(now) };
+//     const thisWeek = { start: startOfWeek(now), end: endOfWeek(now) };
+//     const weeks = getWeeksOfMonth(this.state.selectedYear, this.state.selectedMonth);
 
 //     return (
-//       <Box className={s.root} sx={{ height:'100vh', p:3, display:'flex', flexDirection:'column', backgroundColor:'#f5f5f5' }}>
-//         {/* 헤더 */}
-//         <Box sx={{ mb: 3 }}>
-//           <Typography variant="h4" gutterBottom sx={{ color:'#ffb300', fontWeight:'bold', display:'flex', alignItems:'center', gap:1 }}>
-//             <FilterIcon /> 검사 데이터 그리드
-//           </Typography>
-//           <Typography variant="body1" color="text.secondary">검사 현황을 상세하게 조회하고 관리할 수 있습니다.</Typography>
-//         </Box>
+//       <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+//         <CardHeader
+//           title={
+//             <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'white' }}>
+//               <FilterIcon /> 검색 조건
+//             </Typography>
+//           }
+//           action={
+//             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+//               {/* 연간 */}
+//               <Button
+//                 size="small"
+//                 variant="outlined"
+//                 color="success"
+//                 endIcon={<ExpandMoreIcon />}
+//                 onClick={(e) => this.setState({ yearAnchorPos: getAnchorPos(e.currentTarget) })}
+//                 sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+//               >
+//                 연간
+//               </Button>
+//               <Menu
+//                 open={!!this.state.yearAnchorPos}
+//                 onClose={() => this.setState({ yearAnchorPos: null })}
+//                 anchorReference="anchorPosition"
+//                 anchorPosition={this.state.yearAnchorPos || { top: 0, left: 0 }}
+//               >
+//                 <MenuItem dense onClick={() => this.selectYear(thisYear)}>올해</MenuItem>
+//                 {this.state.years.map((y) => (
+//                   <MenuItem key={y} dense onClick={() => this.selectYear(y)}>{y}년</MenuItem>
+//                 ))}
+//               </Menu>
 
-//         {/* 검색 필터 */}
-//         <Paper elevation={3} sx={{ p:3, mb:3, borderRadius:2 }}>
-//           <CardHeader
-//             title={
-//               <Typography variant="h6" sx={{ display:'flex', alignItems:'center', gap:1, color:'white' }}>
-//                 <SearchIcon /> 검색 조건
-//               </Typography>
-//             }
-//             action={
-//               <Box sx={{ display:'flex', alignItems:'center', gap:1.5 }}>
-//                 {/* 프리셋 버튼들: 생산관리와 동일한 위치/모양 */}
-//                 <Button
-//                   size="small"
-//                   variant="outlined"
-//                   color="success"
-//                   endIcon={<ExpandMoreIcon />}
-//                   onClick={(e)=>this.setState({ yearAnchorPos: getAnchorPos(e.currentTarget) })}
-//                   sx={{ textTransform:'none', fontWeight:700, borderColor:'white', color:'white' }}
+//               {/* 월간 */}
+//               <Button
+//                 size="small"
+//                 variant="outlined"
+//                 color="success"
+//                 endIcon={<ExpandMoreIcon />}
+//                 onClick={(e) => this.setState({ monthAnchorPos: getAnchorPos(e.currentTarget) })}
+//                 sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+//               >
+//                 월간
+//               </Button>
+//               <Menu
+//                 open={!!this.state.monthAnchorPos}
+//                 onClose={() => this.setState({ monthAnchorPos: null })}
+//                 anchorReference="anchorPosition"
+//                 anchorPosition={this.state.monthAnchorPos || { top: 0, left: 0 }}
+//               >
+//                 <MenuItem
+//                   dense
+//                   onClick={() => { this.setState({ selectedYear: thisYear }, () => this.selectMonth(thisMonth)); }}
 //                 >
-//                   연간
-//                 </Button>
-//                 <Menu
-//                   open={!!this.state.yearAnchorPos}
-//                   onClose={()=>this.setState({ yearAnchorPos: null })}
-//                   anchorReference="anchorPosition"
-//                   anchorPosition={this.state.yearAnchorPos || { top: 0, left: 0 }}
-//                 >
-//                   <MenuItem dense onClick={()=>this.selectYear(thisYear)}>올해</MenuItem>
-//                   {[0,1,2,3,4].map(i=>{
-//                     const y = thisYear - i;
-//                     return <MenuItem key={y} dense onClick={()=>this.selectYear(y)}>{y}년</MenuItem>;
-//                   })}
-//                 </Menu>
-
-//                 <Button
-//                   size="small"
-//                   variant="outlined"
-//                   color="success"
-//                   endIcon={<ExpandMoreIcon />}
-//                   onClick={(e)=>this.setState({ monthAnchorPos: getAnchorPos(e.currentTarget) })}
-//                   sx={{ textTransform:'none', fontWeight:700, borderColor:'white', color:'white' }}
-//                 >
-//                   월간
-//                 </Button>
-//                 <Menu
-//                   open={!!this.state.monthAnchorPos}
-//                   onClose={()=>this.setState({ monthAnchorPos: null })}
-//                   anchorReference="anchorPosition"
-//                   anchorPosition={this.state.monthAnchorPos || { top: 0, left: 0 }}
-//                 >
-//                   <MenuItem dense onClick={()=>{ this.setState({ selectedYear: thisYear }, ()=>this.selectMonth(thisMonth)); }}>
-//                     이번달
+//                   이번달
+//                 </MenuItem>
+//                 {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+//                   <MenuItem key={m} dense onClick={() => this.selectMonth(m)}>
+//                     {this.state.selectedYear}년 {m}월
 //                   </MenuItem>
-//                   {Array.from({length:12},(_,i)=>i+1).map(m=>(
-//                     <MenuItem key={m} dense onClick={()=>this.selectMonth(m)}>{this.state.selectedYear}년 {m}월</MenuItem>
-//                   ))}
-//                 </Menu>
+//                 ))}
+//               </Menu>
 
-//                 <Button
-//                   size="small"
-//                   variant="outlined"
-//                   color="success"
-//                   endIcon={<ExpandMoreIcon />}
-//                   onClick={(e)=>this.setState({ weekAnchorPos: getAnchorPos(e.currentTarget) })}
-//                   sx={{ textTransform:'none', fontWeight:700, borderColor:'white', color:'white' }}
-//                 >
-//                   주간
-//                 </Button>
-//                 <Menu
-//                   open={!!this.state.weekAnchorPos}
-//                   onClose={()=>this.setState({ weekAnchorPos: null })}
-//                   anchorReference="anchorPosition"
-//                   anchorPosition={this.state.weekAnchorPos || { top: 0, left: 0 }}
-//                 >
-//                   <MenuItem dense onClick={()=>this.selectWeek(thisWeek)}>
-//                     이번주 ({iso(thisWeek.start)}~{iso(thisWeek.end)})
+//               {/* 주간 */}
+//               <Button
+//                 size="small"
+//                 variant="outlined"
+//                 color="success"
+//                 endIcon={<ExpandMoreIcon />}
+//                 onClick={(e) => this.setState({ weekAnchorPos: getAnchorPos(e.currentTarget) })}
+//                 sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+//               >
+//                 주간
+//               </Button>
+//               <Menu
+//                 open={!!this.state.weekAnchorPos}
+//                 onClose={() => this.setState({ weekAnchorPos: null })}
+//                 anchorReference="anchorPosition"
+//                 anchorPosition={this.state.weekAnchorPos || { top: 0, left: 0 }}
+//               >
+//                 <MenuItem dense onClick={() => this.selectWeek(thisWeek)}>
+//                   이번주 ({iso(thisWeek.start)}~{iso(thisWeek.end)})
+//                 </MenuItem>
+//                 {weeks.map((w, i) => (
+//                   <MenuItem key={i} dense onClick={() => this.selectWeek(w)}>
+//                     {this.state.selectedYear}년 {this.state.selectedMonth}월 {w.label} ({iso(w.start)}~{iso(w.end)})
 //                   </MenuItem>
-//                   {/* 선택된 연/월 기준 주차 목록 */}
-//                   {(() => {
-//                     const first = new Date(this.state.selectedYear, this.state.selectedMonth - 1, 1);
-//                     const last  = lastOfMonth(first);
-//                     let cur = startOfWeek(first);
-//                     let idx = 1;
-//                     const items = [];
-//                     while (cur <= last) {
-//                       const s = new Date(cur), e = endOfWeek(cur);
-//                       const clipS = new Date(Math.max(s, first));
-//                       const clipE = new Date(Math.min(e, last));
-//                       items.push(
-//                         <MenuItem key={idx} dense onClick={()=>this.selectWeek({ start: clipS, end: clipE })}>
-//                           {this.state.selectedYear}년 {this.state.selectedMonth}월 {idx}주차 ({iso(clipS)}~{iso(clipE)})
-//                         </MenuItem>
-//                       );
-//                       idx += 1;
-//                       cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 7);
-//                     }
-//                     return items;
-//                   })()}
-//                 </Menu>
+//                 ))}
+//               </Menu>
 
-//                 <Button
-//                   size="small"
-//                   variant="outlined"
-//                   color="success"
-//                   onClick={this.applyToday}
-//                   sx={{ textTransform:'none', fontWeight:700, borderColor:'white', color:'white' }}
-//                 >
-//                   오늘
-//                 </Button>
+//               {/* 오늘 */}
+//               <Button
+//                 size="small"
+//                 variant="outlined"
+//                 color="success"
+//                 onClick={this.applyToday}
+//                 sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+//               >
+//                 오늘
+//               </Button>
 
-//                 <Button
-//                   size="small"
-//                   variant="outlined"
-//                   color="success"
-//                   endIcon={<ExpandMoreIcon />}
-//                   onClick={(e)=>this.setState({ customAnchorPos: getAnchorPos(e.currentTarget) })}
-//                   sx={{ textTransform:'none', fontWeight:700, borderColor:'white', color:'white' }}
-//                 >
-//                   직접입력
-//                 </Button>
-//                 <Popover
-//                   open={!!this.state.customAnchorPos}
-//                   onClose={()=>this.setState({ customAnchorPos: null })}
-//                   anchorReference="anchorPosition"
-//                   anchorPosition={this.state.customAnchorPos || { top: 0, left: 0 }}
-//                   PaperProps={{ sx:{ p:1.5, borderRadius:2 } }}
-//                 >
-//                   <Box sx={{ display:'grid', gap:1, minWidth: 260 }}>
-//                     <TextField size="small" label="시작일" type="date"
-//                       value={filters.start_work_date}
-//                       onChange={(e)=>this.handleFilterChange('start_work_date', e.target.value)}
-//                       InputLabelProps={{ shrink: true }}
-//                     />
-//                     <TextField size="small" label="종료일" type="date"
-//                       value={filters.end_work_date}
-//                       onChange={(e)=>this.handleFilterChange('end_work_date', e.target.value)}
-//                       InputLabelProps={{ shrink: true }}
-//                     />
-//                   </Box>
-//                 </Popover>
+//               {/* 구분자 & 기간선택 직접 입력 */}
+//               <Typography sx={{ color: 'white', opacity: 0.8, mx: 0.5 }}>|</Typography>
+//               <Typography sx={{ color: 'white' }}>기간선택</Typography>
+//               <TextField
+//                 type="date"
+//                 value={filters.start_date}
+//                 onChange={(e) => this.handleFilterChange('start_date', e.target.value)}
+//                 size="small"
+//                 variant="outlined"
+//                 sx={{ backgroundColor: 'white', borderRadius: 1, minWidth: 150 }}
+//                 InputLabelProps={{ shrink: true }}
+//               />
+//               <Typography sx={{ color: 'white' }}>~</Typography>
+//               <TextField
+//                 type="date"
+//                 value={filters.end_date}
+//                 onChange={(e) => this.handleFilterChange('end_date', e.target.value)}
+//                 size="small"
+//                 variant="outlined"
+//                 sx={{ backgroundColor: 'white', borderRadius: 1, minWidth: 150 }}
+//                 InputLabelProps={{ shrink: true }}
+//               />
 
-//                 {/* 구분자 */}
-//                 <Typography sx={{ color:'white', opacity:0.8, mx:0.5 }}>|</Typography>
+//               {/* 확장/축소 */}
+//               <IconButton
+//                 onClick={() => this.setState((prev) => ({ filterExpanded: !prev.filterExpanded }))}
+//                 sx={{ color: 'white' }}
+//               >
+//                 {this.state.filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+//               </IconButton>
+//             </Box>
+//           }
+//           sx={{ backgroundColor: '#ff8f00', color: 'white', borderRadius: 1, mb: 2 }}
+//         />
 
-//                 {/* 기간선택 입력 */}
-//                 <Typography sx={{ color:'white' }}>기간선택</Typography>
-//                 <TextField
-//                   type="date"
-//                   value={filters.start_work_date}
-//                   onChange={(e)=>this.handleFilterChange('start_work_date', e.target.value)}
-//                   size="small"
-//                   variant="outlined"
-//                   sx={{ backgroundColor:'white', borderRadius:1, minWidth:150 }}
-//                   InputLabelProps={{ shrink: true }}
-//                 />
-//                 <Typography sx={{ color:'white' }}>~</Typography>
-//                 <TextField
-//                   type="date"
-//                   value={filters.end_work_date}
-//                   onChange={(e)=>this.handleFilterChange('end_work_date', e.target.value)}
-//                   size="small"
-//                   variant="outlined"
-//                   sx={{ backgroundColor:'white', borderRadius:1, minWidth:150 }}
-//                   InputLabelProps={{ shrink: true }}
-//                 />
-
-//                 {/* 확장/축소 */}
-//                 <IconButton onClick={this.toggleFilterExpansion} sx={{ color:'white' }}>
-//                   {filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-//                 </IconButton>
-//               </Box>
-//             }
-//             sx={{ backgroundColor:'#ff8f00', color:'white', borderRadius:1, mb:2 }}
+//         {/* === 1행: 공장/공정/설비/품번/품명 === */}
+//         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(160px, 1fr))', gap: 2, mb: 1 }}>
+//           <Autocomplete
+//             size="small"
+//             options={this.state.factories}
+//             value={filters.factory || null}
+//             onChange={(_, v) => this.handleFilterChange('factory', v || '')}
+//             renderInput={(params) => <TextField {...params} label="공장" />}
+//             clearOnEscape
+//           />
+//           <Autocomplete
+//             size="small"
+//             options={this.state.processes}
+//             value={filters.process || null}
+//             onChange={(_, v) => this.handleFilterChange('process', v || '')}
+//             renderInput={(params) => <TextField {...params} label="작업장(공정)" />}
+//             clearOnEscape
+//           />
+//           <Autocomplete
+//             size="small"
+//             options={this.state.equipments}
+//             value={filters.equipment || null}
+//             onChange={(_, v) => this.handleFilterChange('equipment', v || '')}
+//             renderInput={(params) => <TextField {...params} label="라인(설비)" />}
+//             clearOnEscape
 //           />
 
-//           {/* === 1행: 공장/공정/설비/품번/품명 === */}
-//           <Box sx={{ display:'grid', gridTemplateColumns:'repeat(5, minmax(160px, 1fr))', gap:2, mb:1 }}>
-//             <Autocomplete size="small" options={options.plants} value={filters.plant || null}
-//               onChange={(_, v)=>this.handleFilterChange('plant', v || '')}
-//               renderInput={(params)=><TextField {...params} label="공장" />} clearOnEscape />
-//             <Autocomplete size="small" options={options.processes} value={filters.process || null}
-//               onChange={(_, v)=>this.handleFilterChange('process', v || '')}
-//               renderInput={(params)=><TextField {...params} label="작업장(공정)" />} clearOnEscape />
-//             <Autocomplete size="small" options={options.equipments} value={filters.equipment || null}
-//               onChange={(_, v)=>this.handleFilterChange('equipment', v || '')}
-//               renderInput={(params)=><TextField {...params} label="라인(설비)" />} clearOnEscape />
+//           <TextField
+//             fullWidth
+//             label="품번"
+//             value={filters.partNo}
+//             onClick={this.openItemCodeModal}
+//             size="small"
+//             variant="outlined"
+//             InputProps={{
+//               readOnly: true,
+//               style: { cursor: 'pointer' },
+//               endAdornment: (
+//                 <InputAdornment position="end">
+//                   <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
+//                 </InputAdornment>
+//               ),
+//             }}
+//             sx={{ '& .MuiInputBase-root': { cursor: 'pointer', '&:hover': { backgroundColor: '#f5f5f5' } } }}
+//           />
 
-//             <TextField fullWidth label="품번" value={filters.itemNumber} onClick={this.openItemCodeModal}
-//               size="small" variant="outlined"
-//               InputProps={{ readOnly:true, style:{cursor:'pointer'},
-//                 endAdornment:(<InputAdornment position="end"><KeyboardArrowDownIcon sx={{ color:'text.secondary' }}/></InputAdornment>) }}
-//               sx={{ '& .MuiInputBase-root':{ cursor:'pointer', '&:hover':{ backgroundColor:'#f5f5f5' } }}} />
+//           <TextField
+//             fullWidth
+//             label="품명(검사항목)"
+//             value={filters.item}
+//             onClick={this.openItemCodeModal}
+//             size="small"
+//             variant="outlined"
+//             InputProps={{
+//               readOnly: true,
+//               style: { cursor: 'pointer' },
+//               endAdornment: (
+//                 <InputAdornment position="end">
+//                   <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
+//                 </InputAdornment>
+//               ),
+//             }}
+//             sx={{ '& .MuiInputBase-root': { cursor: 'pointer', '&:hover': { backgroundColor: '#f5f5f5' } } }}
+//           />
+//         </Box>
 
-//             <TextField fullWidth label="품명" value={filters.itemName} onClick={this.openItemCodeModal}
-//               size="small" variant="outlined"
-//               InputProps={{ readOnly:true, style:{cursor:'pointer'},
-//                 endAdornment:(<InputAdornment position="end"><KeyboardArrowDownIcon sx={{ color:'text.secondary' }}/></InputAdornment>) }}
-//               sx={{ '& .MuiInputBase-root':{ cursor:'pointer', '&:hover':{ backgroundColor:'#f5f5f5' } }}} />
+//         {/* 확장 필터 */}
+//         <Collapse in={this.state.filterExpanded} timeout="auto" unmountOnExit>
+//           <Divider sx={{ my: 2 }} />
+//           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(160px, 1fr))', gap: 16 }}>
+//             <TextField
+//               fullWidth
+//               label="검사구분"
+//               value={filters.inspType}
+//               onChange={(e) => this.handleFilterChange('inspType', e.target.value)}
+//               size="small"
+//               variant="outlined"
+//             />
+//             <TextField
+//               fullWidth
+//               label="작업구분"
+//               value={filters.workType}
+//               onChange={(e) => this.handleFilterChange('workType', e.target.value)}
+//               size="small"
+//               variant="outlined"
+//             />
+//             <TextField
+//               fullWidth
+//               label="주야구분"
+//               value={filters.shiftType}
+//               onChange={(e) => this.handleFilterChange('shiftType', e.target.value)}
+//               size="small"
+//               variant="outlined"
+//             />
+//             <TextField
+//               fullWidth
+//               label="Top N"
+//               type="number"
+//               value={filters.topN ?? 5}
+//               onChange={(e) => this.handleFilterChange('topN', e.target.value)}
+//               size="small"
+//               variant="outlined"
+//             />
 //           </Box>
+//         </Collapse>
 
-//           {/* 기본 나머지 필터 */}
-//           <Grid container spacing={2}>
-//             <Grid item xs={12} sm={6} md={3}>
-//               <TextField fullWidth label="사업장" value={filters.businessPlace} onChange={(e)=>this.handleFilterChange('businessPlace', e.target.value)} size="small" variant="outlined" />
-//             </Grid>
-//             <Grid item xs={12} sm={6} md={3}>
-//               <TextField fullWidth label="검사구분" value={filters.inspectionType} onChange={(e)=>this.handleFilterChange('inspectionType', e.target.value)} size="small" variant="outlined" />
-//             </Grid>
-//           </Grid>
+//         {/* 버튼 */}
+//         <Box sx={{ mt: 2, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+//           <Button variant="outlined" startIcon={<ClearIcon />} onClick={this.resetToAll} size="large" color="secondary">
+//             필터 초기화
+//           </Button>
+//           <Button
+//             variant="contained"
+//             startIcon={<SearchIcon />}
+//             size="large"
+//             sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}
+//             onClick={() => {
+//               this.loadOptions();
+//               this.loadList();
+//             }}
+//           >
+//             검색
+//           </Button>
+//         </Box>
 
-//           {/* 확장 필터 */}
-//           <Collapse in={filterExpanded} timeout="auto" unmountOnExit>
-//             <Divider sx={{ my: 2 }} />
-//             <Grid container spacing={2}>
-//               <Grid item xs={12} sm={6} md={3}>
-//                 <TextField fullWidth label="주야구분" value={filters.shiftType} onChange={(e)=>this.handleFilterChange('shiftType', e.target.value)} size="small" variant="outlined" />
-//               </Grid>
-//               <Grid item xs={12} sm={6} md={3}>
-//                 <TextField fullWidth label="작업순번" type="number" value={filters.workSequence ?? ''} onChange={(e)=>this.handleFilterChange('workSequence', e.target.value === '' ? null : Number(e.target.value))} size="small" variant="outlined" />
-//               </Grid>
-//               <Grid item xs={12} sm={6} md={3}>
-//                 <TextField fullWidth label="작업구분" value={filters.workType} onChange={(e)=>this.handleFilterChange('workType', e.target.value)} size="small" variant="outlined" />
-//               </Grid>
-//               <Grid item xs={12} sm={6} md={3}>
-//                 <TextField fullWidth label="검사순번" type="number" value={filters.inspectionSequence ?? ''} onChange={(e)=>this.handleFilterChange('inspectionSequence', e.target.value === '' ? null : Number(e.target.value))} size="small" variant="outlined" />
-//               </Grid>
-//               <Grid item xs={12} sm={6} md={3}>
-//                 <TextField fullWidth label="검사항목명" value={filters.inspectionItemName} onChange={(e)=>this.handleFilterChange('inspectionItemName', e.target.value)} size="small" variant="outlined" />
-//               </Grid>
-//               <Grid item xs={12} sm={6} md={3}>
-//                 <TextField fullWidth label="검사내용" value={filters.inspectionDetails} onChange={(e)=>this.handleFilterChange('inspectionDetails', e.target.value)} size="small" variant="outlined" />
-//               </Grid>
-//               <Grid item xs={12} sm={6} md={3}>
-//                 <TextField fullWidth label="생산" type="number" value={filters.productionValue ?? ''} onChange={(e)=>this.handleFilterChange('productionValue', e.target.value === '' ? null : Number(e.target.value))} size="small" variant="outlined" />
-//               </Grid>
-//             </Grid>
-//           </Collapse>
+//         {/* 품목 코드/명 선택 모달 */}
+//         <InspectionItemModal
+//           open={itemCodeModalOpen}
+//           onClose={this.closeItemCodeModal}
+//           onSelect={this.handleItemCodeSelect}
+//           selectedItemCode={filters.partNo}
+//           plant={filters.factory}
+//           worker={filters.process}
+//           line={filters.equipment}
+//           startDate={filters.start_date}
+//           endDate={filters.end_date}
+//         />
+//       </Paper>
+//     );
+//   };
 
-//           {/* 버튼 */}
-//           <Grid item xs={12} sx={{ mt: 2 }}>
-//             <Box sx={{ display:'flex', gap:2, justifyContent:'flex-end' }}>
-//               <Button variant="outlined" startIcon={<ClearIcon />} onClick={this.clearFilters} size="large" color="secondary">
-//                 필터 초기화
-//               </Button>
-//               <Button variant="contained" startIcon={<SearchIcon />} size="large"
-//                 sx={{ backgroundColor:'#ff8f00', '&:hover':{ backgroundColor:'#f57c00' } }}
-//                 onClick={this.handleSearch}>
-//                 검색
-//               </Button>
-//             </Box>
-//           </Grid>
-//         </Paper>
+//   render() {
+//     const { error, loading, rows, columns } = this.state;
 
-//         {/* 데이터 그리드 */}
-//         <Paper elevation={3} sx={{ flex:1, display:'flex', flexDirection:'column', borderRadius:2 }}>
-//           <Box sx={{ height:'100%', width:'100%' }}>
-//             {loading && (
-//               <Box sx={{ display:'flex', justifyContent:'center', alignItems:'center', height:'200px' }}>
-//                 <CircularProgress size={60} sx={{ color:'#ff8f00' }} />
+//     return (
+//       <Box className={s.root} sx={{ height: '100vh', p: 3, display: 'flex', flexDirection: 'column', backgroundColor: '#f5f5f5' }}>
+//         {/* 필터 바 */}
+//         {this.renderFilterBar()}
+
+//         {/* 에러 */}
+//         {error && (
+//           <Box sx={{ mb: 2 }}>
+//             <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+//             <Button
+//               variant="contained"
+//               onClick={this.loadList}
+//               sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}
+//             >
+//               다시 시도
+//             </Button>
+//           </Box>
+//         )}
+
+//         {/* 그리드 */}
+//         <Paper elevation={3} sx={{ flex: 1, display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
+//           <Box sx={{ height: '100%', width: '100%' }}>
+//             {loading ? (
+//               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '220px' }}>
+//                 <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
 //               </Box>
-//             )}
-//             {error && (
-//               <Box sx={{ p:3 }}>
-//                 <Alert severity="error" sx={{ mb:2 }}>{error}</Alert>
-//                 <Button variant="contained" onClick={this.fetchAllDataOnce}
-//                   sx={{ backgroundColor:'#ff8f00', '&:hover':{ backgroundColor:'#f57c00' } }}>
-//                   다시 시도
-//                 </Button>
-//               </Box>
-//             )}
-//             {!loading && !error && (
+//             ) : (
 //               <DataGrid
-//                 rows={inspectionData}
-//                 columns={this.columns}
+//                 rows={rows}
+//                 columns={columns}
+//                 getRowId={(r) => r.id}
 //                 pagination
 //                 paginationMode="client"
 //                 pageSizeOptions={[10, 25, 50, 100]}
-//                 initialState={{ pagination:{ paginationModel:{ page:0, pageSize:10 } } }}
+//                 initialState={{
+//                   pagination: { paginationModel: { page: 0, pageSize: 10 } },
+//                   columns: { columnVisibilityModel: DEFAULT_COLUMN_VIS }, // 🔴 기본 컬럼 숨김 적용
+//                 }}
 //                 disableRowSelectionOnClick
 //                 density="compact"
 //                 slots={{ toolbar: GridToolbar }}
-//                 slotProps={{ toolbar: { showQuickFilter:true, quickFilterProps:{ debounceMs:500 } } }}
+//                 slotProps={{ toolbar: { showQuickFilter: true, quickFilterProps: { debounceMs: 500 } } }}
 //                 sx={{
-//                   '& .super-app-theme--header': { backgroundColor:'#ff8f00', color:'white', fontWeight:'bold' },
-//                   '& .MuiDataGrid-cell': { borderBottom:'1px solid #e0e0e0' },
-//                   '& .MuiDataGrid-root': { border:'none' },
-//                   '& .MuiDataGrid-virtualScroller': { backgroundColor:'#fafafa' },
-//                   '& .MuiDataGrid-footerContainer': { borderTop:'1px solid #e0e0e0' }
+//                   '& .super-app-theme--header': { backgroundColor: '#ff8f00', color: 'white', fontWeight: 'bold' },
+//                   '& .MuiDataGrid-cell': { borderBottom: '1px solid #e0e0e0' },
+//                   '& .MuiDataGrid-root': { border: 'none' },
+//                   '& .MuiDataGrid-virtualScroller': { backgroundColor: '#fafafa' },
+//                   '& .MuiDataGrid-footerContainer': { borderTop: '1px solid #e0e0e0' },
 //                 }}
 //               />
 //             )}
 //           </Box>
 //         </Paper>
-
-//         {/* 품목 코드/명 선택 모달 */}
-//         <ItemCodeModal
-//           open={this.state.itemCodeModalOpen}
-//           onClose={this.closeItemCodeModal}
-//           onSelect={this.handleItemCodeSelect}
-//           selectedItemCode={this.state.filters.itemNumber}
-//           plant={this.state.filters.plant}
-//           worker={this.state.filters.process}
-//           line={this.state.filters.equipment}
-//         />
 //       </Box>
 //     );
 //   }
 // }
 
-// export default InspectionGrid;
-
 
 // src/pages/inspection/InspectionSystemData.js
 import config from '../../config';
-
 import React, { Component } from 'react';
 
 import {
@@ -652,8 +2475,6 @@ import {
   TextField,
   Button,
   Typography,
-  Grid,
-  Chip,
   CardHeader,
   IconButton,
   Divider,
@@ -662,11 +2483,11 @@ import {
   Alert,
   Menu,
   MenuItem,
-  Popover,
   InputAdornment,
 } from '@mui/material';
 import { Autocomplete } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+
 import {
   Search as SearchIcon,
   Clear as ClearIcon,
@@ -674,23 +2495,26 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   KeyboardArrowDown as KeyboardArrowDownIcon,
-  FactCheck as FactCheckIcon,
 } from '@mui/icons-material';
 
-// import ItemCodeModal from '../common/ItemCodeModal'; // 생산기준 품목 모달(필요 시 사용)
-import InspectionSelectModal from '../common/InspectionSelectModal';
+import InspectionItemModal from '../common/InspectionItemModal';
 import s from './InspectionSystemData.module.scss';
 
-/* ====== 기간 프리셋 유틸 ====== */
-const iso = (d) => d.toLocaleDateString('sv-SE');
-const today0 = () => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); };
+/** ---------- helpers ---------- */
+const iso = (d) => d.toLocaleDateString('sv-SE'); // YYYY-MM-DD
+const today0 = () => {
+  const t = new Date();
+  return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+};
 const lastOfMonth = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0);
 
+/** 버튼 기준 화면 좌표 → Menu anchorPosition */
 const getAnchorPos = (el) => {
   if (!el) return null;
   const r = el.getBoundingClientRect();
   return { top: Math.round(r.bottom + window.scrollY), left: Math.round(r.left + window.scrollX) };
 };
+/** 월요일 시작 주간 */
 const startOfWeek = (d) => {
   const day = d.getDay();
   const diff = (day === 0 ? -6 : 1) - day;
@@ -698,760 +2522,783 @@ const startOfWeek = (d) => {
   s.setDate(d.getDate() + diff);
   return new Date(s.getFullYear(), s.getMonth(), s.getDate());
 };
-const endOfWeek = (d) => { const s = startOfWeek(d); return new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6); };
-/* ================================= */
-
-const parseDate = (v) => (v ? new Date(v) : null);
-
-class InspectionGrid extends Component {
-  constructor(props) {
-    super(props);
-
-    const today = new Date().toLocaleDateString('sv-SE');
-    const jan1 = new Date(new Date().getFullYear(), 0, 1).toLocaleDateString('sv-SE');
-
-    this.state = {
-      filters: {
-        plant: '',
-        process: '',
-        equipment: '',
-        itemNumber: '',
-        itemName: '',
-        businessPlace: '',
-        inspectionType: '',
-        start_work_date: jan1,
-        end_work_date: today,
-        shiftType: '',
-        workSequence: null,
-        workType: '',
-        inspectionSequence: null,
-        inspectionItemName: '',
-        inspectionDetails: '',
-        productionValue: null,
-      },
-
-      options: { plants: [], processes: [], equipments: [] },
-
-      selectedYear: new Date().getFullYear(),
-      selectedMonth: new Date().getMonth() + 1,
-      yearAnchorPos: null,
-      monthAnchorPos: null,
-      weekAnchorPos: null,
-      customAnchorPos: null,
-
-      itemCodeModalOpen: false,
-      inspectionModalOpen: false,
-      filterExpanded: false,
-
-      originalData: [],
-      inspectionData: [],
-      loading: false,
-      error: null
-    };
+const endOfWeek = (d) => {
+  const s = startOfWeek(d);
+  return new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6);
+};
+const getWeeksOfMonth = (year, month) => {
+  const first = new Date(year, month - 1, 1);
+  const last = lastOfMonth(first);
+  let cur = startOfWeek(first);
+  const out = [];
+  let idx = 1;
+  while (cur <= last) {
+    const s = new Date(cur), e = endOfWeek(cur);
+    const clipS = new Date(Math.max(s, first));
+    const clipE = new Date(Math.min(e, last));
+    out.push({ label: `${idx}주차`, start: clipS, end: clipE });
+    idx += 1;
+    cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 7);
   }
+  return out;
+};
+
+/** ▶ 기본값을 '전체' 상태로 변경 (start_date/end_date/equipment = "") */
+const getDefaultFilters = () => ({
+  start_date: '',   // 전체기간
+  end_date: '',     // 전체기간
+  factory: '아진산업-본사(경산)',
+  process: '프레스',
+  equipment: '',    // 전체 설비
+  partNo: '',
+  item: '',
+  inspType: '',
+  workType: '',
+  shiftType: '',
+  topN: 5,
+});
+
+/* ====== 키/값 정규화 유틸 ====== */
+/* eslint-disable no-control-regex */
+const INVISIBLE = /[\u00A0\u200B-\u200F\u202A-\u202E\u2060]/g; // NBSP & zero-width & bidi
+const CTRL_IN_KEYS = /[\u0000-\u001F\u007F]/g;                 // control chars (키 전용)
+const CTRL_IN_VALUES = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g; // 값에서만 제거(탭/개행/CR 허용)
+/* eslint-enable no-control-regex */
+const MULTI_SPACE = / {2,}/g;
+
+/** 키: 제어문자/제로폭/여러 공백 제거 */
+function normalizeKey(k) {
+  if (k == null) return '';
+  return String(k)
+    .replace(INVISIBLE, '')
+    .replace(CTRL_IN_KEYS, '')
+    .trim()
+    .replace(MULTI_SPACE, ' ');
+}
+/** 값: 눈에 보이지 않는 제어문자만 제거 (한글/영문/숫자/기호 보존) */
+function sanitizeValue(v) {
+  if (v == null) return v;
+  if (typeof v === 'string') return v.replace(CTRL_IN_VALUES, '');
+  return v;
+}
+/** 행 키 정규화 */
+function normalizeRowKeys(row) {
+  const out = {};
+  Object.keys(row || {}).forEach((k) => {
+    const nk = normalizeKey(k);
+    if (out[nk] == null || out[nk] === '') out[nk] = sanitizeValue(row[k]);
+  });
+  return out;
+}
+
+/** 컬럼 정렬 우선순위 */
+const PREFERRED_ORDER = [
+  'work_date', '보고일',
+  'plant', '공장', '플랜트',
+  'process', '공정',
+  'equipment', '설비',
+  '책임자', '작업장', '자재번호', '자재명', '실적번호', '차종',
+  '양품수량', '생산수량', '불량합계',
+  '검사구분', '주야구분', '작업순번', '작업구분', '검사순번',
+  '검사항목명', '검사내용', '생산',
+  '사업장',
+  'id'
+];
+
+/** ✅ 모든 값이 채워져 있어야 하는 필드 */
+const MUST_HAVE_ALL = [
+  '검사구분', '주야구분', '작업순번', '작업구분', '검사순번',
+  '검사항목명', '검사내용', '생산'
+];
+
+/** ✅ 기본으로 숨길 컬럼(컬럼 패널 토글 OFF) */
+const DEFAULT_COLUMN_VIS = {
+  id: false,
+  '보고일': false,
+  '공장': false,
+  '플랜트': false,
+  '공정': false,
+  '설비': false,
+  '책임자': false,
+  '작업장': false,
+  '실적번호': false,
+  '사업장': false,
+  // 나머지는 표시(명시하지 않으면 보임)
+};
+
+export default class InspectionGrid extends Component {
+  state = {
+    // 필터
+    filters: getDefaultFilters(),
+
+    // 옵션
+    factories: [],
+    processes: [],
+    equipments: [],
+    parts: [],
+    items: [],
+    optionsLoading: false,
+
+    // UI
+    loading: false,
+    error: '',
+    filterExpanded: false,
+
+    // 프리셋 상태/앵커
+    selectedYear: new Date().getFullYear(),
+    selectedMonth: new Date().getMonth() + 1,
+    yearAnchorPos: null,
+    monthAnchorPos: null,
+    weekAnchorPos: null,
+
+    years: [],
+
+    // 모달
+    itemCodeModalOpen: false,
+
+    // 그리드
+    rows: [],
+    columns: [],
+  };
 
   componentDidMount() {
-    this.fetchAllDataOnce();
-    // 옵션은 항상 서버에서 조회 (목록이 비어도 드롭다운을 채우기 위해)
-    this.fetchPlantOptions();
-    // process/equipment는 선택에 따라 불러온다.
+    const base = getDefaultFilters();
+    const saved = localStorage.getItem('inspectionFilters');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const merged = { ...base, ...parsed };
+        // 설비는 저장값이 유효하지 않을 수 있으므로 비워서 '전체'
+        merged.equipment = merged.equipment || '';
+        // 날짜도 전체기간 유지
+        merged.start_date = merged.start_date ?? '';
+        merged.end_date = merged.end_date ?? '';
+        this.setState({ filters: merged });
+      } catch {
+        this.setState({ filters: base });
+      }
+    } else {
+      this.setState({ filters: base });
+    }
+    this.bootstrap();
   }
 
-  /* ================= 서버호출: 리스트 ================= */
-  fetchAllDataOnce = async () => {
-    this.setState({ loading: true, error: null });
+  /** 공통 POST (그리드 엔드포인트) */
+  post = async (path, body) => {
+    const headers = { 'Content-Type': 'application/json' };
+    const url = `${(config.baseURLApi || '').replace(/\/$/, '')}/smartFactory/inspection_grid${path}`;
+    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body || {}) });
+    if (!res.ok) {
+      const t = await res.text().catch(() => '');
+      throw new Error(`${path} 호출 실패: ${res.status} ${t}`);
+    }
+    const json = await res.json();
+    return json.data || [];
+  };
+
+  /** 초기 부트스트랩 */
+  bootstrap = async () => {
+    await this.loadYears();
+    await this.loadOptions();
+    this.loadList();
+  };
+
+  /** 연도 목록 (fallback) */
+  loadYears = async () => {
+    const y = new Date().getFullYear();
+    const years = [y, y - 1, y - 2, y - 3, y - 4];
+    this.setState({ years, selectedYear: y });
+  };
+
+  /** 프론트 → 백엔드 요청 매핑 (빈 문자열은 undefined로 넘겨 필터 해제) */
+  mapFiltersToRequest = (f) => ({
+    start_work_date: f.start_date || undefined,
+    end_work_date: f.end_date || undefined,
+    plant: f.factory || undefined,
+    process: f.process || undefined,
+    equipment: f.equipment || undefined,
+    itemNumber: f.partNo || undefined,
+    inspectionType: f.inspType || undefined,
+    workType: f.workType || undefined,
+    shiftType: f.shiftType || undefined,
+  });
+
+  /** 옵션 로드 */
+  loadOptions = async () => {
+    const { filters } = this.state;
+    this.setState({ optionsLoading: true });
     try {
-      const API_BASE = (config.baseURLApi || '').replace(/\/$/, '');
-      const url = `${API_BASE}/smartFactory/inspection_grid/list`;
+      const reqBase = this.mapFiltersToRequest(filters);
 
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
+      const [factories, processes, equipments, parts, items] = await Promise.all([
+        this.post('/options/plants', {
+          start_work_date: reqBase.start_work_date,
+          end_work_date: reqBase.end_work_date,
+        }),
+        this.post('/options/processes', {
+          start_work_date: reqBase.start_work_date,
+          end_work_date: reqBase.end_work_date,
+          plant: reqBase.plant || undefined,
+        }),
+        this.post('/options/equipments', {
+          start_work_date: reqBase.start_work_date,
+          end_work_date: reqBase.end_work_date,
+          plant: reqBase.plant || undefined,
+          process: reqBase.process || undefined,
+        }),
+        this.post('/options/partNos', reqBase),
+        this.post('/options/partNames', reqBase),
+      ]);
+
+      // 현재 필터 값이 실제 옵션에 없으면 자동으로 비움
+      const fixed = { ...this.state.filters };
+      if (fixed.factory && factories.length && !factories.includes(fixed.factory)) fixed.factory = '';
+      if (fixed.process && processes.length && !processes.includes(fixed.process)) fixed.process = '';
+      if (fixed.equipment && equipments.length && !equipments.includes(fixed.equipment)) fixed.equipment = '';
+
+      this.setState({
+        factories,
+        processes,
+        equipments,
+        parts,
+        items,
+        optionsLoading: false,
+        filters: fixed,
       });
-      if (!res.ok) {
-        const t = await res.text();
-        throw new Error(`HTTP error! status: ${res.status}, message: ${t}`);
-      }
-      const json = await res.json();
-      const all = this.formatApiData(json.data);
-
-      this.setState(
-        { originalData: all, loading: false, error: null },
-        () => { this.recomputeOptionsFromLocal(); this.applyFilters(); }
-      );
     } catch (e) {
-      console.error('초기 데이터 로드 오류:', e);
-      this.setState({ loading: false, error: `데이터 로드 오류: ${e.message || e}` });
+      console.error(e);
+      this.setState({ optionsLoading: false });
     }
   };
 
-  /* ================= 서버호출: 옵션 ================= */
-  fetchPlantOptions = async () => {
-    try {
-      const API_BASE = (config.baseURLApi || '').replace(/\/$/, '');
-      const url = `${API_BASE}/smartFactory/inspection_grid/options/plants`;
-      const body = {
-        start_work_date: this.state.filters.start_work_date,
-        end_work_date: this.state.filters.end_work_date,
-        businessPlace: this.state.filters.businessPlace || undefined,
-      };
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      const json = await res.json();
-      this.setState(prev => ({ options: { ...prev.options, plants: json.data || [] }}));
-    } catch (e) {
-      console.warn('공장 옵션 로드 실패:', e);
-      this.setState(prev => ({ options: { ...prev.options, plants: [] }}));
+  /** 동적 컬럼 생성 */
+  buildColumns = (rows) => {
+    if (!rows?.length) return [];
+    const keySet = new Set();
+    const scanCount = Math.min(rows.length, 200);
+    for (let i = 0; i < scanCount; i += 1) {
+      Object.keys(rows[i] || {}).forEach((k) => keySet.add(k));
     }
-  };
-
-  fetchProcessOptions = async () => {
-    try {
-      const API_BASE = (config.baseURLApi || '').replace(/\/$/, '');
-      const url = `${API_BASE}/smartFactory/inspection_grid/options/processes`;
-      const body = {
-        start_work_date: this.state.filters.start_work_date,
-        end_work_date: this.state.filters.end_work_date,
-        plant: this.state.filters.plant || undefined,
-      };
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      const json = await res.json();
-      this.setState(prev => ({ options: { ...prev.options, processes: json.data || [] }}));
-    } catch (e) {
-      console.warn('공정 옵션 로드 실패:', e);
-      this.setState(prev => ({ options: { ...prev.options, processes: [] }}));
-    }
-  };
-
-  fetchEquipmentOptions = async () => {
-    try {
-      const API_BASE = (config.baseURLApi || '').replace(/\/$/, '');
-      const url = `${API_BASE}/smartFactory/inspection_grid/options/equipments`;
-      const body = {
-        start_work_date: this.state.filters.start_work_date,
-        end_work_date: this.state.filters.end_work_date,
-        plant: this.state.filters.plant || undefined,
-        process: this.state.filters.process || undefined,
-      };
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      const json = await res.json();
-      this.setState(prev => ({ options: { ...prev.options, equipments: json.data || [] }}));
-    } catch (e) {
-      console.warn('설비 옵션 로드 실패:', e);
-      this.setState(prev => ({ options: { ...prev.options, equipments: [] }}));
-    }
-  };
-
-  /* ================= 유틸 ================= */
-  formatApiData = (apiData) => {
-    if (Array.isArray(apiData)) {
-      return apiData.map((item, index) => ({
-        id: item.id || index + 1,
-        businessPlace: item.businessPlace || '',
-        plant: item.plant || '',
-        process: item.process || '',
-        equipment: item.equipment || '',
-        inspectionType: item.inspectionType || '',
-        itemNumber: item.itemNumber || item.자재번호 || '',
-        reportDate: item.reportDate ? new Date(item.reportDate) : (item.근무일자 ? new Date(item.근무일자) : null),
-        shiftType: item.shiftType || '',
-        workSequence: item.workSequence ?? null,
-        workType: item.workType || '',
-        inspectionSequence: item.inspectionSequence ?? null,
-        inspectionItemName: item.inspectionItemName || '',
-        inspectionDetails: item.inspectionDetails || '',
-        productionValue: item.productionValue ?? null,
-        itemName: item.itemName || item.자재명 || '',
-      }));
-    }
-    return [];
-  };
-
-  applyFilters = () => {
-    const { originalData, filters } = this.state;
-
-    const sDate = parseDate(filters.start_work_date);
-    const eDate = parseDate(filters.end_work_date);
-    const str = (v) => String(v ?? '').trim();
-    const numEq = (a, b) => (b === null || b === '' ? true : Number(a) === Number(b));
-
-    const pass = (row) => {
-      if (filters.plant && row.plant !== filters.plant) return false;
-      if (filters.process && row.process !== filters.process) return false;
-      if (filters.equipment && row.equipment !== filters.equipment) return false;
-      if (filters.itemNumber && row.itemNumber !== filters.itemNumber) return false;
-
-      if (filters.businessPlace && row.businessPlace !== filters.businessPlace) return false;
-      if (filters.inspectionType && row.inspectionType !== filters.inspectionType) return false;
-      if (filters.shiftType && row.shiftType !== filters.shiftType) return false;
-      if (filters.workType && row.workType !== filters.workType) return false;
-
-      if (!numEq(row.workSequence, filters.workSequence)) return false;
-      if (!numEq(row.inspectionSequence, filters.inspectionSequence)) return false;
-      if (!numEq(row.productionValue, filters.productionValue)) return false;
-
-      if (str(filters.inspectionItemName)) {
-        if (!str(row.inspectionItemName).includes(str(filters.inspectionItemName))) return false;
-      }
-      if (str(filters.inspectionDetails)) {
-        if (!str(row.inspectionDetails).includes(str(filters.inspectionDetails))) return false;
-      }
-
-      if (sDate && row.reportDate && row.reportDate < sDate) return false;
-      if (eDate && row.reportDate && row.reportDate > eDate) return false;
-
-      return true;
+    const allKeys = Array.from(keySet);
+    const sortKey = (k) => {
+      const idx = PREFERRED_ORDER.indexOf(k);
+      return idx === -1 ? 1000 + allKeys.indexOf(k) : idx;
     };
+    const ordered = allKeys.sort((a, b) => sortKey(a) - sortKey(b));
 
-    this.setState({ inspectionData: originalData.filter(pass) });
+    const dateLike = /(^|_)(date|work_date|reportdate|보고일)$/i;
+    const cols = ordered
+      .filter((k) => k !== '')
+      .map((k) => {
+        const width = Math.min(340, Math.max(110, (k.length || 6) * 16));
+        const isDate = dateLike.test(k);
+        return {
+          field: k,
+          headerName: k,
+          headerClassName: 'super-app-theme--header',
+          cellClassName: 'super-app-theme--cell',
+          width,
+          type: isDate ? 'date' : undefined,
+          valueGetter: isDate
+            ? (p) => {
+                const v = p.value ?? p.row?.[k];
+                if (!v) return null;
+                const d = new Date(v);
+                return Number.isNaN(d.getTime()) ? null : d;
+              }
+            : undefined,
+        };
+      });
+
+    // id 컬럼 앞으로
+    const idIdx = cols.findIndex((c) => c.field === 'id');
+    if (idIdx > 0) {
+      const idCol = cols.splice(idIdx, 1)[0];
+      cols.unshift({ ...idCol, width: 100 });
+    }
+    return cols;
   };
 
-  // (초기 데이터에서) 옵션을 뽑아 로컬로 채우는 기존 로직 – 서버옵션을 우선하지만 백업용으로 유지
-  recomputeOptionsFromLocal = () => {
-    const { originalData, filters } = this.state;
-    const uniq = (arr) => Array.from(new Set(arr.filter((v) => v !== null && v !== undefined && String(v).trim() !== '')));
-    const plants = uniq(originalData.map((r) => r.plant)).sort();
-    const scopeForProcess = filters.plant ? originalData.filter((r) => r.plant === filters.plant) : originalData;
-    const processes = uniq(scopeForProcess.map((r) => r.process)).sort();
-    const scopeForEquip = scopeForProcess.filter((r) => (filters.process ? r.process === filters.process : true));
-    const equipments = uniq(scopeForEquip.map((r) => r.equipment)).sort();
-    // 서버 옵션이 비어 있을 때만 덮어쓰기
-    this.setState(prev => ({
-      options: {
-        plants: prev.options.plants.length ? prev.options.plants : plants,
-        processes: prev.options.processes.length ? prev.options.processes : processes,
-        equipments: prev.options.equipments.length ? prev.options.equipments : equipments,
+  /** 리스트 로드 */
+  loadList = async () => {
+    const { filters } = this.state;
+    try {
+      localStorage.setItem('inspectionFilters', JSON.stringify(filters));
+    } catch {}
+    this.setState({ loading: true, error: '' });
+    try {
+      const rawRows = await this.post('/list', this.mapFiltersToRequest(filters));
+
+      // 디버깅: 첫 행 비교
+      if (rawRows?.length) {
+        // eslint-disable-next-line no-console
+        console.log('[INSPECTION_GRID] raw sample =', rawRows[0]);
       }
-    }));
+
+      const normalized = (rawRows || []).map((r, i) => {
+        const nr = normalizeRowKeys(r);
+        const idVal = nr.id ?? r?.id ?? i + 1;
+        return { id: idVal, ...nr };
+      });
+
+      /** ✅ 모든 필드가 채워진 행만 필터링 */
+      const filtered = normalized.filter((row) =>
+        MUST_HAVE_ALL.every((k) => row[k] !== null && row[k] !== undefined && String(row[k]).trim() !== '')
+      );
+
+      // 디버깅: 정규화/필터링된 첫 행
+      if (filtered?.length) {
+        // eslint-disable-next-line no-console
+        console.log('[INSPECTION_GRID] sample keys =', Object.keys(filtered[0]));
+        // eslint-disable-next-line no-console
+        console.log('[INSPECTION_GRID] filtered sample =', filtered[0]);
+      }
+
+      const columns = this.buildColumns(filtered);
+      this.setState({ rows: filtered, columns, loading: false });
+    } catch (e) {
+      console.error(e);
+      this.setState({ error: '데이터를 불러오지 못했습니다.', loading: false });
+    }
   };
 
-  handleFilterChange = (field, value) => {
+  /** 필터 변경 */
+  handleFilterChange = async (field, value) => {
     this.setState(
-      (prev) => ({
-        filters: {
-          ...prev.filters,
-          [field]: (field.includes('Sequence') || field === 'productionValue') && value === '' ? null : value,
-        },
-      }),
-      async () => {
-        if (field === 'plant') {
-          this.setState(prev => ({ filters: { ...prev.filters, process: '', equipment: '', itemNumber: '', itemName: '' }}));
-          await this.fetchProcessOptions();
-          await this.fetchEquipmentOptions();
+      (prev) => {
+        const f = { ...prev.filters, [field]: value };
+        if (field === 'factory') {
+          f.process = '';
+          f.equipment = '';
+          f.partNo = '';
+          f.item = '';
         } else if (field === 'process') {
-          this.setState(prev => ({ filters: { ...prev.filters, equipment: '', itemNumber: '', itemName: '' }}));
-          await this.fetchEquipmentOptions();
+          f.equipment = '';
+          f.partNo = '';
+          f.item = '';
+        } else if (field === 'equipment') {
+          f.partNo = '';
+          f.item = '';
+        } else if (field === 'topN') {
+          f.topN = Number(value) || 5;
         }
-        this.applyFilters();
+        return { filters: f };
+      },
+      async () => {
+        await this.loadOptions();
+        await this.loadList();
       }
     );
   };
 
-  handleSearch = () => this.applyFilters();
-  toggleFilterExpansion = () => this.setState((prev) => ({ filterExpanded: !prev.filterExpanded }));
-  clearFilters = () => {
-    const today = new Date().toLocaleDateString('sv-SE');
-    const jan1 = new Date(new Date().getFullYear(), 0, 1).toLocaleDateString('sv-SE');
-    this.setState({
-      filters: {
-        plant: '',
-        process: '',
-        equipment: '',
-        itemNumber: '',
-        itemName: '',
-        businessPlace: '',
-        inspectionType: '',
-        start_work_date: jan1,
-        end_work_date: today,
-        shiftType: '',
-        workSequence: null,
-        workType: '',
-        inspectionSequence: null,
-        inspectionItemName: '',
-        inspectionDetails: '',
-        productionValue: null,
-      },
-    }, () => {
-      this.applyFilters();
-      this.fetchPlantOptions();
-      this.setState(prev => ({ options: { ...prev.options, processes: [], equipments: [] }}));
+  /** 날짜 프리셋/범위 */
+  setDateRange = async (start, end) => {
+    const start_date = start ? iso(start) : '';
+    const end_date = end ? iso(end) : '';
+    this.setState(
+      (prev) => ({ filters: { ...prev.filters, start_date, end_date } }),
+      async () => {
+        try {
+          localStorage.setItem('inspectionFilters', JSON.stringify(this.state.filters));
+        } catch {}
+        await this.loadOptions();
+        this.loadList();
+      }
+    );
+  };
+  applyToday = () => {
+    const t = today0();
+    this.setDateRange(t, t);
+  };
+  selectYear = (y) => {
+    const s = new Date(y, 0, 1);
+    const e = new Date(y, 11, 31);
+    this.setState({ selectedYear: y, yearAnchorPos: null });
+    this.setDateRange(s, e);
+  };
+  selectMonth = (m) => {
+    const y = this.state.selectedYear;
+    const s = new Date(y, m - 1, 1);
+    const e = lastOfMonth(s);
+    this.setState({ monthAnchorPos: null, selectedMonth: m });
+    this.setDateRange(s, e);
+  };
+  selectWeek = (w) => {
+    this.setState({ weekAnchorPos: null });
+    this.setDateRange(w.start, w.end);
+  };
+
+  /** ▶ 전체 초기화(전체기간/전체 옵션) */
+  resetToAll = async () => {
+    const filters = getDefaultFilters(); // 이미 전체기간/전체 설비
+    this.setState({ filters, selectedYear: new Date().getFullYear(), selectedMonth: new Date().getMonth() + 1 }, async () => {
+      try { localStorage.removeItem('inspectionFilters'); } catch {}
+      await this.loadOptions();
+      this.loadList();
     });
   };
 
-  /* ===== 기간 프리셋 동작 ===== */
-  setDateRange = (start, end) => {
-    const start_work_date = iso(start);
-    const end_work_date = iso(end);
-    this.setState(
-      (prev) => ({ filters: { ...prev.filters, start_work_date, end_work_date } }),
-      () => {
-        this.applyFilters();
-        // 기간이 바뀌면 옵션도 갱신
-        this.fetchPlantOptions();
-        this.fetchProcessOptions();
-        this.fetchEquipmentOptions();
-      }
-    );
-  };
-  applyToday = () => { const t = today0(); this.setDateRange(t, t); };
-  selectYear = (y) => { const s = new Date(y, 0, 1); const e = new Date(y, 11, 31); this.setState({ selectedYear: y, yearAnchorPos: null }); this.setDateRange(s, e); };
-  selectMonth = (m) => { const y = this.state.selectedYear; const s = new Date(y, m - 1, 1); const e = lastOfMonth(s); this.setState({ monthAnchorPos: null, selectedMonth: m }); this.setDateRange(s, e); };
-  selectWeek = (w) => { this.setState({ weekAnchorPos: null }); this.setDateRange(w.start, w.end); };
-  /* ======================== */
-
-  // 생산 품목 모달 – 사용 안 하면 주석 유지
-  // openItemCodeModal = () => this.setState({ itemCodeModalOpen: true });
-  // closeItemCodeModal = () => this.setState({ itemCodeModalOpen: false });
-  // handleItemCodeSelect = ({ 품목번호, 품목명 }) => {
-  //   this.setState(
-  //     (prev) => ({
-  //       filters: { ...prev.filters, itemNumber: 품목번호 || '', itemName: 품목명 || '' },
-  //       itemCodeModalOpen: false,
-  //     }),
-  //     this.applyFilters
-  //   );
-  // };
-
-  /* ===== 검사 데이터 선택 모달 ===== */
-  openInspectionModal = () => this.setState({ inspectionModalOpen: true });
-  closeInspectionModal = () => this.setState({ inspectionModalOpen: false });
-  handleInspectionPick = (row) => {
-    // 모달에서 더블클릭/선택한 행을 받아서 필터에 반영
+  /** 품번/품명 모달 */
+  openItemCodeModal = () => this.setState({ itemCodeModalOpen: true });
+  closeItemCodeModal = () => this.setState({ itemCodeModalOpen: false });
+  handleItemCodeSelect = ({ 품목번호, 품목명 }) => {
     this.setState(
       (prev) => ({
-        filters: {
-          ...prev.filters,
-          itemNumber: row?.itemNumber || prev.filters.itemNumber,
-          itemName: row?.itemName || prev.filters.itemName,
-          plant: row?.plant || prev.filters.plant,
-          process: row?.process || prev.filters.process,
-          equipment: row?.equipment || prev.filters.equipment,
-        },
-        inspectionModalOpen: false,
+        filters: { ...prev.filters, partNo: 품목번호 || '', item: 품목명 || '' },
+        itemCodeModalOpen: false,
       }),
       () => {
-        // 상위 필터가 달라졌을 수 있으므로 옵션도 갱신
-        this.fetchProcessOptions();
-        this.fetchEquipmentOptions();
-        this.applyFilters();
+        this.loadOptions();
+        this.loadList();
       }
     );
   };
 
-  /* ===== 그리드 컬럼 ===== */
-  columns = [
-    { field: 'id', headerName: 'ID', width: 80, type: 'number', headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'businessPlace', headerName: '사업장', width: 120, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'plant', headerName: '공장', width: 120, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'process', headerName: '공정', width: 120, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'equipment', headerName: '설비', width: 150, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'inspectionType', headerName: '검사구분', width: 100, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'itemNumber', headerName: '품번', width: 120, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'reportDate', headerName: '보고일', width: 120, type: 'date', headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
-      valueGetter: (p)=> (p.value instanceof Date && !isNaN(p.value) ? p.value : null) },
-    { field: 'shiftType', headerName: '주야구분', width: 100, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'workSequence', headerName: '작업순번', width: 100, type: 'number', headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'workType', headerName: '작업구분', width: 100, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'inspectionSequence', headerName: '검사순번', width: 120, type: 'number', headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'inspectionItemName', headerName: '검사항목명', width: 150, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'inspectionDetails', headerName: '검사내용', width: 200, headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'productionValue', headerName: '생산', width: 100, type: 'number', headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
-      renderCell: (p)=>(<Chip label={p.value ? p.value.toLocaleString() : '0'} color="primary" size="small" variant="outlined" sx={{ fontWeight: 'bold' }} />) },
-  ];
-
-  render() {
-    const { filters, filterExpanded, inspectionData, loading, error, options } = this.state;
+  /** ---------- 필터 바 ---------- */
+  renderFilterBar = () => {
+    const { filters, factories, processes, equipments, itemCodeModalOpen } = this.state;
 
     const now = today0();
-    const thisYear  = now.getFullYear();
+    const thisYear = now.getFullYear();
     const thisMonth = now.getMonth() + 1;
-    const thisWeek  = { start: startOfWeek(now), end: endOfWeek(now) };
+    const thisWeek = { start: startOfWeek(now), end: endOfWeek(now) };
+    const weeks = getWeeksOfMonth(this.state.selectedYear, this.state.selectedMonth);
 
     return (
-      <Box className={s.root} sx={{ height:'100vh', p:3, display:'flex', flexDirection:'column', backgroundColor:'#f5f5f5' }}>
-        {/* 헤더 */}
-        <Box sx={{ mb: 3, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-          <Box>
-            <Typography variant="h4" gutterBottom sx={{ color:'#ffb300', fontWeight:'bold', display:'flex', alignItems:'center', gap:1 }}>
-              <FilterIcon /> 검사 데이터 그리드
+      <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+        <CardHeader
+          title={
+            <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'white' }}>
+              <FilterIcon /> 검색 조건
             </Typography>
-            <Typography variant="body1" color="text.secondary">검사 현황을 상세하게 조회하고 관리할 수 있습니다.</Typography>
-          </Box>
+          }
+          action={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              {/* 연간 */}
+              <Button
+                size="small"
+                variant="outlined"
+                color="success"
+                endIcon={<ExpandMoreIcon />}
+                onClick={(e) => this.setState({ yearAnchorPos: getAnchorPos(e.currentTarget) })}
+                sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+              >
+                연간
+              </Button>
+              <Menu
+                open={!!this.state.yearAnchorPos}
+                onClose={() => this.setState({ yearAnchorPos: null })}
+                anchorReference="anchorPosition"
+                anchorPosition={this.state.yearAnchorPos || { top: 0, left: 0 }}
+              >
+                <MenuItem dense onClick={() => this.selectYear(thisYear)}>올해</MenuItem>
+                {this.state.years.map((y) => (
+                  <MenuItem key={y} dense onClick={() => this.selectYear(y)}>{y}년</MenuItem>
+                ))}
+              </Menu>
 
-          {/* 검사 선택 모달 버튼 */}
-          <Button
+              {/* 월간 */}
+              <Button
+                size="small"
+                variant="outlined"
+                color="success"
+                endIcon={<ExpandMoreIcon />}
+                onClick={(e) => this.setState({ monthAnchorPos: getAnchorPos(e.currentTarget) })}
+                sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+              >
+                월간
+              </Button>
+              <Menu
+                open={!!this.state.monthAnchorPos}
+                onClose={() => this.setState({ monthAnchorPos: null })}
+                anchorReference="anchorPosition"
+                anchorPosition={this.state.monthAnchorPos || { top: 0, left: 0 }}
+              >
+                <MenuItem
+                  dense
+                  onClick={() => { this.setState({ selectedYear: thisYear }, () => this.selectMonth(thisMonth)); }}
+                >
+                  이번달
+                </MenuItem>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                  <MenuItem key={m} dense onClick={() => this.selectMonth(m)}>
+                    {this.state.selectedYear}년 {m}월
+                  </MenuItem>
+                ))}
+              </Menu>
+
+              {/* 주간 */}
+              <Button
+                size="small"
+                variant="outlined"
+                color="success"
+                endIcon={<ExpandMoreIcon />}
+                onClick={(e) => this.setState({ weekAnchorPos: getAnchorPos(e.currentTarget) })}
+                sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+              >
+                주간
+              </Button>
+              <Menu
+                open={!!this.state.weekAnchorPos}
+                onClose={() => this.setState({ weekAnchorPos: null })}
+                anchorReference="anchorPosition"
+                anchorPosition={this.state.weekAnchorPos || { top: 0, left: 0 }}
+              >
+                <MenuItem dense onClick={() => this.selectWeek(thisWeek)}>
+                  이번주 ({iso(thisWeek.start)}~{iso(thisWeek.end)})
+                </MenuItem>
+                {weeks.map((w, i) => (
+                  <MenuItem key={i} dense onClick={() => this.selectWeek(w)}>
+                    {this.state.selectedYear}년 {this.state.selectedMonth}월 {w.label} ({iso(w.start)}~{iso(w.end)})
+                  </MenuItem>
+                ))}
+              </Menu>
+
+              {/* 오늘 */}
+              <Button
+                size="small"
+                variant="outlined"
+                color="success"
+                onClick={this.applyToday}
+                sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+              >
+                오늘
+              </Button>
+
+              {/* 구분자 & 기간선택 직접 입력 */}
+              <Typography sx={{ color: 'white', opacity: 0.8, mx: 0.5 }}>|</Typography>
+              <Typography sx={{ color: 'white' }}>기간선택</Typography>
+              <TextField
+                type="date"
+                value={filters.start_date}
+                onChange={(e) => this.handleFilterChange('start_date', e.target.value)}
+                size="small"
+                variant="outlined"
+                sx={{ backgroundColor: 'white', borderRadius: 1, minWidth: 150 }}
+                InputLabelProps={{ shrink: true }}
+              />
+              <Typography sx={{ color: 'white' }}>~</Typography>
+              <TextField
+                type="date"
+                value={filters.end_date}
+                onChange={(e) => this.handleFilterChange('end_date', e.target.value)}
+                size="small"
+                variant="outlined"
+                sx={{ backgroundColor: 'white', borderRadius: 1, minWidth: 150 }}
+                InputLabelProps={{ shrink: true }}
+              />
+
+              {/* 확장/축소 */}
+              <IconButton
+                onClick={() => this.setState((prev) => ({ filterExpanded: !prev.filterExpanded }))}
+                sx={{ color: 'white' }}
+              >
+                {this.state.filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              </IconButton>
+            </Box>
+          }
+          sx={{ backgroundColor: '#ff8f00', color: 'white', borderRadius: 1, mb: 2 }}
+        />
+
+        {/* === 1행: 공장/공정/설비/품번/품명 === */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(160px, 1fr))', gap: 2, mb: 1 }}>
+          <Autocomplete
+            size="small"
+            options={this.state.factories}
+            value={filters.factory || null}
+            onChange={(_, v) => this.handleFilterChange('factory', v || '')}
+            renderInput={(params) => <TextField {...params} label="공장" />}
+            clearOnEscape
+          />
+          <Autocomplete
+            size="small"
+            options={this.state.processes}
+            value={filters.process || null}
+            onChange={(_, v) => this.handleFilterChange('process', v || '')}
+            renderInput={(params) => <TextField {...params} label="작업장(공정)" />}
+            clearOnEscape
+          />
+          <Autocomplete
+            size="small"
+            options={this.state.equipments}
+            value={filters.equipment || null}
+            onChange={(_, v) => this.handleFilterChange('equipment', v || '')}
+            renderInput={(params) => <TextField {...params} label="라인(설비)" />}
+            clearOnEscape
+          />
+
+          <TextField
+            fullWidth
+            label="품번"
+            value={filters.partNo}
+            onClick={this.openItemCodeModal}
+            size="small"
             variant="outlined"
-            startIcon={<FactCheckIcon/>}
-            onClick={this.openInspectionModal}
-            sx={{ borderColor:'#ff8f00', color:'#ff8f00', fontWeight:'bold' }}
+            InputProps={{
+              readOnly: true,
+              style: { cursor: 'pointer' },
+              endAdornment: (
+                <InputAdornment position="end">
+                  <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ '& .MuiInputBase-root': { cursor: 'pointer', '&:hover': { backgroundColor: '#f5f5f5' } } }}
+          />
+
+          <TextField
+            fullWidth
+            label="품명(검사항목)"
+            value={filters.item}
+            onClick={this.openItemCodeModal}
+            size="small"
+            variant="outlined"
+            InputProps={{
+              readOnly: true,
+              style: { cursor: 'pointer' },
+              endAdornment: (
+                <InputAdornment position="end">
+                  <KeyboardArrowDownIcon sx={{ color: 'text.secondary' }} />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ '& .MuiInputBase-root': { cursor: 'pointer', '&:hover': { backgroundColor: '#f5f5f5' } } }}
+          />
+        </Box>
+
+        {/* 확장 필터 */}
+        <Collapse in={this.state.filterExpanded} timeout="auto" unmountOnExit>
+          <Divider sx={{ my: 2 }} />
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(160px, 1fr))', gap: 16 }}>
+            <TextField
+              fullWidth
+              label="검사구분"
+              value={filters.inspType}
+              onChange={(e) => this.handleFilterChange('inspType', e.target.value)}
+              size="small"
+              variant="outlined"
+            />
+            <TextField
+              fullWidth
+              label="작업구분"
+              value={filters.workType}
+              onChange={(e) => this.handleFilterChange('workType', e.target.value)}
+              size="small"
+              variant="outlined"
+            />
+            <TextField
+              fullWidth
+              label="주야구분"
+              value={filters.shiftType}
+              onChange={(e) => this.handleFilterChange('shiftType', e.target.value)}
+              size="small"
+              variant="outlined"
+            />
+            <TextField
+              fullWidth
+              label="Top N"
+              type="number"
+              value={filters.topN ?? 5}
+              onChange={(e) => this.handleFilterChange('topN', e.target.value)}
+              size="small"
+              variant="outlined"
+            />
+          </Box>
+        </Collapse>
+
+        {/* 버튼 */}
+        <Box sx={{ mt: 2, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+          <Button variant="outlined" startIcon={<ClearIcon />} onClick={this.resetToAll} size="large" color="secondary">
+            필터 초기화
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<SearchIcon />}
+            size="large"
+            sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}
+            onClick={() => {
+              this.loadOptions();
+              this.loadList();
+            }}
           >
-            검사 데이터 선택
+            검색
           </Button>
         </Box>
 
-        {/* 검색 필터 */}
-        <Paper elevation={3} sx={{ p:3, mb:3, borderRadius:2 }}>
-          <CardHeader
-            title={
-              <Typography variant="h6" sx={{ display:'flex', alignItems:'center', gap:1, color:'white' }}>
-                <SearchIcon /> 검색 조건
-              </Typography>
-            }
-            action={
-              <Box sx={{ display:'flex', alignItems:'center', gap:1.5 }}>
-                {/* 프리셋 버튼들 */}
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="success"
-                  endIcon={<ExpandMoreIcon />}
-                  onClick={(e)=>this.setState({ yearAnchorPos: getAnchorPos(e.currentTarget) })}
-                  sx={{ textTransform:'none', fontWeight:700, borderColor:'white', color:'white' }}
-                >
-                  연간
-                </Button>
-                <Menu
-                  open={!!this.state.yearAnchorPos}
-                  onClose={()=>this.setState({ yearAnchorPos: null })}
-                  anchorReference="anchorPosition"
-                  anchorPosition={this.state.yearAnchorPos || { top: 0, left: 0 }}
-                >
-                  <MenuItem dense onClick={()=>this.selectYear(thisYear)}>올해</MenuItem>
-                  {[0,1,2,3,4].map(i=>{
-                    const y = thisYear - i;
-                    return <MenuItem key={y} dense onClick={()=>this.selectYear(y)}>{y}년</MenuItem>;
-                  })}
-                </Menu>
+        {/* 품목 코드/명 선택 모달 */}
+        <InspectionItemModal
+          open={itemCodeModalOpen}
+          onClose={this.closeItemCodeModal}
+          onSelect={this.handleItemCodeSelect}
+          selectedItemCode={filters.partNo}
+          plant={filters.factory}
+          worker={filters.process}
+          line={filters.equipment}
+          startDate={filters.start_date}
+          endDate={filters.end_date}
+        />
+      </Paper>
+    );
+  };
 
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="success"
-                  endIcon={<ExpandMoreIcon />}
-                  onClick={(e)=>this.setState({ monthAnchorPos: getAnchorPos(e.currentTarget) })}
-                  sx={{ textTransform:'none', fontWeight:700, borderColor:'white', color:'white' }}
-                >
-                  월간
-                </Button>
-                <Menu
-                  open={!!this.state.monthAnchorPos}
-                  onClose={()=>this.setState({ monthAnchorPos: null })}
-                  anchorReference="anchorPosition"
-                  anchorPosition={this.state.monthAnchorPos || { top: 0, left: 0 }}
-                >
-                  <MenuItem dense onClick={()=>{ this.setState({ selectedYear: thisYear }, ()=>this.selectMonth(thisMonth)); }}>
-                    이번달
-                  </MenuItem>
-                  {Array.from({length:12},(_,i)=>i+1).map(m=>(
-                    <MenuItem key={m} dense onClick={()=>this.selectMonth(m)}>{this.state.selectedYear}년 {m}월</MenuItem>
-                  ))}
-                </Menu>
+  render() {
+    const { error, loading, rows, columns } = this.state;
 
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="success"
-                  endIcon={<ExpandMoreIcon />}
-                  onClick={(e)=>this.setState({ weekAnchorPos: getAnchorPos(e.currentTarget) })}
-                  sx={{ textTransform:'none', fontWeight:700, borderColor:'white', color:'white' }}
-                >
-                  주간
-                </Button>
-                <Menu
-                  open={!!this.state.weekAnchorPos}
-                  onClose={()=>this.setState({ weekAnchorPos: null })}
-                  anchorReference="anchorPosition"
-                  anchorPosition={this.state.weekAnchorPos || { top: 0, left: 0 }}
-                >
-                  <MenuItem dense onClick={()=>this.selectWeek(thisWeek)}>
-                    이번주 ({iso(thisWeek.start)}~{iso(thisWeek.end)})
-                  </MenuItem>
-                  {/* 선택된 연/월 기준 주차 목록 */}
-                  {(() => {
-                    const first = new Date(this.state.selectedYear, this.state.selectedMonth - 1, 1);
-                    const last  = lastOfMonth(first);
-                    let cur = startOfWeek(first);
-                    let idx = 1;
-                    const items = [];
-                    while (cur <= last) {
-                      const s = new Date(cur), e = endOfWeek(cur);
-                      const clipS = new Date(Math.max(s, first));
-                      const clipE = new Date(Math.min(e, last));
-                      items.push(
-                        <MenuItem key={idx} dense onClick={()=>this.selectWeek({ start: clipS, end: clipE })}>
-                          {this.state.selectedYear}년 {this.state.selectedMonth}월 {idx}주차 ({iso(clipS)}~{iso(clipE)})
-                        </MenuItem>
-                      );
-                      idx += 1;
-                      cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 7);
-                    }
-                    return items;
-                  })()}
-                </Menu>
+    return (
+      <Box className={s.root} sx={{ height: '100vh', p: 3, display: 'flex', flexDirection: 'column', backgroundColor: '#f5f5f5' }}>
+        {/* 필터 바 */}
+        {this.renderFilterBar()}
 
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="success"
-                  onClick={this.applyToday}
-                  sx={{ textTransform:'none', fontWeight:700, borderColor:'white', color:'white' }}
-                >
-                  오늘
-                </Button>
-
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="success"
-                  endIcon={<ExpandMoreIcon />}
-                  onClick={(e)=>this.setState({ customAnchorPos: getAnchorPos(e.currentTarget) })}
-                  sx={{ textTransform:'none', fontWeight:700, borderColor:'white', color:'white' }}
-                >
-                  직접입력
-                </Button>
-                <Popover
-                  open={!!this.state.customAnchorPos}
-                  onClose={()=>this.setState({ customAnchorPos: null })}
-                  anchorReference="anchorPosition"
-                  anchorPosition={this.state.customAnchorPos || { top: 0, left: 0 }}
-                  PaperProps={{ sx:{ p:1.5, borderRadius:2 } }}
-                >
-                  <Box sx={{ display:'grid', gap:1, minWidth: 260 }}>
-                    <TextField size="small" label="시작일" type="date"
-                      value={filters.start_work_date}
-                      onChange={(e)=>this.handleFilterChange('start_work_date', e.target.value)}
-                      InputLabelProps={{ shrink: true }}
-                    />
-                    <TextField size="small" label="종료일" type="date"
-                      value={filters.end_work_date}
-                      onChange={(e)=>this.handleFilterChange('end_work_date', e.target.value)}
-                      InputLabelProps={{ shrink: true }}
-                    />
-                  </Box>
-                </Popover>
-
-                {/* 구분자 */}
-                <Typography sx={{ color:'white', opacity:0.8, mx:0.5 }}>|</Typography>
-
-                {/* 기간선택 입력 */}
-                <Typography sx={{ color:'white' }}>기간선택</Typography>
-                <TextField
-                  type="date"
-                  value={filters.start_work_date}
-                  onChange={(e)=>this.handleFilterChange('start_work_date', e.target.value)}
-                  size="small"
-                  variant="outlined"
-                  sx={{ backgroundColor:'white', borderRadius:1, minWidth:150 }}
-                  InputLabelProps={{ shrink: true }}
-                />
-                <Typography sx={{ color:'white' }}>~</Typography>
-                <TextField
-                  type="date"
-                  value={filters.end_work_date}
-                  onChange={(e)=>this.handleFilterChange('end_work_date', e.target.value)}
-                  size="small"
-                  variant="outlined"
-                  sx={{ backgroundColor:'white', borderRadius:1, minWidth:150 }}
-                  InputLabelProps={{ shrink: true }}
-                />
-
-                {/* 확장/축소 */}
-                <IconButton onClick={this.toggleFilterExpansion} sx={{ color:'white' }}>
-                  {filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                </IconButton>
-              </Box>
-            }
-            sx={{ backgroundColor:'#ff8f00', color:'white', borderRadius:1, mb:2 }}
-          />
-
-          {/* === 1행: 공장/공정/설비/품번/품명 === */}
-          <Box sx={{ display:'grid', gridTemplateColumns:'repeat(5, minmax(160px, 1fr))', gap:2, mb:1 }}>
-            <Autocomplete
-              size="small"
-              options={options.plants}
-              value={filters.plant || null}
-              onChange={(_, v)=>this.handleFilterChange('plant', v || '')}
-              renderInput={(params)=><TextField {...params} label="공장" />}
-              clearOnEscape
-            />
-            <Autocomplete
-              size="small"
-              options={options.processes}
-              value={filters.process || null}
-              onChange={(_, v)=>this.handleFilterChange('process', v || '')}
-              renderInput={(params)=><TextField {...params} label="작업장(공정)" />}
-              clearOnEscape
-            />
-            <Autocomplete
-              size="small"
-              options={options.equipments}
-              value={filters.equipment || null}
-              onChange={(_, v)=>this.handleFilterChange('equipment', v || '')}
-              renderInput={(params)=><TextField {...params} label="라인(설비)" />}
-              clearOnEscape
-            />
-
-            {/* 품번/품명: 필요 시 생산기준 모달로 전환 가능 */}
-            <TextField
-              fullWidth
-              label="품번"
-              value={filters.itemNumber}
-              // onClick={this.openItemCodeModal}
-              size="small"
-              variant="outlined"
-              InputProps={{
-                readOnly:true, style:{cursor:'pointer'},
-                endAdornment:(<InputAdornment position="end"><KeyboardArrowDownIcon sx={{ color:'text.secondary' }}/></InputAdornment>)
-              }}
-              sx={{ '& .MuiInputBase-root':{ cursor:'pointer', '&:hover':{ backgroundColor:'#f5f5f5' } }}}
-            />
-
-            <TextField
-              fullWidth
-              label="품명"
-              value={filters.itemName}
-              // onClick={this.openItemCodeModal}
-              size="small"
-              variant="outlined"
-              InputProps={{
-                readOnly:true, style:{cursor:'pointer'},
-                endAdornment:(<InputAdornment position="end"><KeyboardArrowDownIcon sx={{ color:'text.secondary' }}/></InputAdornment>)
-              }}
-              sx={{ '& .MuiInputBase-root':{ cursor:'pointer', '&:hover':{ backgroundColor:'#f5f5f5' } }}}
-            />
+        {/* 에러 */}
+        {error && (
+          <Box sx={{ mb: 2 }}>
+            <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+            <Button
+              variant="contained"
+              onClick={this.loadList}
+              sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}
+            >
+              다시 시도
+            </Button>
           </Box>
+        )}
 
-          {/* 기본 나머지 필터 */}
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField fullWidth label="사업장" value={filters.businessPlace} onChange={(e)=>this.handleFilterChange('businessPlace', e.target.value)} size="small" variant="outlined" />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField fullWidth label="검사구분" value={filters.inspectionType} onChange={(e)=>this.handleFilterChange('inspectionType', e.target.value)} size="small" variant="outlined" />
-            </Grid>
-          </Grid>
-
-          {/* 확장 필터 */}
-          <Collapse in={filterExpanded} timeout="auto" unmountOnExit>
-            <Divider sx={{ my: 2 }} />
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField fullWidth label="주야구분" value={filters.shiftType} onChange={(e)=>this.handleFilterChange('shiftType', e.target.value)} size="small" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField fullWidth label="작업순번" type="number" value={filters.workSequence ?? ''} onChange={(e)=>this.handleFilterChange('workSequence', e.target.value === '' ? null : Number(e.target.value))} size="small" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField fullWidth label="작업구분" value={filters.workType} onChange={(e)=>this.handleFilterChange('workType', e.target.value)} size="small" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField fullWidth label="검사순번" type="number" value={filters.inspectionSequence ?? ''} onChange={(e)=>this.handleFilterChange('inspectionSequence', e.target.value === '' ? null : Number(e.target.value))} size="small" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField fullWidth label="검사항목명" value={filters.inspectionItemName} onChange={(e)=>this.handleFilterChange('inspectionItemName', e.target.value)} size="small" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField fullWidth label="검사내용" value={filters.inspectionDetails} onChange={(e)=>this.handleFilterChange('inspectionDetails', e.target.value)} size="small" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField fullWidth label="생산" type="number" value={filters.productionValue ?? ''} onChange={(e)=>this.handleFilterChange('productionValue', e.target.value === '' ? null : Number(e.target.value))} size="small" variant="outlined" />
-              </Grid>
-            </Grid>
-          </Collapse>
-
-          {/* 버튼 */}
-          <Grid item xs={12} sx={{ mt: 2 }}>
-            <Box sx={{ display:'flex', gap:2, justifyContent:'flex-end' }}>
-              <Button variant="outlined" startIcon={<ClearIcon />} onClick={this.clearFilters} size="large" color="secondary">
-                필터 초기화
-              </Button>
-              <Button variant="contained" startIcon={<SearchIcon />} size="large"
-                sx={{ backgroundColor:'#ff8f00', '&:hover':{ backgroundColor:'#f57c00' } }}
-                onClick={this.handleSearch}>
-                검색
-              </Button>
-            </Box>
-          </Grid>
-        </Paper>
-
-        {/* 데이터 그리드 */}
-        <Paper elevation={3} sx={{ flex:1, display:'flex', flexDirection:'column', borderRadius:2 }}>
-          <Box sx={{ height:'100%', width:'100%' }}>
-            {loading && (
-              <Box sx={{ display:'flex', justifyContent:'center', alignItems:'center', height:'200px' }}>
-                <CircularProgress size={60} sx={{ color:'#ff8f00' }} />
+        {/* 그리드 */}
+        <Paper elevation={3} sx={{ flex: 1, display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
+          <Box sx={{ height: '100%', width: '100%' }}>
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '220px' }}>
+                <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
               </Box>
-            )}
-            {error && (
-              <Box sx={{ p:3 }}>
-                <Alert severity="error" sx={{ mb:2 }}>{error}</Alert>
-                <Button variant="contained" onClick={this.fetchAllDataOnce}
-                  sx={{ backgroundColor:'#ff8f00', '&:hover':{ backgroundColor:'#f57c00' } }}>
-                  다시 시도
-                </Button>
-              </Box>
-            )}
-            {!loading && !error && (
+            ) : (
               <DataGrid
-                rows={inspectionData}
-                columns={this.columns}
+                rows={rows}
+                columns={columns}
+                getRowId={(r) => r.id}
                 pagination
                 paginationMode="client"
                 pageSizeOptions={[10, 25, 50, 100]}
-                initialState={{ pagination:{ paginationModel:{ page:0, pageSize:10 } } }}
+                initialState={{
+                  pagination: { paginationModel: { page: 0, pageSize: 10 } },
+                  sorting: { sortModel: [{ field: 'id', sort: 'asc' }] }, // 기본 정렬: id 오름차순
+                  columns: { columnVisibilityModel: DEFAULT_COLUMN_VIS },  // 기본 컬럼 숨김
+                }}
                 disableRowSelectionOnClick
                 density="compact"
                 slots={{ toolbar: GridToolbar }}
-                slotProps={{ toolbar: { showQuickFilter:true, quickFilterProps:{ debounceMs:500 } } }}
+                slotProps={{ toolbar: { showQuickFilter: true, quickFilterProps: { debounceMs: 500 } } }}
                 sx={{
-                  '& .super-app-theme--header': { backgroundColor:'#ff8f00', color:'white', fontWeight:'bold' },
-                  '& .MuiDataGrid-cell': { borderBottom:'1px solid #e0e0e0' },
-                  '& .MuiDataGrid-root': { border:'none' },
-                  '& .MuiDataGrid-virtualScroller': { backgroundColor:'#fafafa' },
-                  '& .MuiDataGrid-footerContainer': { borderTop:'1px solid #e0e0e0' }
+                  '& .super-app-theme--header': { backgroundColor: '#ff8f00', color: 'white', fontWeight: 'bold' },
+                  '& .MuiDataGrid-cell': { borderBottom: '1px solid #e0e0e0' },
+                  '& .MuiDataGrid-root': { border: 'none' },
+                  '& .MuiDataGrid-virtualScroller': { backgroundColor: '#fafafa' },
+                  '& .MuiDataGrid-footerContainer': { borderTop: '1px solid #e0e0e0' },
                 }}
               />
             )}
           </Box>
         </Paper>
-
-        {/* 생산 품목 모달(필요 시 활성화)
-        <ItemCodeModal
-          open={this.state.itemCodeModalOpen}
-          onClose={this.closeItemCodeModal}
-          onSelect={this.handleItemCodeSelect}
-          selectedItemCode={this.state.filters.itemNumber}
-          plant={this.state.filters.plant}
-          worker={this.state.filters.process}
-          line={this.state.filters.equipment}
-        /> */}
-
-        {/* 검사 데이터 선택 모달(검사×생산 조인 결과) */}
-        <InspectionSelectModal
-          open={this.state.inspectionModalOpen}
-          onClose={this.closeInspectionModal}
-          onSelect={this.handleInspectionPick}
-          plant={this.state.filters.plant}
-          process={this.state.filters.process}
-          equipment={this.state.filters.equipment}
-          startDate={this.state.filters.start_work_date}
-          endDate={this.state.filters.end_work_date}
-        />
       </Box>
     );
   }
 }
-
-export default InspectionGrid;
