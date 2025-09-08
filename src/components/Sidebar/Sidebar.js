@@ -2079,6 +2079,11 @@ class Sidebar extends React.Component {
       <>
         <ul className={s.iconNav} aria-label="Main navigation (icons only)">
           {items.map((it) => {
+            // 관리자가 아니면 admin 메뉴 숨김
+            if (it.key === "admin" && this.props.role !== "시스템관리자") {
+              return null;
+            }
+
             const icon = this.themeIcons(it.iconKey);
             const content = (
               <>
@@ -2325,7 +2330,6 @@ class Sidebar extends React.Component {
     // static 모드에선 접히지 않음
     const isCollapsed = !this.props.sidebarOpened && !this.props.sidebarStatic;
 
-    console.log("현재 사용자 역할:", this.props.role);
     return (
       <div
         className={`${isCollapsed ? s.sidebarClose : ""} ${s.sidebarWrapper} ${cx({
