@@ -493,7 +493,7 @@ export default function ProductForecast() {
       <Grid container spacing={2} marginTop={2} marginBottom={3}>
         {/* 좌측 그래프 */}
         <Grid item xs={12} md={8}>
-          <Card className={styles.sectionCard}>
+          <Card className={styles.sectionCard} sx={{ height: 400 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 시간별 실제 vs 예측
@@ -530,82 +530,89 @@ export default function ProductForecast() {
 
         {/* 우측 KPI 그룹 */}
         <Grid item xs={12} md={4}>
-          <Card className={styles.sectionCard} sx={{ backgroundColor: "#f9fafb" }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <TrendingUp sx={{ color: themeHex }} /> KPI 지표
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                기준 시간: 07:00~07:50
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Card className={styles.kpiInnerCard} sx={{ border: `1px solid ${themeHex}`, borderRadius: 2 }}>
-                    <CardContent className={styles.kpiInnerContent}>
-                      <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                        SKU별 시간별
-                      </Typography>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <AdsClick sx={{ color: "#1E3A8A" }} />
-                        <Typography variant="body1">정미 UPH: <b>{kpi.uph !== "-" ? kpi.uph : "데이터 없음"}</b></Typography>
-                      </Box>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <CheckCircleOutline sx={{ color: "#1E3A8A" }} />
-                        <Typography variant="body1">실적 UPH: <b>{kpi.actual !== "-" ? kpi.actual : "데이터 없음"}</b></Typography>
-                      </Box>
-                      <Typography
-                        variant="h5"
-                        fontWeight="bold"
-                        color="#1E3A8A"
-                        sx={{
-                          mt: 2,
-                          p: 1,
-                          backgroundColor: kpi.uphAchievement !== "-" ? "rgba(30, 58, 138, 0.1)" : "#f5f5f5",
-                          borderRadius: 1,
-                          textAlign: "center",
-                        }}
-                      >
-                        달성률 {kpi.uphAchievement !== "-" ? `${kpi.uphAchievement}%` : "N/A"}
-                      </Typography>
-                    </CardContent>
-                  </Card>
+            <Card className={styles.sectionCard} sx={{ backgroundColor: "#f9fafb", height: 400 }}>
+              <CardContent sx={{ height: "100%", display: "flex", flexDirection: "column", p: 3 }}>
+                <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <TrendingUp sx={{ color: themeHex }} /> KPI 지표
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  기준 시간: 07:00~07:50
+                </Typography>
+                <Grid container spacing={2} sx={{ flex: 1, minHeight: 280 }}>
+                  <Grid item xs={12} sm={6} sx={{ display: "flex" }}>
+                    <Card className={styles.kpiInnerCard} sx={{ border: `1px solid ${themeHex}`, borderRadius: 2, height: "100%", width: "100%", backgroundColor: "#fafbfc" }}>
+                      <CardContent className={styles.kpiInnerContent} sx={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", p: 2.5 }}>
+                        <div>
+                          <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ fontWeight: "bold", mb: 2 }}>
+                            SKU별 시간별
+                          </Typography>
+                          <Box display="flex" alignItems="center" gap={1} sx={{ mb: 2 }}>
+                            <AdsClick sx={{ color: "#1E3A8A" }} />
+                            <Typography variant="body2">정미 UPH: <b>{kpi.uph !== "-" ? kpi.uph : "데이터 없음"}</b></Typography>
+                          </Box>
+                          <Box display="flex" alignItems="center" gap={1} sx={{ mb: 3 }}>
+                            <CheckCircleOutline sx={{ color: "#1E3A8A" }} />
+                            <Typography variant="body2">실적 UPH: <b>{kpi.actual !== "-" ? kpi.actual : "데이터 없음"}</b></Typography>
+                          </Box>
+                        </div>
+                        <Typography
+                          variant="h5"
+                          fontWeight="bold"
+                          color="#1E3A8A"
+                          sx={{
+                            mt: "auto",
+                            p: 2.5,
+                            backgroundColor: kpi.uphAchievement !== "-" ? "rgba(30, 58, 138, 0.1)" : "#f5f5f5",
+                            borderRadius: 1,
+                            textAlign: "center",
+                          }}
+                        >
+                          달성률 {kpi.uphAchievement !== "-" ? `${kpi.uphAchievement}%` : "N/A"}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={6} sx={{ display: "flex" }}>
+                    <Card className={styles.kpiInnerCard} sx={{ border: `1px solid ${themeHex}`, borderRadius: 2, height: "100%", width: "100%", backgroundColor: "#fafbfc" }}>
+                      <CardContent className={styles.kpiInnerContent} sx={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", p: 2.5 }}>
+                        <div>
+                          <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ fontWeight: "bold", mb: 2 }}>
+                            SKU별 누적
+                          </Typography>
+                          <Box display="flex" alignItems="center" gap={1} sx={{ mb: 2 }}>
+                            <AdsClick sx={{ color: "#1E3A8A" }} />
+                            <Typography variant="body2">목표 생산량: <b>{kpi.target !== "-" ? kpi.target : "데이터 없음"}</b></Typography>
+                          </Box>
+                          <Box display="flex" alignItems="center" gap={1} sx={{ mb: 3 }}>
+                            <CheckCircleOutline sx={{ color: "#1E3A8A" }} />
+                            <Typography variant="body2">누적 생산량: <b>{kpi.cumActual !== "-" ? kpi.cumActual : "데이터 없음"}</b></Typography>
+                          </Box>
+                        </div>
+                        <Typography
+                          variant="h5"
+                          fontWeight="bold"
+                          color="#1E3A8A"
+                          sx={{
+                            mt: "auto",
+                            p: 2.5,
+                            backgroundColor: kpi.achievement !== "-" ? "rgba(30, 58, 138, 0.1)" : "#f5f5f5",
+                            borderRadius: 1,
+                            textAlign: "center",
+                          }}
+                        >
+                          달성률 {kpi.achievement !== "-" ? `${kpi.achievement}%` : "N/A"}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Card className={styles.kpiInnerCard} sx={{ border: `1px solid ${themeHex}`, borderRadius: 2 }}>
-                    <CardContent className={styles.kpiInnerContent}>
-                      <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                        SKU별 누적
-                      </Typography>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <AdsClick sx={{ color: "#1E3A8A" }} />
-                        <Typography variant="body1">목표 생산량: <b>{kpi.target !== "-" ? kpi.target : "데이터 없음"}</b></Typography>
-                      </Box>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <CheckCircleOutline sx={{ color: "#1E3A8A" }} />
-                        <Typography variant="body1">누적 생산량: <b>{kpi.cumActual !== "-" ? kpi.cumActual : "데이터 없음"}</b></Typography>
-                      </Box>
-                      <Typography
-                        variant="h5"
-                        fontWeight="bold"
-                        color="#1E3A8A"
-                        sx={{
-                          mt: 2,
-                          p: 1,
-                          backgroundColor: kpi.achievement !== "-" ? "rgba(30, 58, 138, 0.1)" : "#f5f5f5",
-                          borderRadius: 1,
-                          textAlign: "center",
-                        }}
-                      >
-                        달성률 {kpi.achievement !== "-" ? `${kpi.achievement}%` : "N/A"}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
-      </Grid>
+
+
+
 
       {/* 3) 공정 단계별 현황 */}
       <Card className={styles.sectionCard}>
