@@ -1225,7 +1225,15 @@ const alertMessage =
       <div className={styles.grid}>
         {/* 공정도 */}
         <div className={styles.card} aria-label="공정 흐름도">
-          <h2>공정도</h2>
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 style={{ margin: 0 }}>공정도</h2>
+            <span style={{ fontSize: "14px", color: "#6b7280" }}>
+              ({filters.date})
+            </span>
+          </div>
+          <div className={styles.flow}></div>
+
           <div className={styles.flow}>
             {/* 블랭킹 */}
             <div className={styles.row}>
@@ -1334,26 +1342,35 @@ const alertMessage =
 
         {/* 실시간 병목 현황 */}
         <div className={styles.card}>
-          <h2>실시간 병목 현황</h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 style={{ margin: 0 }}>실시간 병목 현황</h2>
+            <span style={{ fontSize: "14px", color: "#6b7280" }}>
+              ({filters.date})
+            </span>
+          </div>
           <ReactECharts option={radarOption} style={{ height: "400px" }} />
         </div>
+
       </div>
+
+
 
 
 
       {/* 2행: Pie + Heatmap */}
       <div className={styles.grid}>
         <div className={styles.card}>
-          <h2>
-            과거 병목 시각화 (주간)
-            <span style={{ fontSize: "14px", color: "#6b7280", marginLeft: "8px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 style={{ margin: 0 }}>📊 과거 병목 시각화 (주간)</h2>
+            <span style={{ fontSize: "14px", color: "#6b7280" }}>
               {past7Dates.length > 0
                 ? `(${past7Dates[0]} ~ ${past7Dates[past7Dates.length - 1]})`
                 : "(데이터 없음)"}
             </span>
-          </h2>
+          </div>
           <ReactECharts option={pieOption} style={{ height: "280px" }} />
         </div>
+
         <div className={styles.card}>
           <h2>날짜별 병목 기록 및 예측</h2>
           <div style={{ position: "relative", height: "280px" }}>
@@ -1393,29 +1410,23 @@ const alertMessage =
       </div>
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
       {/* 1행: SKU + 공정 병목 분석 (수평 2개 카드) */}
       <div className={styles.grid}>
         {/* (1) SKU별 병목 비율 종합 + SKU별 병목 예측 */}
         <div className={styles.card}>
-          <h2>📦 SKU별 병목 분석</h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 style={{ margin: 0 }}>📦 SKU별 병목 분석</h2>
+            <span style={{ fontSize: "14px", color: "#6b7280" }}>
+              {pastDates.length > 0
+                ? `(${pastDates[0]} ~ ${pastDates[pastDates.length - 1]})`
+                : "(데이터 없음)"}
+            </span>
+          </div>
 
           {/* SKU별 병목 비율 종합 (파이차트) */}
           <ReactECharts
             option={makePieOption("", skuTotalPieData)}
-            style={{ height: "260px" }}
+            style={{ height: "280px" }}
           />
 
           {/* SKU별 병목 예측 (텍스트 박스) */}
@@ -1456,13 +1467,21 @@ const alertMessage =
 
         {/* (2) 조립셀 세부 병목 비율 + 공정별 병목 예측 */}
         <div className={styles.card}>
-          <h2>⚙️ 공정별 병목 분석</h2>
+          
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 style={{ margin: 0 }}>⚙️ 공정별 병목 분석</h2>
+            <span style={{ fontSize: "14px", color: "#6b7280" }}>
+              {pastDates.length > 0
+                ? `(${pastDates[0]} ~ ${pastDates[pastDates.length - 1]})`
+                : "(데이터 없음)"}
+            </span>
+          </div>
 
           {/* 조립셀 세부 병목 비율 (파이차트) */}
           {topStage ? (
             <ReactECharts
               option={makePieOption("", topStageData)}
-              style={{ height: "260px" }}
+              style={{ height: "280px" }}
             />
           ) : (
             <Typography color="text.secondary">데이터 없음</Typography>
