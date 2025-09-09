@@ -1054,12 +1054,29 @@ const alertMessage =
     ],
   };
 
-  // 히트맵 옵션
+
+
+
+  
+
+
+
+
+  // ✅ 회색 배경 데이터: 과거+오늘 날짜 전체
+  const grayBackgroundData = [];
+  [...pastDates, today].forEach((d, xIdx) => {
+    stages.forEach((stage, yIdx) => {
+      grayBackgroundData.push([xIdx, yIdx, 0]); // 0 = 회색
+    });
+  });
+
+  // ✅ blockOption 수정
   const blockOption = {
     tooltip: {
       formatter: (p) => {
         const date = allDates[p.data[0]];
         const stage = stages[p.data[1]];
+        if (p.data[2] === 0) return `${date}<br/>${stage} : 기록 없음`;
         const type = p.data[2] === 1 ? "실제 병목" : "예측 병목";
         return `${date}<br/>${stage} : ${type}`;
       },
@@ -1071,7 +1088,7 @@ const alertMessage =
       splitLine: { show: true },
       axisLine: { show: true },
       markLine: {
-        data: [{ xAxis: pastDates.length }], // 오늘 날짜 위치에 라인
+        data: [{ xAxis: pastDates.length }], // 오늘 위치
         lineStyle: { color: "black", type: "solid" },
       },
     },
@@ -1083,15 +1100,38 @@ const alertMessage =
     },
     visualMap: {
       show: false,
-      min: 1,
+      min: 0,
       max: 2,
-      inRange: { color: ["#ef4444", "#3b82f6"] },
+      inRange: {
+        color: [
+          "rgba(200,200,200,0.2)", // 0 → 회색 (배경)
+          "#ef4444",               // 1 → 빨강 (과거 병목)
+          "#3b82f6",               // 2 → 파랑 (예측 병목)
+        ],
+      },
     },
-    series: [{ type: "heatmap", data: animatedHeatmapData }],
+    series: [
+      {
+        type: "heatmap",
+        data: grayBackgroundData, // ✅ 전체 회색 배경
+        silent: true,             // tooltip 안뜨게 하고 싶으면 true
+      },
+      {
+        type: "heatmap",
+        data: animatedHeatmapData, // ✅ 실제 병목 데이터
+      },
+    ],
   };
 
 
 
+
+
+
+
+
+  
+  
 
   return (
     <div className={styles.dashboard}>
