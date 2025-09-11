@@ -16,7 +16,7 @@ import { createHashHistory } from "history";
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-// ⬅ 추가
+
 import LoadingScreen from './lib/loadingScreen';
 
 const history = createHashHistory();
@@ -25,7 +25,7 @@ export function getHistory() {
   return history;
 }
 
-// ⬅ 추가: 로딩 전역 초기화 (앱 시작 시 1회)
+
 LoadingScreen.init({
   backgroundColor: 'rgba(0,0,0,0.6)',
   svgColor: '#ffffff',
@@ -43,7 +43,10 @@ if (token) {
 // ⬅ 추가: axios 전역 인터셉터 (모든 API 요청에 로딩 자동 적용)
 axios.interceptors.request.use(
   (config) => {
-    LoadingScreen.trackStart('처리 중...', 'dots'); // circle | dots | pulse | hourglass | arrows | standard
+    // X-Skip-Loading 헤더가 있으면 전역 로딩 스크린 표시하지 않음
+    if (!config.headers['X-Skip-Loading']) {
+      LoadingScreen.trackStart('처리 중...', 'dots'); // circle | dots | pulse | hourglass | arrows | standard
+    }
     return config;
   },
   (error) => {
@@ -54,11 +57,17 @@ axios.interceptors.request.use(
 
 axios.interceptors.response.use(
   (response) => {
-    LoadingScreen.trackEnd();
+    // X-Skip-Loading 헤더가 있으면 전역 로딩 스크린 종료하지 않음
+    if (!response.config.headers['X-Skip-Loading']) {
+      LoadingScreen.trackEnd();
+    }
     return response;
   },
   (error) => {
-    LoadingScreen.trackEnd();
+    // X-Skip-Loading 헤더가 있으면 전역 로딩 스크린 종료하지 않음
+    if (!error.config?.headers['X-Skip-Loading']) {
+      LoadingScreen.trackEnd();
+    }
     return Promise.reject(error);
   }
 );

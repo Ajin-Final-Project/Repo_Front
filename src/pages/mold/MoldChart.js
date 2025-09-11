@@ -987,7 +987,7 @@ class MoldChart extends Component {
         }}
       >
         <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#1976d2' }}>
-          금형 세척주기 랭킹
+          세척 금형 내역
         </Typography>
         
         {cleaningRankedData.length > 0 ? (

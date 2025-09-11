@@ -673,6 +673,10 @@ import MoldBreakDownGrid from "../../pages/mold/MoldBreakDownGrid";
 import ProductForecast from "../../pages/ai/ProductForecast";
 import Bottleneck from "../../pages/ai/Bottleneck";
 
+// 챗봇 컴포넌트
+import Chatbot from "../Chatbot/Chatbot";
+import ChatIcon from "../Chatbot/ChatIcon";
+
 class Layout extends React.Component {
   static propTypes = {
     sidebarStatic: PropTypes.bool,
@@ -687,11 +691,34 @@ class Layout extends React.Component {
     dashboardTheme: DashboardThemes.DARK,
   };
 
+  constructor(props) {
+    super(props);
+    this.state = {
+      isChatbotOpen: false,
+    };
+  }
+
+  toggleChatbot = () => {
+    this.setState(prevState => ({
+      isChatbotOpen: !prevState.isChatbotOpen
+    }));
+  };
+
+  closeChatbot = () => {
+    this.setState({ isChatbotOpen: false });
+  };
+
   render() {
     // (선택) CSS 변수로 사이드바 폭을 넘기고 싶다면 유지
     const sidebarWidthVar = this.props.sidebarOpened
       ? "var(--sidebar-open-w)"
       : "var(--sidebar-mini-w)";
+
+    // 로그인 페이지에서는 챗봇을 표시하지 않음
+    const isLoginPage = this.props.location.pathname === '/login' || 
+                       this.props.location.pathname === '/register' || 
+                       this.props.location.pathname === '/forgot' || 
+                       this.props.location.pathname === '/password-reset';
 
     return (
       <div
@@ -909,6 +936,20 @@ class Layout extends React.Component {
             </TransitionGroup>
           </main>
         </div>
+        
+        {/* 챗봇 아이콘과 사이드바 - 로그인 페이지 제외 */}
+        {!isLoginPage && (
+          <>
+            <ChatIcon 
+              onClick={this.toggleChatbot} 
+              isOpen={this.state.isChatbotOpen}
+            />
+            <Chatbot 
+              isOpen={this.state.isChatbotOpen}
+              onClose={this.closeChatbot}
+            />
+          </>
+        )}
       </div>
     );
   }
