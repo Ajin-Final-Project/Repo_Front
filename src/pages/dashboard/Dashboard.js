@@ -1,4 +1,6 @@
 import React from "react";
+import Clock from "./components/Clock";
+import AjinDashboardDemo from "./components/AjinDashboardDemo";
 import { Row, Col, Table } from "reactstrap";
 
 import usersImg from "../../images/usersImg.svg";
@@ -1341,7 +1343,10 @@ class Dashboard extends React.Component {
   render() {
     return (
       <div className={s.root}>
-        <Row>
+        {/* <h1>나는야</h1> */}
+        {/* <Clock /> */}
+        <AjinDashboardDemo />
+        {/* <Row>
           <Col xl={4}>
             <Widget
               title={<p style={{ fontWeight: 700 }}>Average Order Value</p>}
@@ -1796,7 +1801,7 @@ class Dashboard extends React.Component {
               </Table>
             </Widget>
           </Col>
-        </Row>
+        </Row> */}
       </div>
     );
   }

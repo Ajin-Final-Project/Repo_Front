@@ -5,8 +5,10 @@ import TitleSection from "./components/TitleSection";
 import KpiSection from "./components/KpiSection";
 import MonthlySection from "./components/MonthlySection";
 import PieAndNotesSection from "./components/PieAndNotesSection";
+import FacilityItemDowntimeAggSection from "./components/FacilityItemDowntimeAggSection";
+import FacilityLineDowntimeAggSection from "./components/FacilityLineDowntimeAggSection";
 import s from "./DowntimeChart.module.scss";
-import { selectThemeHex, selectThemeKey } from "../../reducers/layout";
+import { selectThemeHex } from "../../reducers/layout";
 import config from "../../config";
 
 import {
@@ -42,19 +44,19 @@ class DowntimeChart extends Component {
     super(props);
 
     const DEFAULT_END = "2025-06-30";
-    const start_work_date = "2025-01-01";
+    const start_work_date = "2024-01-01";
 
     this.DEFAULT_END = DEFAULT_END;
     this.PIE_TOP_N = 5;
     this.PIE_WITH_OTHERS = true;
     this.API = (path) => `${config.baseURLApi}/smartFactory${path}`;
-    this.ctrl = { summary: null, monthly: null, pie: null, notes: null, codes: null };
+    this.ctrl = { summary: null, monthly: null, pie: null, notes: null, codes: null, facilities: null };
 
     this.state = {
       pageLoading: true,       // ✅ 방법 B: 초기 진입부터 로딩 ON
       pageError: null,
-      loading: { summary: false, monthly: false, pie: false, notes: false, codes: false },
-      error: { summary: null, monthly: null, pie: null, notes: null, codes: null },
+      loading: { summary: false, monthly: false, pie: false, notes: false, codes: false, facilities: false },
+      error: { summary: null, monthly: null, pie: null, notes: null, codes: null, facilities: null },
 
       kpiFilters: { start_work_date: start_work_date, end_work_date: DEFAULT_END, press: "1500T" },
       kpiSummary: { total: 0, count: 0, avg: 0, topName: "-", topValue: 0, topList: [] },
@@ -94,6 +96,9 @@ class DowntimeChart extends Component {
       chartMonthTop3Map: {},
       pieData: [],
       topNotes: [],
+
+      facilityItemDowntimeAgg: [],
+      facilityLineDowntimeAgg: [],
     };
   }
 
@@ -509,11 +514,117 @@ class DowntimeChart extends Component {
     }
   };
 
+  // 설비적 제품별 비가동 예상시간 집계
+  fetchFacilityItemDowntimeAgg = async () => {
+    const { kpiFilters, chartItemCode } = this.state;
+
+    if (!this.hasValidItemCode()) {
+      this.setState({ topNotes: [] });
+      return;
+    }
+    this.setLoading("facilityItemDowntimeAgg", true);
+    this.setError("facilityItemDowntimeAgg", null);
+
+    try {
+      const signal = this.abortPrev("facilityItemDowntimeAgg");
+      const payload = {
+        start_work_date: kpiFilters.start_work_date,
+        end_work_date: kpiFilters.end_work_date,
+        workplace: kpiFilters.press,
+        itemCode: String(chartItemCode).trim(),
+      };
+
+      const json = await this.fetchJson(
+        this.API("/downtime_chart/facility-item-downtime-agg"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          signal,
+          body: JSON.stringify(payload),
+        },
+        "facilityItemDowntimeAgg"
+      );
+
+      const raw = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
+      const rows = raw.map((r, i) => ({
+        id: i + 1,
+        downtimeName: r.downtime_name ?? r.downtimeName ?? "-",
+        count: Number(r.cnt ?? r.count ?? 0),
+        expectedMinutes: Number(r.expected_minutes ?? r.expectedMinutes ?? 0),
+      }));
+
+      this.setState({ facilityItemDowntimeAgg: rows });
+    } catch (e) {
+      console.error("[fetchFacilityItemDowntimeAgg]", e);
+      this.setError("facilityItemDowntimeAgg", e.message || "facilityItemDowntimeAgg 조회 실패");
+      this.setState({ facilityItemDowntimeAgg: [] });
+    } finally {
+      this.setLoading("facilityItemDowntimeAgg", false);
+    }
+  };
+
+  // 설비적 라인별 비가동 예상시간 집계
+  fetchFacilityLineDowntimeAgg = async () => {
+    const { kpiFilters } = this.state;
+
+    if (!this.hasValidItemCode()) {
+      this.setState({ topNotes: [] });
+      return;
+    }
+    this.setLoading("FacilityLineDowntimeAgg", true);
+    this.setError("FacilityLineDowntimeAgg", null);
+
+    try {
+      const signal = this.abortPrev("FacilityLineDowntimeAgg");
+      const payload = {
+        start_work_date: kpiFilters.start_work_date,
+        end_work_date: kpiFilters.end_work_date,
+        workplace: kpiFilters.press,
+      };
+
+      const json = await this.fetchJson(
+        this.API("/downtime_chart/facility-line-downtime-agg"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          signal,
+          body: JSON.stringify(payload),
+        },
+        "FacilityLineDowntimeAgg"
+      );
+
+      const raw = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
+      // ✅ 집계 응답 표준화
+      const rows = raw.map((r, i) => ({
+        id: i + 1,
+        downtimeName: r.downtime_name ?? r.downtimeName ?? "-",
+        count: Number(r.cnt ?? r.count ?? 0),
+        expectedMinutes: Number(r.expected_minutes ?? r.expectedMinutes ?? 0),
+      }));
+
+      this.setState({ facilityLineDowntimeAgg: rows });
+    } catch (e) {
+      console.error("[fetchFacilityItemDowntimeAgg]", e);
+      this.setError("FacilityLineDowntimeAgg", e.message || "FacilityLineDowntimeAgg 조회 실패");
+      this.setState({ facilityLineDowntimeAgg: [] });
+    } finally {
+      this.setLoading("FacilityLineDowntimeAgg", false);
+    }
+  };
+
+
   // ✅ 방법 B: pageLoading은 여기서 관리하지 않음
   fetchAllSections = async () => {
     this.setState({ pageError: null });
     try {
-      await Promise.all([this.fetchSummary(), this.fetchMonthly(), this.fetchPie(), this.fetchTopNotes()]);
+      await Promise.all([
+        this.fetchSummary(), 
+        this.fetchMonthly(), 
+        this.fetchPie(), 
+        this.fetchTopNotes(),
+        this.fetchFacilityItemDowntimeAgg(),
+        this.fetchFacilityLineDowntimeAgg()
+      ]);
     } catch {
       this.setState({ pageError: "데이터를 불러오는 중 오류가 발생했습니다." });
     }
@@ -644,7 +755,24 @@ class DowntimeChart extends Component {
       filterExpanded,
       itemCodeModalOpen,
       chartItemCode,
+      facilityItemDowntimeAgg,
+      facilityLineDowntimeAgg
     } = this.state;
+    // console.log("■ DowntimeChart facilityItemDowntimeAgg", facilityItemDowntimeAgg);
+    // console.log("■ DowntimeChart facilityLineDowntimeAgg", facilityLineDowntimeAgg);
+    // console.log("■ DowntimeChart facilityLineDowntimeAgg", facilityLineDowntimeAgg);
+    // function totalCount(list) {
+    //   const arr = Array.isArray(list) ? list : [];
+    //   return arr.reduce((sum, row) => {
+    //     const n = Number(row?.count ?? row?.cnt ?? 0);
+    //     return sum + (Number.isFinite(n) ? n : 0);
+    //   }, 0);
+    // }
+
+    // // 사용
+    // const total = totalCount(facilityLineDowntimeAgg);
+    // console.log(total);                // 합계 숫자
+    // console.log(total.toLocaleString()); // 1,234처럼 표기
 
     return (
       <div className={s.root}>
@@ -1070,6 +1198,47 @@ class DowntimeChart extends Component {
           start_work_date={uiFilters.start_work_date}
           end_work_date={uiFilters.end_work_date}
         />
+
+        {/* 🏭 설비 기준 집계 섹션 */}
+        <FacilityItemDowntimeAggSection
+          data={facilityItemDowntimeAgg}                      // [{ id, downtimeName, count, expectedMinutes }]
+          loading={loading.facilities}
+          error={error.facilities}
+          onRetry={this.fetchFacilityItemDowntimeAgg}
+          themeHex={themeHex}
+          onChangeExpected={(name, minutes) => {
+            // (선택) 변경된 예상시간을 부모 상태나 서버에 저장하고 싶다면 여기서 처리
+            // 1) 프론트 임시 반영(부모 상태에도 덮어쓰기):
+            this.setState((s) => ({
+              facilityItemDowntimeAgg: s.facilityItemDowntimeAgg.map((r) =>
+                r.downtimeName === name ? { ...r, expectedMinutes: minutes } : r
+              ),
+            }));
+
+            // 2) (옵션) 서버 저장 API 호출 (예: PATCH /smartFactory/downtime_chart/expected-time)
+            // fetch(this.API("/downtime_chart/expected-time"), { method: "PATCH", body: JSON.stringify({ ...키들..., downtimeName: name, expectedMinutes: minutes }) })
+            //   .catch(() => {/* 실패 시 토스트/롤백 등 */})
+          }}
+        />
+
+        <FacilityLineDowntimeAggSection
+          data={facilityLineDowntimeAgg}
+          loading={loading.FacilityLineDowntimeAgg}
+          error={error.FacilityLineDowntimeAgg}
+          onRetry={this.fetchFacilityLineDowntimeAgg}
+          themeHex={themeHex}
+          onChangeExpected={(name, minutes, line) => {
+            // 프론트 즉시 반영 (옵션)
+            this.setState(s => ({
+              facilityLineDowntimeAgg: s.facilityLineDowntimeAgg.map(r =>
+                r.downtimeName === name && (line ? r.line === line : true)
+                  ? { ...r, expectedMinutes: minutes }
+                  : r
+              ),
+            }));
+            // TODO: 필요하면 서버에 PATCH 호출
+          }}
+        />
       </div>
     );
   }
@@ -1077,5 +1246,4 @@ class DowntimeChart extends Component {
 
 export default connect((state) => ({
   themeHex: selectThemeHex(state),
-  // themeKey: selectThemeKey(state),
 }))(DowntimeChart);
