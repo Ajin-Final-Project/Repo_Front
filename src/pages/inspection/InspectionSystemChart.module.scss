@@ -1,14 +1,273 @@
+// // // .root {
+// // //   background: #f5f7fb;
+// // //   min-height: 100vh;
+// // //   padding: 24px;
+// // //   position: relative;
+// // // }
+
+// // // /* 공통 섹션 */
+// // // .section {
+// // //   background: #fff;
+// // //   border: 1px solid #eceff1;
+// // //   border-radius: 12px;
+// // //   padding: 16px;
+// // //   box-shadow: 0 2px 10px rgba(0,0,0,.03);
+// // //   display: flex;
+// // //   flex-direction: column;
+// // //   height: 100%;
+// // //   width: 100%;
+// // // }
+
+// // // .sectionHeader {
+// // //   display: flex;
+// // //   align-items: center;
+// // //   justify-content: space-between;
+// // //   margin-bottom: 8px;
+// // // }
+// // // .sectionTitle {
+// // //   display: flex;
+// // //   align-items: center;
+// // //   gap: 8px;
+// // //   font-weight: 900;
+// // //   letter-spacing: .2px;
+// // // }
+
+// // // /* 좌측 일자 패널 + 우측 내용 */
+// // // .dailyLayout {
+// // //   display: grid;
+// // //   grid-template-columns: 370px minmax(0, 1fr);
+// // //   align-items: start;
+// // //   gap : 15px;
+// // // }
+
+// // // .dayPanel {
+// // //   background: #fff;
+// // //   border: 1px solid #eceff1;
+// // //   border-radius: 12px;
+// // //   padding: 16px;
+// // //   height: fit-content;
+// // // }
+
+// // // .rightArea { display: flex; flex-direction: column; }
+
+// // // /* 좌측 목록(보고일/설비/품번) */
+// // // .dayList { border: 1px solid #eceff1; border-radius: 8px; overflow: hidden; }
+// // // .dayListHead, .dayRow {
+// // //   display: grid;
+// // //   grid-template-columns: 1fr 1fr 1fr;
+// // //   column-gap: 8px;
+// // //   align-items: center;
+// // // }
+// // // .dayListHead {
+// // //   background: #fafafa;
+// // //   font-weight: 800;
+// // //   font-size: 12px;
+// // //   color: #546e7a;
+// // //   padding: 8px 10px;
+// // //   border-bottom: 1px solid #eceff1;
+// // // }
+// // // .dayListBody { max-height: 400px; overflow: auto; }
+// // // .dayRow {
+// // //   padding: 8px 10px;
+// // //   border-bottom: 1px solid #f1f3f5;
+// // //   cursor: pointer;
+// // //   font-size: 13px;
+// // // }
+// // // .dayRow:hover { background: #f7fbff; }
+// // // .dayRow.active { background: #e3f2fd; font-weight: 700; }
+// // // .dayEmpty { padding: 16px; color: #90a4ae; text-align: center; }
+
+// // // /* 반응형 */
+// // // @media (max-width: 960px) {
+// // //   .section { padding: 12px; }
+// // //   .dailyLayout { grid-template-columns: 1fr; }
+// // //   .dayPanel { order: 2; }
+// // //   .rightArea { order: 1; }
+// // // }
+
+
+// // .root {
+// //   background: #f5f7fb;
+// //   min-height: 100vh;
+// //   padding: 24px;
+// //   position: relative;
+// // }
+
+// // /* 공통 섹션 */
+// // .section {
+// //   background: #fff;
+// //   border: 1px solid #eceff1;
+// //   border-radius: 12px;
+// //   padding: 16px;
+// //   box-shadow: 0 2px 10px rgba(0,0,0,.03);
+// //   display: flex;
+// //   flex-direction: column;
+// //   height: 100%;
+// //   width: 100%;
+// // }
+
+// // .sectionHeader {
+// //   display: flex;
+// //   align-items: center;
+// //   justify-content: space-between;
+// //   margin-bottom: 8px;
+// // }
+// // .sectionTitle {
+// //   display: flex;
+// //   align-items: center;
+// //   gap: 8px;
+// //   font-weight: 900;
+// //   letter-spacing: .2px;
+// // }
+
+// // /* 좌측 일자 패널 + 우측 내용 */
+// // .dailyLayout {
+// //   display: grid;
+// //   grid-template-columns: 370px minmax(0, 1fr);
+// //   align-items: start;
+// //   gap: 15px;
+// // }
+
+// // .dayPanel {
+// //   background: #fff;
+// //   border: 1px solid #eceff1;
+// //   border-radius: 12px;
+// //   padding: 16px;
+// //   height: fit-content;
+// // }
+
+// // .rightArea { display: flex; flex-direction: column; }
+
+// // /* 좌측 목록(보고일/설비/품번) */
+// // .dayList { border: 1px solid #eceff1; border-radius: 8px; overflow: hidden; }
+// // .dayListHead, .dayRow {
+// //   display: grid;
+// //   grid-template-columns: 1fr 1fr 1fr;
+// //   column-gap: 8px;
+// //   align-items: center;
+// // }
+// // .dayListHead {
+// //   background: #fafafa;
+// //   font-weight: 800;
+// //   font-size: 12px;
+// //   color: #546e7a;
+// //   padding: 8px 10px;
+// //   border-bottom: 1px solid #eceff1;
+// // }
+// // .dayListBody { max-height: 400px; overflow: auto; }
+// // .dayRow {
+// //   padding: 8px 10px;
+// //   border-bottom: 1px solid #f1f3f5;
+// //   cursor: pointer;
+// //   font-size: 13px;
+// // }
+// // .dayRow:hover { background: #f7fbff; }
+// // .dayRow.active { background: #e3f2fd; font-weight: 700; }
+// // .dayEmpty { padding: 16px; color: #90a4ae; text-align: center; }
+
+// // /* 반응형 */
+// // @media (max-width: 960px) {
+// //   .section { padding: 12px; }
+// //   .dailyLayout { grid-template-columns: 1fr; }
+// //   .dayPanel { order: 2; }
+// //   .rightArea { order: 1; }
+// // }
+
+
+// .root {
+//   background: #f5f7fb;
+//   min-height: 100vh;
+//   padding: 24px;
+//   position: relative;
+// }
+
+// /* 공통 섹션 */
+// .section {
+//   background: #fff;
+//   border: 1px solid #eceff1;
+//   border-radius: 12px;
+//   padding: 16px;
+//   box-shadow: 0 2px 10px rgba(0,0,0,.03);
+//   display: flex;
+//   flex-direction: column;
+//   height: 100%;
+//   width: 100%;
+// }
+
+// .sectionHeader {
+//   display: flex;
+//   align-items: center;
+//   justify-content: space-between;
+//   margin-bottom: 8px;
+// }
+// .sectionTitle {
+//   display: flex;
+//   align-items: center;
+//   gap: 8px;
+//   font-weight: 900;
+//   letter-spacing: .2px;
+// }
+
+// /* 좌측 일자 패널 + 우측 내용 */
+// .dailyLayout {
+//   display: grid;
+//   grid-template-columns: 370px minmax(0, 1fr);
+//   align-items: start;
+//   gap: 15px;
+// }
+
+// .dayPanel {
+//   background: #fff;
+//   border: 1px solid #eceff1;
+//   border-radius: 12px;
+//   padding: 16px;
+//   height: fit-content;
+// }
+
+// .rightArea { display: flex; flex-direction: column; }
+
+// /* 좌측 목록(보고일/설비/품번) */
+// .dayList { border: 1px solid #eceff1; border-radius: 8px; overflow: hidden; }
+// .dayListHead, .dayRow {
+//   display: grid;
+//   grid-template-columns: 1fr 1fr 1fr;
+//   column-gap: 8px;
+//   align-items: center;
+// }
+// .dayListHead {
+//   background: #fafafa;
+//   font-weight: 800;
+//   font-size: 12px;
+//   color: #546e7a;
+//   padding: 8px 10px;
+//   border-bottom: 1px solid #eceff1;
+// }
+// .dayListBody { max-height: 400px; overflow: auto; }
+// .dayRow {
+//   padding: 8px 10px;
+//   border-bottom: 1px solid #f1f3f5;
+//   cursor: pointer;
+//   font-size: 13px;
+// }
+// .dayRow:hover { background: #f7fbff; }
+// .dayRow.active { background: #e3f2fd; font-weight: 700; }
+// .dayEmpty { padding: 16px; color: #90a4ae; text-align: center; }
+
+// /* 반응형 */
+// @media (max-width: 960px) {
+//   .section { padding: 12px; }
+//   .dailyLayout { grid-template-columns: 1fr; }
+//   .dayPanel { order: 2; }
+//   .rightArea { order: 1; }
+// }
+
+
 .root {
   background: #f5f7fb;
   min-height: 100vh;
   padding: 24px;
   position: relative;
 }
-
-/* KPI 카드(간결 스타일) */
-.kpiTitle { font-size: 12px; font-weight: 800; opacity: 0.9; }
-.kpiValue { font-size: 22px; font-weight: 900; margin-top: 4px; }
-.kpiSub   { font-size: 12px; }
 
 /* 공통 섹션 */
 .section {
@@ -37,31 +296,55 @@
   letter-spacing: .2px;
 }
 
-/* Donut legend */
-.legendRow {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-top: 8px;
-  color: #677483;
+/* 좌측 일자 패널 + 우측 내용 */
+.dailyLayout {
+  display: grid;
+  grid-template-columns: 370px minmax(0, 1fr);
+  align-items: start;
+  gap: 15px;
+}
+
+.dayPanel {
+  background: #fff;
+  border: 1px solid #eceff1;
+  border-radius: 12px;
+  padding: 16px;
+  height: fit-content;
+}
+
+.rightArea { display: flex; flex-direction: column; }
+
+/* 좌측 목록(보고일/설비/품번) */
+.dayList { border: 1px solid #eceff1; border-radius: 8px; overflow: hidden; }
+.dayListHead, .dayRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  column-gap: 8px;
+  align-items: center;
+}
+.dayListHead {
+  background: #fafafa;
+  font-weight: 800;
+  font-size: 12px;
+  color: #546e7a;
+  padding: 8px 10px;
+  border-bottom: 1px solid #eceff1;
+}
+.dayListBody { max-height: 400px; overflow: auto; }
+.dayRow {
+  padding: 8px 10px;
+  border-bottom: 1px solid #f1f3f5;
+  cursor: pointer;
   font-size: 13px;
 }
-.legendItem { display: inline-flex; align-items: center; gap: 6px; }
-.legendDot { width: 10px; height: 10px; border-radius: 999px; }
-
-/* 도넛 중앙 텍스트 */
-.donutCenter {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  pointer-events: none;
-}
+.dayRow:hover { background: #f7fbff; }
+.dayRow.active { background: #e3f2fd; font-weight: 700; }
+.dayEmpty { padding: 16px; color: #90a4ae; text-align: center; }
 
 /* 반응형 */
 @media (max-width: 960px) {
   .section { padding: 12px; }
+  .dailyLayout { grid-template-columns: 1fr; }
+  .dayPanel { order: 2; }
+  .rightArea { order: 1; }
 }
