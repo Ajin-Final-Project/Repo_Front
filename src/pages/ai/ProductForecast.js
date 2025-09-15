@@ -517,7 +517,7 @@ export default function ProductForecast() {
   const allValues = visibleTimeData.flatMap((d) => [d.actual, d.predicted].filter((v) => v != null));
   const minVal = allValues.length ? Math.min(...allValues) : 0;
   const maxVal = allValues.length ? Math.max(...allValues) : 100;
-  const margin = (maxVal - minVal) * 0.1;
+  const margin = (maxVal - minVal);
   const yMin = Math.max(0, minVal - margin);
   const yMax = maxVal + margin;
 
@@ -960,7 +960,7 @@ export default function ProductForecast() {
                 </div>
               </Box>
               <div style={{ height: 530, width: "100%", marginTop: 16 }}>
-                <DataGrid
+                {/* <DataGrid
                   rows={tableRows}
                   columns={tableColumns}
                   autoHeight
@@ -980,7 +980,32 @@ export default function ProductForecast() {
                       color: themeHex,
                     },
                   }}
+                /> */}
+
+
+                <DataGrid
+                  rows={tableRows}
+                  columns={tableColumns}
+                  autoHeight
+                  initialState={{
+                    pagination: {
+                      paginationModel: { pageSize: 10 },
+                    },
+                  }}
+                  pageSizeOptions={[5, 10, 20]}
+                  getRowClassName={(params) =>
+                    params.row.type === "내일" ? "highlightTomorrow" : ""
+                  }
+                  sx={{
+                    "& .highlightTomorrow": {
+                      backgroundColor: `${themeHex}20`,
+                      fontWeight: "bold",
+                      color: "black",   // ✅ 글자색을 검정으로 고정
+                    },
+                  }}
                 />
+
+
               </div>
             </>
           )}
@@ -1226,7 +1251,7 @@ export default function ProductForecast() {
                   {dayShift.map((d, idx) => (
                     <TableRow key={idx}>
                       <TableCell
-                        sx={d.isSelected ? { backgroundColor: `${themeHex}40`, fontWeight: "bold", color: themeHex, border: `2px solid ${themeHex}` } : {}}
+                        sx={d.isSelected ? { backgroundColor: `${themeHex}40`, fontWeight: "bold", color: "black", border: `2px solid ${themeHex}` } : {}}
                       >
                         {d.start} – {d.end}
                       </TableCell>
@@ -1236,7 +1261,7 @@ export default function ProductForecast() {
                           ...(d.isSelected && {
                             backgroundColor: `${themeHex}40`,
                             fontWeight: "bold",
-                            color: themeHex,
+                            color: "black",
                             border: `2px solid ${themeHex}`,
                           }),
                         }}
