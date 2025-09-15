@@ -263,17 +263,9 @@ const Bottleneck = () => {
     ],
   });
 
-
-
-
-
-
   const topStageEntry = skuTotalPieData.sort((a, b) => b.value - a.value)[0];
   const topStage = topStageEntry?.name;
   const topStageData = stagePieDataByStage[topStage] || [];
-
-
-
 
 
   // ✅ 미래 공정별 예측 요약 (Bottleneck_pred_Cell 사용)
@@ -357,26 +349,11 @@ const Bottleneck = () => {
 })();
 
 
-
-
-
-
-
-
 // ✅ 전후 상태 선택 (before/after)
 const [viewMode, setViewMode] = useState("before");
 
-
-
-
-
-
-
-
 // 최신 데이터
 const latest = byDate[filters.date] || byDate[pastDates[pastDates.length - 1]] || {};
-
-
 
 
 // ✅ SankeyConfig 동적 생성 함수
@@ -457,15 +434,6 @@ const buildSankeyConfig = (row) => {
 const sankeyConfig = buildSankeyConfig(latest);
 
 
-
-
-
-
-
-
-
-
-
 // ✅ Cell ↔ SKU 매핑 (실제 공정 규칙에 맞춰 수정 가능)
 const computeQueueFlow = (row) => {
   if (!row) return { before: [], after: [] };
@@ -504,19 +472,8 @@ const computeQueueFlow = (row) => {
 
 
 
-
-
-
-
-
-
-
-
-
 // ✅ 최신 데이터 기반으로 계산
 const { before, after } = computeQueueFlow(latest);
-
-
 
 
 // ✅ Bar 차트 옵션 (전/후 하나만 표시, y축 범위 고정)
@@ -530,7 +487,7 @@ const makeBarOption = (before, after, mode) => {
   return {
     tooltip: { trigger: "axis" },
     legend: { show: false },
-    xAxis: { type: "category", data: cells },
+    xAxis: { type: "category", data: cells.map((c) => translateCellLabel(c)) },
     yAxis: {
       type: "value",
       min: 0,
@@ -549,55 +506,14 @@ const makeBarOption = (before, after, mode) => {
 };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// 번호별 팔레트: Cell=진한색, SKU=연한색
-// const PALETTE = {
-//   1: { cell: "#2563eb", sku: "#93c5fd" },  // 파랑
-//   2: { cell: "#10b981", sku: "#6ee7b7" },  // 초록
-//   3: { cell: "#7c3aed", sku: "#c4b5fd" },  // 보라
-//   4: { cell: "#f59e0b", sku: "#fcd34d" },  // 주황
-// };
-
-// const getNumFromName = (name) => {
-//   const m = String(name).match(/(\d)/);
-//   return m ? Number(m[1]) : null;
-// };
-
-// const colorForNode = (name) => {
-//   const n = getNumFromName(name);
-//   if (!n) return "#94a3b8";
-//   if (name.includes("SKU")) return PALETTE[n].sku;
-//   return PALETTE[n].cell;
-// };
-
-
-
-
-
-
-
+// Cell1 → 조립셀1 변환
+const translateCellLabel = (name) => {
+  if (name.startsWith("Cell")) {
+    const num = name.replace("Cell", "");
+    return `조립셀${num}`;
+  }
+  return name;
+};
 
 
 // ✅ SKU 고정 색상
@@ -632,10 +548,6 @@ const colorForNode = (name) => {
 };
 
 
-
-
-
-
 // ✅ Sankey 옵션 (CELL → SKU 고정)
 const makeSankeyOption = (skuToBefore, skuToAfter, mode) => {
   const cells = ["Cell1", "Cell2", "Cell3", "Cell4"];
@@ -644,7 +556,7 @@ const makeSankeyOption = (skuToBefore, skuToAfter, mode) => {
   // 노드: 항상 CELL → SKU
   const nodes = [
     ...cells.map((c) => ({
-      name: `${c} (${mode})`,
+      name: `${translateCellLabel(c)} (${mode})`,   // ← 변환 적용
       depth: 0,
       itemStyle: { color: colorForNode(c) },
       label: { color: "#111827", fontSize: 12 },
@@ -664,7 +576,7 @@ const makeSankeyOption = (skuToBefore, skuToAfter, mode) => {
           skus
             .filter((sku) => (skuToBefore[sku]?.[cell] ?? 0) > 0)
             .map((sku) => ({
-              source: `${cell} (before)`,
+              source: `${translateCellLabel(cell)} (before)`,
               target: sku,
               value: skuToBefore[sku][cell],
             }))
@@ -673,7 +585,7 @@ const makeSankeyOption = (skuToBefore, skuToAfter, mode) => {
           skus
             .filter((sku) => (skuToAfter[sku]?.[cell] ?? 0) > 0)
             .map((sku) => ({
-              source: `${cell} (after)`,
+              source: `${translateCellLabel(cell)} (after)`,
               target: sku,
               value: skuToAfter[sku][cell],
             }))
@@ -704,44 +616,10 @@ const makeSankeyOption = (skuToBefore, skuToAfter, mode) => {
 };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 const availableDates = Object.keys(byDate);  // 실제 DB에서 내려온 날짜들
   const past7Dates = useMemo(() => {
     return getPastDates(filters.date, 7).filter((d) => availableDates.includes(d));
   }, [filters.date, byDate]);
-
-
-
-
-
-
-
-
-
 
 
 
@@ -794,28 +672,6 @@ const alertMessage =
     `⚠️ [${translateBottleneck(bottleneckKey)}]에서 병목이 발생했습니다. `
   + `이는 통합 생산량에 약 ${impactVal.toFixed(1)}의 영향을 줄 것으로 보입니다. `
   + `전날보다 생산량은 ${changeMsg} 예상됩니다.`;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
   [...pastDates, today].forEach((d, xIdx) => {
@@ -906,7 +762,6 @@ const alertMessage =
     );
   }
 
-  
 
   // Radar 차트 최대치
   const maxQueueValue = Math.max(
@@ -983,7 +838,6 @@ const alertMessage =
 
 
   // Pie 차트 데이터
-
   let pieData = [
     {
       name: "블랭킹",
@@ -1055,13 +909,6 @@ const alertMessage =
   };
 
 
-
-
-  
-
-
-
-
   // ✅ 회색 배경 데이터: 과거+오늘 날짜 전체
   const grayBackgroundData = [];
   [...pastDates, today].forEach((d, xIdx) => {
@@ -1122,15 +969,6 @@ const alertMessage =
       },
     ],
   };
-
-
-
-
-
-
-
-
-  
   
 
   return (
@@ -1142,10 +980,10 @@ const alertMessage =
           gutterBottom
           sx={{ fontWeight: "bold", color: themeHex }}
         >
-          병목 공정 예측
+          병목 공정 예측/분석
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          주요 공정의 병목 현황과 예측 결과를 시각화합니다.
+          주요 공정의 병목 현황과 향후 예측 결과를 시각화합니다.
         </Typography>
       </Box>
 
@@ -1169,20 +1007,10 @@ const alertMessage =
           }}
         />
         <Grid container spacing={2} alignItems="center">
-          {/* 일간 버튼만 고정 */}
-          <Grid item>
-            <Button
-              size="small"
-              variant="contained"
-              sx={{ backgroundColor: themeHex, "&:hover": { backgroundColor: themeHex } }}
-            >
-              일간
-            </Button>
-          </Grid>
 
           {/* 단일 날짜 선택 */}
           <Grid item>
-            <Typography sx={{ mr: 1 }}>기준일 선택</Typography>
+            <Typography sx={{ mr: 1 }}>일자</Typography>
           </Grid>
           <Grid item>
             <TextField
@@ -1202,14 +1030,6 @@ const alertMessage =
       </Paper>
 
 
-
-
-
-
-
-
-
-
       {/* 경고 박스 */}
       <div className={styles.alert}>
         {/* ⚠️ {translateBottleneck(latest?.Bottleneck_actual)}에서 병목이 발생하여 생산량에{" "}
@@ -1227,7 +1047,7 @@ const alertMessage =
         <div className={styles.card} aria-label="공정 흐름도">
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 style={{ margin: 0 }}>공정도</h2>
+            <h2 style={{ margin: 0 }}>병목 공정도</h2>
             <span style={{ fontSize: "14px", color: "#6b7280" }}>
               ({filters.date})
             </span>
@@ -1343,7 +1163,7 @@ const alertMessage =
         {/* 실시간 병목 현황 */}
         <div className={styles.card}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 style={{ margin: 0 }}>실시간 병목 현황</h2>
+            <h2 style={{ margin: 0 }}>대기열 현황</h2>
             <span style={{ fontSize: "14px", color: "#6b7280" }}>
               ({filters.date})
             </span>
@@ -1354,14 +1174,11 @@ const alertMessage =
       </div>
 
 
-
-
-
       {/* 2행: Pie + Heatmap */}
       <div className={styles.grid}>
         <div className={styles.card}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 style={{ margin: 0 }}>📊 과거 병목 시각화 (주간)</h2>
+            <h2 style={{ margin: 0 }}>📊 최근 1주 병목 분포</h2>
             <span style={{ fontSize: "14px", color: "#6b7280" }}>
               {past7Dates.length > 0
                 ? `(${past7Dates[0]} ~ ${past7Dates[past7Dates.length - 1]})`
@@ -1372,7 +1189,7 @@ const alertMessage =
         </div>
 
         <div className={styles.card}>
-          <h2>날짜별 병목 기록 및 예측</h2>
+          <h2>일자별 병목 기록/예측</h2>
           <div style={{ position: "relative", height: "280px" }}>
             <ReactECharts option={blockOption} style={{ height: "280px" }} />
             {showPastLabel && (
@@ -1415,7 +1232,7 @@ const alertMessage =
         {/* (1) SKU별 병목 비율 종합 + SKU별 병목 예측 */}
         <div className={styles.card}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 style={{ margin: 0 }}>📦 SKU별 병목 분석</h2>
+            <h2 style={{ margin: 0 }}>📦 품번(SKU)별 병목 분석</h2>
             <span style={{ fontSize: "14px", color: "#6b7280" }}>
               {pastDates.length > 0
                 ? `(${pastDates[0]} ~ ${pastDates[pastDates.length - 1]})`
@@ -1447,7 +1264,7 @@ const alertMessage =
                 color: "#1e40af",
               }}
             >
-              예측 결과
+              품번(SKU)별 병목 예측
             </h3>
             <div
               style={{
@@ -1505,7 +1322,7 @@ const alertMessage =
                 color: "#166534",
               }}
             >
-              예측 결과
+              공정별 병목 예측
             </h3>
             <div
               style={{
@@ -1525,29 +1342,11 @@ const alertMessage =
       </div>
 
 
-      
-
-      
-
-
-
-
-
-
-
-
-
       {/* 인사이트 */}
       <div className={`${styles.insight} ${styles.section}`}>
         병목 집중 지점: <b>{translateBottleneck(latest?.Bottleneck_actual)}</b> → SKU 분산
         재배치를 통한 부하 균형 조정이 요구됨.
       </div>
-
-
-
-
-
-
 
 
       {/* 전/후 선택 버튼 */}
@@ -1598,17 +1397,11 @@ const alertMessage =
       </Box>
 
 
-
-
-
-
-      
-
       {/* 원래 vs 제안 + Queue 변화 */}
       <div className={styles.grid}>
         {/* Sankey 다이어그램 */}
         <div className={styles.card}>
-          <h2>재분배 {viewMode === "before" ? "전" : "후"} 흐름 (SKU → Cell)</h2>
+          <h2>재분배 {viewMode === "before" ? "전" : "후"} 생산 비율</h2>
           <ReactECharts
             option={makeSankeyOption(sankeyConfig.skuToBefore, sankeyConfig.skuToAfter, viewMode)}
             style={{ height: 400 }}
@@ -1617,7 +1410,7 @@ const alertMessage =
 
         {/* Bar 차트 */}
         <div className={styles.card}>
-          <h2>재분배 {viewMode === "before" ? "전" : "후"} Cell별 Queue 변화</h2>
+          <h2>재분배 {viewMode === "before" ? "전" : "후"} 대기열</h2>
           <ReactECharts
             option={makeBarOption(before, after, viewMode)} // ✅ viewMode 반영
             style={{ height: 400 }}
@@ -1625,15 +1418,6 @@ const alertMessage =
         </div>
 
       </div>
-
-
-
-
-
-
-      
-
-
 
     </div>
   );

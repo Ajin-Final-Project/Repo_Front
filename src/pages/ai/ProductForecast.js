@@ -409,7 +409,7 @@ export default function ProductForecast() {
       predicted: d.pred != null ? Number(d.pred).toFixed(2) : "-",
       actual: isFuture ? "-" : (d.actual != null ? Math.round(d.actual) : "-"),
       diff: isFuture ? "-" : (d.error != null ? Number(d.error).toFixed(2) : "-"),
-      acc: isFuture ? "-" : (d.pct_error != null ? `${(100 - d.pct_error).toFixed(2)}%` : "-"),
+      acc: isFuture ? "-" : (d.pct_error != null ? `${(d.pct_error).toFixed(2)}%` : "-"),
       uph: isFuture ? "-" : (d.hourly_avg != null ? Number(d.hourly_avg).toFixed(2) : "-"),
     };
   });
@@ -562,10 +562,10 @@ export default function ProductForecast() {
           gutterBottom
           sx={{ fontWeight: "bold", color: themeHex }}
         >
-          생산량 예측
+          생산량 예측/분석
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          생산 예측 결과를 시각화하여 계획과 실적을 쉽게 비교할 수 있습니다.
+          생산 계획 대비 실적을 시각화하여 예측 정확도와 현황을 한눈에 확인할 수 있습니다.
         </Typography>
       </Box>
 
@@ -580,17 +580,9 @@ export default function ProductForecast() {
           sx={{ backgroundColor: themeHex, color: "white", borderRadius: 1, mb: 2 }}
         />
         <Grid container spacing={2} alignItems="center">
+          
           <Grid item>
-            <Button
-              size="small"
-              variant="contained"
-              sx={{ backgroundColor: themeHex, "&:hover": { backgroundColor: themeHex } }}
-            >
-              주간
-            </Button>
-          </Grid>
-          <Grid item>
-            <Typography sx={{ mr: 1 }}>기준일 선택</Typography>
+            <Typography sx={{ mr: 1 }}>일자</Typography>
           </Grid>
           <Grid item>
             <TextField
@@ -603,7 +595,7 @@ export default function ProductForecast() {
             />
           </Grid>
           <Grid item>
-            <Typography sx={{ ml: 2 }}>분석 대상 SKU</Typography>
+            <Typography sx={{ ml: 2 }}>품번(SKU)</Typography>
           </Grid>
           <Grid item>
             <FormControl size="small" sx={{ minWidth: 120, backgroundColor: "white", borderRadius: 1 }}>
@@ -616,7 +608,7 @@ export default function ProductForecast() {
             </FormControl>
           </Grid>
           <Grid item>
-            <Typography sx={{ ml: 2 }}>시간대 선택</Typography>
+            <Typography sx={{ ml: 2 }}>시간대</Typography>
           </Grid>
           <Grid item>
             <FormControl size="small" sx={{ minWidth: 120, backgroundColor: "white", borderRadius: 1 }}>
@@ -636,7 +628,7 @@ export default function ProductForecast() {
               onClick={() => setAutoCycle(!autoCycle)}
               sx={{ backgroundColor: autoCycle ? "#d32f2f" : themeHex, "&:hover": { backgroundColor: autoCycle ? "#b71c1c" : themeHex } }}
             >
-              {autoCycle ? "자동 순환 끄기" : "자동 순환 켜기"}
+              {autoCycle ? "자동 순환 OFF" : "자동 순환 ON"}
             </Button>
           </Grid>
         </Grid>
@@ -645,7 +637,7 @@ export default function ProductForecast() {
       {/* 1) 일자별 생산량 */}
       <Card className={styles.sectionCard}>
         <CardContent>
-          <Typography variant="h6" gutterBottom>일자별 실제 vs 예측</Typography>
+          <Typography variant="h6" gutterBottom>일자별 생산 실적 및 예측</Typography>
           {loading.daily ? (
             <Box sx={{ height: 530, display: "flex", justifyContent: "center", alignItems: "center" }}>
               <CircularProgress size={60} sx={{ color: themeHex }} />
@@ -669,8 +661,6 @@ export default function ProductForecast() {
                       <YAxis domain={["dataMin - 10", "dataMax + 10"]} />
                       <Tooltip formatter={(value, name) => [Number(value).toFixed(2), name]} />
                       <Legend verticalAlign="top" align="right" wrapperStyle={{ marginBottom: 10 }} />
-
-
 
                       {/* ✅ 실제: 막대 먼저 */}
                       <Bar
@@ -696,15 +686,9 @@ export default function ProductForecast() {
                         animationDuration={2000}
                         animationBegin={0}
                       />
-
-
                       
                     </ComposedChart>
                   </ResponsiveContainer>
-
-
-
-
 
                 </div>
               </Box>
@@ -743,9 +727,12 @@ export default function ProductForecast() {
         <Grid item xs={12} md={8}>
           <Card className={styles.sectionCard} sx={{ height: "100%" }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                시간별 실제 vs 예측 (현재: {selectedTimeSlot})
-              </Typography>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                <Typography variant="h6">시간대별 생산 실적 및 예측</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  ({selectedTimeSlot})
+                </Typography>
+              </Box>
               {loading.hourly ? (
                 <Box sx={{ height: 300, display: "flex", justifyContent: "center", alignItems: "center" }}>
                   <CircularProgress size={60} sx={{ color: themeHex }} />
@@ -828,12 +815,14 @@ export default function ProductForecast() {
         <Grid item xs={12} md={4}>
           <Card className={styles.sectionCard} sx={{ backgroundColor: "#f9fafb", height: "100%" }}>
             <CardContent sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-              <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <TrendingUp sx={{ color: themeHex }} /> KPI 지표
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                기준 시간: {selectedTimeSlot}
-              </Typography>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                <Typography variant="h6" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <TrendingUp sx={{ color: themeHex }} /> 핵심 지표
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  ({selectedTimeSlot})
+                </Typography>
+              </Box>
               {selectedSlot ? (
                 <Grid container spacing={2} sx={{ flex: 1, minHeight: 280 }}>
                   <Grid item xs={12} sm={6} sx={{ display: "flex" }}>
@@ -841,7 +830,7 @@ export default function ProductForecast() {
                       <CardContent className={styles.kpiInnerContent} sx={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", p: 2.5 }}>
                         <div>
                           <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ fontWeight: "bold", mb: 2 }}>
-                            SKU별 시간별
+                            시간대별 실적
                           </Typography>
                           <Box display="flex" alignItems="center" gap={1} sx={{ mb: 2 }}>
                             <AdsClick sx={{ color: "#1E3A8A" }} />
@@ -874,7 +863,7 @@ export default function ProductForecast() {
                       <CardContent className={styles.kpiInnerContent} sx={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", p: 2.5 }}>
                         <div>
                           <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ fontWeight: "bold", mb: 2 }}>
-                            SKU별 누적
+                            일 누적 현황
                           </Typography>
                           <Box display="flex" alignItems="center" gap={1} sx={{ mb: 2 }}>
                             <AdsClick sx={{ color: "#1E3A8A" }} />
@@ -916,9 +905,12 @@ export default function ProductForecast() {
       {/* 3) 공정 단계별 현황 */}
       <Card className={styles.sectionCard}>
         <CardContent>
-          <Typography variant="h6" gutterBottom>
-            공정 단계별 현황 (시간대: {selectedTimeSlot})
-          </Typography>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+            <Typography variant="h6">공정 단계별 가동률</Typography>
+            <Typography variant="caption" color="text.secondary">
+              ({selectedTimeSlot})
+            </Typography>
+          </Box>
           {selectedSlot ? (
             <Grid container spacing={2} marginTop={1}>
               <Grid item xs={4}>
@@ -952,7 +944,7 @@ export default function ProductForecast() {
       <Card className={styles.sectionCard}>
         <CardContent>
           <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <TrendingUp sx={{ color: themeHex }} /> 교대별 생산량 (현재: {selectedTimeSlot})
+            <TrendingUp sx={{ color: themeHex }} /> 교대별 생산 실적
           </Typography>
           <Box sx={{ display: { xs: "none", md: "block" } }}>
             <TableContainer component={Paper}>
@@ -960,10 +952,10 @@ export default function ProductForecast() {
                 <TableHead>
                   <TableRow>
                     <TableCell align="center" colSpan={2} sx={{ backgroundColor: "#f5f5f520", fontWeight: "bold", borderRight: `2px solid ${themeHex}` }}>
-                      🌞 주간근무
+                      🌞 주간 근무
                     </TableCell>
                     <TableCell align="center" colSpan={2} sx={{ backgroundColor: "#f5f5f520", fontWeight: "bold" }}>
-                      🌙 야간근무
+                      🌙 야간 근무
                     </TableCell>
                   </TableRow>
                   <TableRow>
