@@ -944,7 +944,7 @@ class ProductionGrid extends Component {
           <Grid item xs={12} sm={6} md={2}>
             <TextField
               fullWidth
-              label="품목코드"
+              label="품번"
               value={filters.itemCode}
               onClick={this.openItemCodeModal}
               onSelect={this.handleItemCodeSelect}
