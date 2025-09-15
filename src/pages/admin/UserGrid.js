@@ -118,6 +118,7 @@
 //     </Box>
 //   );
 // }
+// 맨 위 아이콘 import들 옆에 추가
 
 import { connect } from 'react-redux';
 import { selectThemeHex } from '../../reducers/layout';
@@ -153,6 +154,7 @@ import {
   Clear as ClearIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
+  FilterList as FilterIcon,   // ← 추가 (생산 그리드와 같은 아이콘)
 } from '@mui/icons-material';
 
 // SCSS 모듈
@@ -408,20 +410,42 @@ class UserGrid extends Component {
     const { themeHex } = this.props;
     return (
       // <Box className={s.root} sx={{ height: '100vh', p: 3, display: 'flex', flexDirection: 'column', backgroundColor: '#f5f5f5' }}>
-      <Box className={s.root} sx={{ height: '100vh', p: 3, display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+      // ✅ 내부 스크롤이 부모에 막히지 않게 minHeight:0 꼭 추가
+      <Box className={s.root} sx={{ height: '100vh', p: 3, display: 'flex', flexDirection: 'column', bgcolor: 'background.default',  minHeight: 0 }}>  {/* ← ✅ 추가*/}
 
         {/* 헤더 */}
         <Box sx={{ mb: 3 }}>
           {/* <Typography variant="h4" gutterBottom sx={{ color: '#ffb300', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}> */}
-          <Typography variant="h4" gutterBottom sx={{ color: themeHex, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* <Typography variant="h4" gutterBottom sx={{ color: themeHex, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
+            사원 관리 데이터
+          </Typography> */}
+          <Typography
+            variant="h4"
+            gutterBottom
+            sx={{ color: themeHex, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}
+          >
+            <FilterIcon sx={{ fontSize: 32 }} />  {/* 생산 데이터 그리드와 동일한 아이콘 */}
             사원 관리 데이터
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            사원 정보를 조건별로 조회하고 데이터 그리드로 확인합니다.
+            사원 정보를 조회하고 관리할 수 있습니다.
           </Typography>
         </Box>
 
         {/* 검색 패널 */}
+        {/* <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}> */}
+        {/* ✅ 이 Paper가 세로로 남은 공간을 차지하고, 내부에 스크롤이 생기도록 */}
+        {/* <Paper
+            elevation={3}
+            sx={{
+              flex: 1,
+              minHeight: 0,        // ← ✅ 추가 (없으면 자식이 넘치면서 페이지 스크롤이 생김)
+              display: 'flex',
+              flexDirection: 'column',
+              borderRadius: 2,
+            }}
+          > */}
+        {/* 검색 패널 (예전처럼 그대로, flex:1 절대 주지 않기) */}
         <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
           <CardHeader
             title={(
@@ -448,83 +472,78 @@ class UserGrid extends Component {
           {/* 기본 필터 */}
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6} md={3}>
-              <TextField fullWidth label="ID" value={filters.user_id}
-                         onChange={(e) => this.handleFilterChange('user_id', e.target.value)}
-                         size="small" variant="outlined" />
+              <TextField fullWidth label="본부" value={filters.hq}   // 추가
+                onChange={(e) => this.handleFilterChange('hq', e.target.value)}
+                size="small" variant="outlined" />
             </Grid>
-            {/* <Grid item xs={12} sm={6} md={3}>
-              <TextField fullWidth label="PW" value={filters.pw}
-                         onChange={(e) => this.handleFilterChange('pw', e.target.value)}
-                         size="small" variant="outlined" />
-            </Grid> */}
-             {/* PW 입력창 제거 */}
+            <Grid item xs={12} sm={6} md={3}>
+              <TextField fullWidth label="부서" value={filters.dept}
+                onChange={(e) => this.handleFilterChange('dept', e.target.value)}
+                size="small" variant="outlined" />
+            </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+              <TextField fullWidth label="직급" value={filters.rank} // 추가
+                onChange={(e) => this.handleFilterChange('rank', e.target.value)}
+                size="small" variant="outlined" />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <TextField fullWidth label="권한" value={filters.role} // 추가
+                onChange={(e) => this.handleFilterChange('role', e.target.value)}
+                size="small" variant="outlined" />
+            </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <TextField fullWidth label="이름" value={filters.name}
-                         onChange={(e) => this.handleFilterChange('name', e.target.value)}
-                         size="small" variant="outlined" />
+                onChange={(e) => this.handleFilterChange('name', e.target.value)}
+                size="small" variant="outlined" />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <TextField fullWidth label="나이" type="number" value={filters.age}
-                         onChange={(e) => this.handleFilterChange('age', e.target.value)}
-                         size="small" variant="outlined" />
-            </Grid>
-            {/* ✅ 나이 범위 추가 */}
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField fullWidth label="나이(최소)" type="number" value={filters.age_min}
-                         onChange={(e) => this.handleFilterChange('age_min', e.target.value)}
-                         size="small" variant="outlined" />
+              <TextField fullWidth label="메일" value={filters.email}
+                onChange={(e) => this.handleFilterChange('email', e.target.value)}
+                size="small" variant="outlined" />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <TextField fullWidth label="나이(최대)" type="number" value={filters.age_max}
-                         onChange={(e) => this.handleFilterChange('age_max', e.target.value)}
-                         size="small" variant="outlined" />
+              <TextField fullWidth label="전화번호" value={filters.phone}
+                onChange={(e) => this.handleFilterChange('phone', e.target.value)}
+                size="small" variant="outlined" />
             </Grid>
           </Grid>
 
           {/* 확장 필터 */}
           <Collapse in={filterExpanded} timeout="auto" unmountOnExit>
             <Divider sx={{ my: 2 }} />
-            <Grid container spacing={2}>
+              <Grid container spacing={2}>
               <Grid item xs={12} sm={6} md={3}>
-                <TextField fullWidth label="본부" value={filters.hq}   // 추가
-                           onChange={(e) => this.handleFilterChange('hq', e.target.value)}
-                           size="small" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField fullWidth label="부서" value={filters.dept}
-                           onChange={(e) => this.handleFilterChange('dept', e.target.value)}
-                           size="small" variant="outlined" />
-              </Grid>
-               <Grid item xs={12} sm={6} md={3}>
-                <TextField fullWidth label="직급" value={filters.rank} // 추가
-                           onChange={(e) => this.handleFilterChange('rank', e.target.value)}
-                           size="small" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField fullWidth label="권한" value={filters.role} // 추가
-                           onChange={(e) => this.handleFilterChange('role', e.target.value)}
-                           size="small" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField fullWidth label="메일" value={filters.email}
-                           onChange={(e) => this.handleFilterChange('email', e.target.value)}
-                           size="small" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField fullWidth label="전화번호" value={filters.phone}
-                           onChange={(e) => this.handleFilterChange('phone', e.target.value)}
-                           size="small" variant="outlined" />
+              <TextField fullWidth label="ID" value={filters.user_id}
+                onChange={(e) => this.handleFilterChange('user_id', e.target.value)}
+                size="small" variant="outlined" />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
                 <TextField fullWidth label="주소" value={filters.address}
-                           onChange={(e) => this.handleFilterChange('address', e.target.value)}
-                           size="small" variant="outlined" />
+                  onChange={(e) => this.handleFilterChange('address', e.target.value)}
+                  size="small" variant="outlined" />
               </Grid>
-            </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField fullWidth label="나이" type="number" value={filters.age}
+                  onChange={(e) => this.handleFilterChange('age', e.target.value)}
+                  size="small" variant="outlined" />
+              </Grid>
+
+              {/* <Grid item xs={12} sm={6} md={3}>
+                <TextField fullWidth label="나이(최소)" type="number" value={filters.age_min}
+                  onChange={(e) => this.handleFilterChange('age_min', e.target.value)}
+                  size="small" variant="outlined" />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField fullWidth label="나이(최대)" type="number" value={filters.age_max}
+                  onChange={(e) => this.handleFilterChange('age_max', e.target.value)}
+                  size="small" variant="outlined" />
+              </Grid> */}
+              </Grid>
           </Collapse>
 
           {/* 옵션 & 버튼 */}
-          <Grid item xs={12} sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {/* <Grid item xs={12} sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}> */}
+          <Grid item xs={12} sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
             {/* <FormControlLabel
               control={<Switch checked={showPw} onChange={this.toggleShowPw} />}
               label="PW 보기 (운영권장 X)"
@@ -551,8 +570,22 @@ class UserGrid extends Component {
         </Paper>
 
         {/* 그리드 */}
-        <Paper elevation={3} sx={{ flex: 1, display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
-          <Box sx={{ height: '100%', width: '100%' }}>
+        {/* <Paper elevation={3} sx={{ flex: 1, display: 'flex', flexDirection: 'column', borderRadius: 2 }}> */}
+        {/* ✅ 2) 그리드 섹션: 남은 높이를 차지 + 내부 스크롤 */}
+        <Paper
+          elevation={3}
+          sx={{
+            flex: 1,                   // ★ 남은 공간 모두 차지
+            minHeight: 0,              // ★ 내부 스크롤 허용
+            display: 'flex',
+            flexDirection: 'column',
+            borderRadius: 2,
+          }}
+        >
+          
+          {/* <Box sx={{ height: '100%', width: '100%' }}> */}
+          {/* ✅ 3) DataGrid 래퍼: 내부 스크롤이 이  Box 안에서 발생 */}
+          <Box sx={{ flex: 1, minHeight: 0, width: '100%' }}>
             {loading && (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
                 {/* <CircularProgress size={60} sx={{ color: 'primary.main' }} /> */}
@@ -614,9 +647,14 @@ class UserGrid extends Component {
                 // }}
                 sx={(theme) => ({
                   // 헤더 바탕/글자
-                  '& .MuiDataGrid-columnHeaders': {
+                  // '& .MuiDataGrid-columnHeaders': {
                     // backgroundColor: theme.palette.primary.main,
                     // color: theme.palette.getContrastText(theme.palette.primary.main),
+                  // 헤더(색상 + 고정 보강)
+                  '& .MuiDataGrid-columnHeaders': {
+                    position: 'sticky',          // 보강 (내부 스크롤에서도 확실히 고정)
+                    top: 0,
+                    zIndex: 1,
                     backgroundColor: `${themeHex} !important`,
                     color: `${theme.palette.getContrastText(themeHex)} !important`, 
                     borderBottom: 'none',
