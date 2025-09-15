@@ -1,6 +1,7 @@
 // src/components/modals/ItemCodeModal.jsx
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
 import {
   Dialog,
   DialogTitle,
@@ -21,6 +22,7 @@ import {
 import { Search as SearchIcon, Clear as ClearIcon, Inventory as InventoryIcon } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
 import config from '../../config';
+import { selectThemeHex, selectThemeKey } from '../../reducers/layout';
 
 class ItemCodeModal extends Component {
   constructor(props) {
@@ -111,7 +113,7 @@ class ItemCodeModal extends Component {
   };
 
   render() {
-    const { open, onClose, selectedItemCode, plant, worker, line } = this.props;
+    const { open, onClose, selectedItemCode, plant, worker, line, themeHex, themeKey } = this.props;
     const { searchTerm, items, loading, error } = this.state;
 
     const columns = [
@@ -199,7 +201,7 @@ class ItemCodeModal extends Component {
       >
         <DialogTitle
           sx={{
-            background: 'linear-gradient(135deg, #ff8f00 0%, #f57c00 100%)',
+            background: `linear-gradient(135deg, ${themeHex} 0%, ${themeHex}dd 100%)`,
             color: 'white',
             display: 'flex',
             alignItems: 'center',
@@ -300,12 +302,12 @@ class ItemCodeModal extends Component {
                        backgroundColor: 'white',
                        '&:hover': {
                          '& .MuiOutlinedInput-notchedOutline': {
-                           borderColor: '#ff8f00',
+                           borderColor: themeHex,
                          }
                        },
                        '&.Mui-focused': {
                          '& .MuiOutlinedInput-notchedOutline': {
-                           borderColor: '#ff8f00',
+                           borderColor: themeHex,
                            borderWidth: '2px'
                          }
                        }
@@ -314,7 +316,7 @@ class ItemCodeModal extends Component {
                   InputProps={{
                                          startAdornment: (
                        <InputAdornment position="start">
-                         <SearchIcon sx={{ color: '#ff8f00' }} />
+                         <SearchIcon sx={{ color: themeHex }} />
                        </InputAdornment>
                      ),
                     endAdornment: searchTerm && (
@@ -324,7 +326,7 @@ class ItemCodeModal extends Component {
                            onClick={this.clearSearch}
                            sx={{ 
                              color: '#6c757d',
-                             '&:hover': { backgroundColor: 'rgba(255, 143, 0, 0.1)' }
+                             '&:hover': { backgroundColor: `${themeHex}20` }
                            }}
                          >
                           <ClearIcon fontSize="small" />
@@ -338,16 +340,16 @@ class ItemCodeModal extends Component {
                    variant="contained"
                    onClick={this.handleSearch}
                    sx={{ 
-                     background: 'linear-gradient(135deg, #ff8f00 0%, #f57c00 100%)',
+                     background: `linear-gradient(135deg, ${themeHex} 0%, ${themeHex}dd 100%)`,
                      borderRadius: '8px',
                      px: 3,
                      py: 1,
                      textTransform: 'none',
                      fontWeight: 600,
-                     boxShadow: '0 4px 12px rgba(255, 143, 0, 0.3)',
+                     boxShadow: `0 4px 12px ${themeHex}50`,
                      '&:hover': { 
-                       background: 'linear-gradient(135deg, #f57c00 0%, #ef6c00 100%)',
-                       boxShadow: '0 6px 16px rgba(255, 143, 0, 0.4)'
+                       background: `linear-gradient(135deg, ${themeHex}dd 0%, ${themeHex}bb 100%)`,
+                       boxShadow: `0 6px 16px ${themeHex}60`
                      }
                    }}
                  >
@@ -366,8 +368,8 @@ class ItemCodeModal extends Component {
                      variant="outlined" 
                      size="small"
                      sx={{ 
-                       borderColor: '#ff8f00',
-                       color: '#ff8f00',
+                       borderColor: themeHex,
+                       color: themeHex,
                        fontWeight: 600,
                        '& .MuiChip-label': { px: 1.5 }
                      }}
@@ -393,7 +395,7 @@ class ItemCodeModal extends Component {
                                  <CircularProgress 
                    size={50} 
                    sx={{ 
-                     color: '#ff8f00',
+                     color: themeHex,
                      '& .MuiCircularProgress-circle': {
                        strokeLinecap: 'round',
                      }
@@ -452,7 +454,7 @@ class ItemCodeModal extends Component {
                   },
                                      '& .MuiDataGrid-row': {
                      '&:hover': {
-                       backgroundColor: 'rgba(255, 143, 0, 0.05)',
+                       backgroundColor: `${themeHex}10`,
                        cursor: 'pointer',
                        transition: 'background-color 0.2s ease'
                      },
@@ -486,9 +488,9 @@ class ItemCodeModal extends Component {
               borderColor: '#dee2e6',
               color: '#6c757d',
                              '&:hover': {
-                 borderColor: '#ff8f00',
-                 color: '#ff8f00',
-                 backgroundColor: 'rgba(255, 143, 0, 0.05)'
+                 borderColor: themeHex,
+                 color: themeHex,
+                 backgroundColor: `${themeHex}10`
                }
             }}
           >
@@ -509,6 +511,15 @@ ItemCodeModal.propTypes = {
   plant: PropTypes.string, // 공장 정보
   worker: PropTypes.string, // 작업자 정보
   line: PropTypes.string, // 작업장 정보
+  themeHex: PropTypes.string, // 테마 색상
+  themeKey: PropTypes.string, // 테마 키
 };
 
-export default ItemCodeModal;
+function mapStateToProps(state) {
+  return {
+    themeHex: selectThemeHex(state),
+    themeKey: selectThemeKey(state)
+  };
+}
+
+export default connect(mapStateToProps)(ItemCodeModal);
