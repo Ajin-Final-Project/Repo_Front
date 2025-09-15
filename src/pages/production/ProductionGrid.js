@@ -843,7 +843,7 @@ class ProductionGrid extends Component {
         onClick={this.applyToday}
         sx={{ textTransform: "none", fontWeight: 700, borderColor: "white", color: "white" }}
       >
-        오늘
+        금일
       </Button>
 
       {/* 구분자 파이프(옵션) */}
