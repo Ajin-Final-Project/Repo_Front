@@ -207,11 +207,11 @@ class DowntimeGrid extends Component {
         downtimeName: item.downtimeName ?? item.비가동명 ?? '',
         downtimeMinutes,
         note: item.note ?? item.비고 ?? '',
-        shift: item.shift ?? item['주야구분'] ?? '',
-        productName: item.productName ?? item['품명'] ?? '',
-        itemType: item.itemType ?? item['품목구분'] ?? '',
-        categoryMain: item.categoryMain ?? item['대분류'] ?? '',
-        categorySub: item.categorySub ?? item['소분류'] ?? '',
+        // shift: item.shift ?? item['주야구분'] ?? '',
+        // productName: item.productName ?? item['품명'] ?? '',
+        // itemType: item.itemType ?? item['품목구분'] ?? '',
+        // categoryMain: item.categoryMain ?? item['대분류'] ?? '',
+        // categorySub: item.categorySub ?? item['소분류'] ?? '',
       };
     });
   };
@@ -282,16 +282,16 @@ class DowntimeGrid extends Component {
     { field: 'carModel', headerName: '차종', width: 120,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
 
-    { field: 'shift', headerName: '주야구분', width: 110,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'productName', headerName: '품명', width: 160,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'itemType', headerName: '품목구분', width: 120,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'categoryMain', headerName: '대분류', width: 120,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'categorySub', headerName: '소분류', width: 120,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    // { field: 'shift', headerName: '주야구분', width: 110,
+    //   headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    // { field: 'productName', headerName: '품명', width: 160,
+    //   headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    // { field: 'itemType', headerName: '품목구분', width: 120,
+    //   headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    // { field: 'categoryMain', headerName: '대분류', width: 120,
+    //   headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    // { field: 'categorySub', headerName: '소분류', width: 120,
+    //   headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
 
     { field: 'downtimeCode', headerName: '비가동코드', width: 140,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
@@ -341,14 +341,14 @@ class DowntimeGrid extends Component {
             variant="h4"
             gutterBottom
             sx={{
-              color: '#ffb300',
+              color: themeHex,
               fontWeight: 'bold',
               display: 'flex',
               alignItems: 'center',
               gap: 1,
             }}
           >
-            <FilterIcon />
+            <FilterIcon sx={{color: themeHex}}/>
             비가동 데이터 그리드
           </Typography>
           <Typography variant="body1" color="text.secondary">
@@ -631,7 +631,7 @@ class DowntimeGrid extends Component {
                 />
               </Grid>
 
-              {/* 추가 필터 */}
+              {/* 추가 필터
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
                   fullWidth
@@ -676,7 +676,7 @@ class DowntimeGrid extends Component {
                   onChange={(e) => this.handleFilterChange('categorySub', e.target.value)}
                   size="small"
                 />
-              </Grid>
+              </Grid> */}
             </Grid>
           </Collapse>
 

@@ -1,466 +1,436 @@
-// src/pages/DowntimeChart/components/FacilityItemDowntimeAggSection.jsx
+// ./components/FacilityItemDowntimeAggSection.jsx
 import React, { useMemo, useState } from "react";
 import {
   Box,
   Paper,
+  CardHeader,
   Typography,
-  Grid,
-  Divider,
-  Button,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
   CircularProgress,
   Alert,
-  TextField,
-  IconButton,
-  Tooltip,
-  Chip,
+  Button,
   LinearProgress,
-  ToggleButtonGroup,
-  ToggleButton,
-  MenuItem,
-  InputAdornment,
+  Chip,
+  Divider,
+  Stack,
+  Tooltip,
+  Grid,
 } from "@mui/material";
-import {
-  Edit as EditIcon,
-  Check as CheckIcon,
-  Close as CloseIcon,
-  Refresh as RefreshIcon,
-  Search as SearchIcon,
-  DensitySmall as DensitySmallIcon,
-  DensityMedium as DensityMediumIcon,
-} from "@mui/icons-material";
+import { alpha } from "@mui/material/styles";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import QueryStatsIcon from "@mui/icons-material/QueryStats";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
+import ListAltIcon from "@mui/icons-material/ListAlt";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 
+/** -------------------------------- 좌측 패널 (고정 높이 500px + 내부 스크롤) -------------------------------- */
 export default function FacilityItemDowntimeAggSection({
   data = [],
   loading = false,
   error = null,
   onRetry,
   themeHex = "#1976d2",
-  onChangeExpected,
+  onSelect,
 }) {
-  // ── 상태
-  const [localOverrides, setLocalOverrides] = useState({});
-  const [editing, setEditing] = useState(null); // 현재 편집중인 downtimeName
-  const [editValue, setEditValue] = useState("");
-  const [q, setQ] = useState(""); // 검색어
-  const [sortKey, setSortKey] = useState("severity"); // severity | count | expected | name
-  const [density, setDensity] = useState("standard"); // compact | standard
+  const [selected, setSelected] = useState(null);
 
-  // ── 데이터 머지 + 계산
-  const merged = useMemo(() => {
-    const arr = Array.isArray(data) ? data : [];
-    return arr.map((r) => {
-      const override = localOverrides[r.downtimeName];
-      const expected = override !== undefined && override !== null
-        ? Number(override)
-        : Number(r.expectedMinutes || 0);
-      const count = Number(r.count || 0);
-      const severity = count * expected; // 핵심: 심각도(총 분)
-      return { ...r, displayMinutes: expected, count, severity };
-    });
-  }, [data, localOverrides]);
-
-  const filtered = useMemo(() => {
-    const kw = q.trim().toLowerCase();
-    if (!kw) return merged;
-    return merged.filter((r) => (r.downtimeName || "").toLowerCase().includes(kw));
-  }, [merged, q]);
-
-  const sorted = useMemo(() => {
-    const arr = [...filtered];
-    const collator = new Intl.Collator("ko-KR");
-    arr.sort((a, b) => {
-      switch (sortKey) {
-        case "count": return b.count - a.count;
-        case "expected": return b.displayMinutes - a.displayMinutes;
-        case "name": return collator.compare(a.downtimeName || "", b.downtimeName || "");
-        case "severity":
-        default: return b.severity - a.severity;
-      }
-    });
-    return arr;
-  }, [filtered, sortKey]);
-
-  const totals = useMemo(() => {
-    const totalCount = sorted.reduce((s, r) => s + r.count, 0);
-    const totalMinutes = sorted.reduce((s, r) => s + r.severity, 0);
-    return { totalCount, totalMinutes };
-  }, [sorted]);
-
-  // Pareto (80%) 계산
-  const paretoInfo = useMemo(() => {
-    if (sorted.length === 0) return { topCount: 0, ratio: 0, isParetoSet: new Set() };
-    const total = sorted.reduce((s, r) => s + r.severity, 0);
-    if (total <= 0) return { topCount: 0, ratio: 0, isParetoSet: new Set() };
-
-    let cum = 0;
-    let idx = 0;
-    const isParetoSet = new Set();
-    while (idx < sorted.length && cum / total < 0.8) {
-      cum += sorted[idx].severity;
-      isParetoSet.add(sorted[idx].downtimeName);
-      idx += 1;
-    }
-    return { topCount: idx, ratio: Math.min(100, Math.round((cum / total) * 100)), isParetoSet };
-  }, [sorted]);
-
-  // ── 상태별 렌더
-  if (loading) {
-    return (
-      <Paper elevation={3} sx={{ p: 2, borderRadius: 2, minHeight: 220, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <CircularProgress size={60} sx={{ color: themeHex }} />
-      </Paper>
+  const rows = useMemo(() => {
+    const copy = Array.isArray(data) ? [...data] : [];
+    copy.sort(
+      (a, b) =>
+        (b.expectedMinutes || 0) - (a.expectedMinutes || 0) ||
+        String(a.downtimeName).localeCompare(String(b.downtimeName))
     );
-  }
+    return copy;
+  }, [data]);
 
-  if (error) {
-    return (
-      <Paper elevation={3} sx={{ p: 2, borderRadius: 2 }}>
-        <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
-        {onRetry && (
-          <Button variant="contained" onClick={onRetry} startIcon={<RefreshIcon />} sx={{ backgroundColor: themeHex }}>
-            다시 시도
-          </Button>
-        )}
-      </Paper>
-    );
-  }
+  const fmt = (n) =>
+    new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 0 }).format(n ?? 0);
+
+  const handleRowClick = (row) => {
+    setSelected(row.downtimeName);
+    if (typeof onSelect === "function") onSelect(row);
+  };
 
   return (
-    <Paper elevation={3} sx={{ p: 2, borderRadius: 2 }}>
-      {/* 헤더 & 컨트롤 */}
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap", mb: 1 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          설비 기준 · 제품별 비가동 발생 현황 & 예상 조치시간
-        </Typography>
+    <Paper
+      elevation={3}
+      sx={{
+        borderRadius: 2,
+        overflow: "hidden",
+        mb: 3,
+        display: "flex",
+        flexDirection: "column",
+        height: 500,            // ✅ 고정 높이
+      }}
+    >
+      <CardHeader
+        title={
+          <Typography variant="h6" sx={{ display: "flex", alignItems: "center", gap: 1, color: "white" }}>
+            비가동 목록
+          </Typography>
+        }
+        sx={{ backgroundColor: themeHex, color: "white", py: 1.5, flexShrink: 0 }}
+      />
 
-        <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
-          <TextField
-            size="small"
-            placeholder="비가동명 검색"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
-            }}
-          />
-          <TextField
-            size="small"
-            select
-            value={sortKey}
-            onChange={(e) => setSortKey(e.target.value)}
-            label="정렬"
-            sx={{ minWidth: 130 }}
-          >
-            <MenuItem value="severity">심각도(총 분)</MenuItem>
-            <MenuItem value="count">발생건수</MenuItem>
-            <MenuItem value="expected">예상분/건</MenuItem>
-            <MenuItem value="name">가나다</MenuItem>
-          </TextField>
-
-          <ToggleButtonGroup
-            value={density}
-            exclusive
-            onChange={(_, v) => v && setDensity(v)}
-            size="small"
-          >
-            <ToggleButton value="compact" aria-label="콤팩트">
-              <DensitySmallIcon fontSize="small" />
-            </ToggleButton>
-            <ToggleButton value="standard" aria-label="표준">
-              <DensityMediumIcon fontSize="small" />
-            </ToggleButton>
-          </ToggleButtonGroup>
+      {loading ? (
+        <Box sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 0 }}>
+          <CircularProgress sx={{ color: themeHex }} size={56} />
         </Box>
-      </Box>
-
-      {/* KPI 요약 */}
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-          gap: 1.5,
-          mb: 2,
-        }}
-      >
-        <KpiCard
-          title="총 발생건수"
-          value={`${totals.totalCount.toLocaleString("ko-KR")}건`}
-          themeHex={themeHex}
-        />
-        <KpiCard
-          title="총 예상 소요시간"
-          value={`${totals.totalMinutes.toLocaleString("ko-KR")}분`}
-          subtitle="(발생건수 × 예상분/건)"
-          themeHex={themeHex}
-        />
-        <KpiCard
-          title="Pareto 80% 누적"
-          value={`${paretoInfo.ratio}%`}
-          subtitle={`상위 ${paretoInfo.topCount}개 항목이 커버`}
-          themeHex={themeHex}
-        />
-      </Box>
-
-      <Divider sx={{ mb: 2 }} />
-
-      {/* 본문 그리드 */}
-      {sorted.length === 0 ? (
-        <Box sx={{ py: 6, textAlign: "center", color: "text.secondary" }}>
-          표시할 데이터가 없습니다.
+      ) : error ? (
+        <Box sx={{ p: 2, flex: 1, minHeight: 0, overflow: "auto" }}>
+          <Alert severity="error" sx={{ mb: 1.5 }}>{error}</Alert>
           {onRetry && (
-            <Box sx={{ mt: 2 }}>
-              <Button variant="outlined" startIcon={<RefreshIcon />} onClick={onRetry}>
-                다시 불러오기
-              </Button>
-            </Box>
+            <Button variant="contained" onClick={onRetry} sx={{ backgroundColor: themeHex }}>
+              다시 시도
+            </Button>
           )}
         </Box>
+      ) : rows.length === 0 ? (
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", p: 3, flex: 1, minHeight: 0, overflow: "auto" }}>
+          <Typography color="text.secondary">표시할 비가동 데이터가 없습니다.</Typography>
+        </Box>
       ) : (
-        <Grid container spacing={density === "compact" ? 1 : 1.5}>
-          {sorted.map((row, idx) => {
-            const isEditing = editing === row.downtimeName;
-            const total = totals.totalMinutes || 1;
-            const share = Math.max(0, Math.round((row.severity / total) * 100));
-            const medalColor =
-              idx === 0 ? "#FFD700" : idx === 1 ? "#C0C0C0" : idx === 2 ? "#CD7F32" : null;
-            const isPareto = paretoInfo.isParetoSet.has(row.downtimeName);
-
-            return (
-              <Grid
-                item
-                key={row.id ?? row.downtimeName ?? idx}
-                xs={12}
-                sm={6}
-                md={4}
-                lg={3}
-                xl={density === "compact" ? 2 : 3}
-              >
-                <Box
-                  sx={{
-                    p: density === "compact" ? 1.25 : 1.75,
-                    borderRadius: 2,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: density === "compact" ? 1 : 1.25,
-                    height: "100%",
-                    position: "relative",
-                    overflow: "hidden",
-                    "&:hover": {
-                      boxShadow: 3,
-                      transform: "translateY(-1px)",
-                      transition: "all .15s ease",
-                    },
-                    // 좌측 강조 바
-                    "&::before": {
-                      content: '""',
-                      position: "absolute",
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: 4,
-                      background: themeHex,
-                      opacity: 0.8,
-                    },
-                  }}
-                >
-                  {/* 상단 라벨 영역 */}
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-                    {/* 랭크/메달 */}
-                    <Box
-                      sx={{
-                        width: 26,
-                        height: 26,
-                        borderRadius: "50%",
-                        bgcolor: medalColor ? medalColor : "action.hover",
-                        color: medalColor ? "#222" : "text.secondary",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 13,
-                        fontWeight: 700,
-                      }}
-                      aria-label={`순위 ${idx + 1}`}
-                      title={`순위 ${idx + 1}`}
-                    >
-                      {idx + 1}
-                    </Box>
-
-                    <Tooltip title={row.downtimeName}>
-                      <Typography
-                        variant={density === "compact" ? "subtitle2" : "subtitle1"}
-                        sx={{
-                          fontWeight: 700,
-                          lineHeight: 1.2,
-                          flex: 1,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {row.downtimeName}
+        <Box sx={{ px: 2, pb: 2, flex: 1, minHeight: 0, overflow: "auto" /* ✅ 본문만 스크롤 */ }}>
+          <Table
+            size="medium"
+            aria-label="비가동명 및 조치예상 시간"
+            sx={{
+              borderCollapse: "separate",
+              borderSpacing: "0 8px",
+              "& thead th": { fontWeight: 700, color: "text.secondary", position: "sticky", top: 0, background: "background.paper", zIndex: 1 },
+              "& tbody tr": {
+                cursor: "pointer",
+                backgroundColor: "background.paper",
+                "&:hover": { backgroundColor: "action.hover" },
+              },
+            }}
+          >
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ pl: 2.5 }}>비가동명</TableCell>
+                <TableCell align="right" sx={{ pr: 2.5 }}>
+                  조치예상 시간(분/건)
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows.map((r) => {
+                const isSelected = selected === r.downtimeName;
+                return (
+                  <TableRow
+                    key={r.id ?? r.downtimeName}
+                    onClick={() => handleRowClick({ downtimeName: r.downtimeName, expectedMinutes: r.expectedMinutes })}
+                    selected={isSelected}
+                    sx={{
+                      "& td": { borderBottom: "none", py: 1.25 },
+                      outline: isSelected ? `2px solid ${themeHex}` : "none",
+                      outlineOffset: -1,
+                      borderRadius: 2,
+                    }}
+                  >
+                    <TableCell sx={{ pl: 2.5 }}>
+                      <Typography fontWeight={600} noWrap title={r.downtimeName}>
+                        {r.downtimeName ?? "-"}
                       </Typography>
-                    </Tooltip>
-
-                    {isPareto && (
-                      <Chip
-                        size="small"
-                        label="Pareto 80%"
-                        sx={{ bgcolor: "warning.light", color: "warning.contrastText" }}
-                      />
-                    )}
-                  </Box>
-
-                  {/* 핵심 수식 라인 */}
-                  <Typography variant="body2" color="text.secondary">
-                    발생 <b>{row.count.toLocaleString("ko-KR")}</b>건 × 예상{" "}
-                    <b>{row.displayMinutes.toLocaleString("ko-KR")}분/건</b> = 총{" "}
-                    <b>{row.severity.toLocaleString("ko-KR")}분</b>
-                  </Typography>
-
-                  {/* 진행바: 전체 대비 해당 항목 기여도 */}
-                  <Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={share}
-                      sx={{
-                        height: 8,
-                        borderRadius: 8,
-                        bgcolor: "action.hover",
-                        "& .MuiLinearProgress-bar": {
-                          background: themeHex,
-                          opacity: 0.5,
-                        },
-                      }}
-                      aria-label={`전체 대비 ${share}%`}
-                    />
-                    <Box sx={{ display: "flex", justifyContent: "space-between", mt: 0.5 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        전체 대비
-                      </Typography>
-                      <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                        {share}%
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  {/* 예상시간 편집 */}
-                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
-                    {!isEditing ? (
-                      <>
-                        <Typography variant="body2">
-                          예상{" "}
-                          <b>{Number(row.displayMinutes || 0).toLocaleString("ko-KR")}분/건</b>
-                        </Typography>
-                        <Tooltip title="예상시간 수정">
-                          <IconButton
-                            size="small"
-                            onClick={() => {
-                              setEditing(row.downtimeName);
-                              setEditValue(String(row.displayMinutes || 0));
-                            }}
-                            aria-label="예상시간 수정"
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </>
-                    ) : (
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, width: "100%" }}>
-                        <TextField
-                          size="small"
-                          type="number"
-                          label="예상분/건"
-                          sx={{ width: 130 }}
-                          value={editValue}
-                          autoFocus
-                          onChange={(e) => setEditValue(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") commitEdit(row.downtimeName, editValue);
-                            else if (e.key === "Escape") setEditing(null);
-                          }}
-                          inputProps={{ min: 0 }}
-                        />
-                        <Tooltip title="저장(Enter)">
-                          <IconButton
-                            color="primary"
-                            size="small"
-                            onClick={() => commitEdit(row.downtimeName, editValue)}
-                            aria-label="저장"
-                          >
-                            <CheckIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="취소(Esc)">
-                          <IconButton size="small" onClick={() => setEditing(null)} aria-label="취소">
-                            <CloseIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    )}
-                  </Box>
-                </Box>
-              </Grid>
-            );
-          })}
-        </Grid>
+                    </TableCell>
+                    <TableCell align="right" sx={{ pr: 2.5 }}>
+                      <Typography fontWeight={700}>{fmt(r.expectedMinutes)}</Typography>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Box>
       )}
     </Paper>
   );
-
-  function commitEdit(name, value) {
-    const minutes = Math.max(0, Math.round(Number(value || 0)));
-    setLocalOverrides((prev) => ({ ...prev, [name]: minutes }));
-    setEditing(null);
-    if (typeof onChangeExpected === "function") {
-      onChangeExpected(name, minutes);
-    }
-  }
 }
 
-// ── 작은 KPI 카드 컴포넌트
-function KpiCard({ title, value, subtitle, themeHex }) {
-  return (
+/** -------------------------------- 우측 패널 (고정 높이 500px + 내부 스크롤) -------------------------------- */
+export function RightDetailSection({
+  causeName,
+  data,
+  loading = false,
+  error = null,
+  onRetry,
+  themeHex = "#1976d2",
+  /** 라벨 고정폭(px) – 길어도 바 시작점이 동일 */
+  labelColumnWidth = 220,
+}) {
+  const fmt = (n) =>
+    new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 0 }).format(n ?? 0);
+
+  const share = Number(data?.share_pct ?? 0);
+  const ave = data?.actual_vs_expected ?? null;
+  const dist = Array.isArray(data?.actual_action_dist) ? data.actual_action_dist : [];
+  const counts = data?.counts ?? { cause: 0, total: 0 };
+
+  const diff = Number(ave?.diff_min ?? 0);
+  const diffIsPlus = diff > 0;
+  const diffIcon = diffIsPlus ? <TrendingUpIcon fontSize="small" /> : <TrendingDownIcon fontSize="small" />;
+
+  const progressBase = () => ({
+    height: 12,
+    borderRadius: 8,
+    backgroundColor: alpha(themeHex, 0.12),
+    "& .MuiLinearProgress-bar": {
+      borderRadius: 8,
+      backgroundColor: themeHex,
+    },
+  });
+
+  const SectionTitle = ({ icon, children, hint }) => (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+      <Box
+        sx={{
+          p: 0.75,
+          borderRadius: 1.5,
+          bgcolor: alpha(themeHex, 0.1),
+          color: themeHex,
+          display: "inline-flex",
+          flexShrink: 0,
+        }}
+      >
+        {icon}
+      </Box>
+      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+        {children}
+      </Typography>
+      {hint && (
+        <Tooltip title={hint} arrow>
+          <InfoOutlinedIcon sx={{ fontSize: 18, color: "text.disabled" }} />
+        </Tooltip>
+      )}
+    </Box>
+  );
+
+  const KpiCard = ({ icon, label, value, suffix }) => (
     <Paper
-      elevation={0}
+      variant="outlined"
       sx={{
-        p: 1.5,
+        p: 1.25,
         borderRadius: 2,
-        border: "1px solid",
-        borderColor: "divider",
         display: "flex",
-        flexDirection: "column",
-        gap: 0.5,
-        position: "relative",
-        overflow: "hidden",
-        "&::after": {
-          content: '""',
-          position: "absolute",
-          right: -24,
-          top: -24,
-          width: 80,
-          height: 80,
-          borderRadius: "50%",
-          background: themeHex,
-          opacity: 0.08,
-        },
+        alignItems: "center",
+        gap: 1.25,
+        borderColor: alpha(themeHex, 0.2),
       }}
     >
-      <Typography variant="overline" sx={{ color: "text.secondary", letterSpacing: 0.5 }}>
-        {title}
-      </Typography>
-      <Typography variant="h6" sx={{ fontWeight: 800 }}>
-        {value}
-      </Typography>
-      {subtitle && (
+      <Box
+        sx={{
+          p: 0.75,
+          borderRadius: 1.5,
+          bgcolor: alpha(themeHex, 0.08),
+          color: themeHex,
+          display: "inline-flex",
+          flexShrink: 0,
+        }}
+      >
+        {icon}
+      </Box>
+      <Box sx={{ minWidth: 0 }}>
         <Typography variant="caption" color="text.secondary">
-          {subtitle}
+          {label}
         </Typography>
+        <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.15 }}>
+          {value}
+          {suffix && (
+            <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 0.25 }}>
+              {suffix}
+            </Typography>
+          )}
+        </Typography>
+      </Box>
+    </Paper>
+  );
+
+  return (
+    <Paper
+      elevation={3}
+      sx={{
+        borderRadius: 2,
+        overflow: "hidden",
+        mb: 3,
+        display: "flex",
+        flexDirection: "column",
+        height: 500,            // ✅ 고정 높이
+      }}
+    >
+      <CardHeader
+        title={
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography variant="h6" sx={{ color: "white", fontWeight: 800 }}>
+              {causeName ? `비가동 상세 — ${causeName}` : "비가동 상세"}
+            </Typography>
+            {causeName && (
+              <Chip
+                size="small"
+                label="선택됨"
+                sx={{
+                  color: themeHex,
+                  bgcolor: "white",
+                  fontWeight: 700,
+                  height: 22,
+                }}
+              />
+            )}
+          </Box>
+        }
+        sx={{ backgroundColor: themeHex, color: "white", py: 1.5, flexShrink: 0 }}
+      />
+
+      {/* 상태 처리 */}
+      {loading ? (
+        <Box sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 0 }}>
+          <CircularProgress sx={{ color: themeHex }} size={56} />
+        </Box>
+      ) : error ? (
+        <Box sx={{ p: 2, flex: 1, minHeight: 0, overflow: "auto" }}>
+          <Alert severity="error" sx={{ mb: 1.5 }}>{error}</Alert>
+          {onRetry && (
+            <Button variant="contained" onClick={onRetry} sx={{ backgroundColor: themeHex }}>
+              다시 시도
+            </Button>
+          )}
+        </Box>
+      ) : !causeName ? (
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", p: 3, flex: 1, minHeight: 0, overflow: "auto" }}>
+          <Typography color="text.secondary">왼쪽에서 비가동명을 선택하면 상세가 표시됩니다.</Typography>
+        </Box>
+      ) : !data ? (
+        <Box sx={{ p: 3, flex: 1, minHeight: 0, overflow: "auto" }}>
+          <Typography color="text.secondary">데이터를 불러오는 중입니다…</Typography>
+        </Box>
+      ) : (
+        /* ✅ 본문만 스크롤 (높이는 500px 안에서 자동) */
+        <Box sx={{ p: 2.5, flex: 1, minHeight: 0, overflow: "auto" }}>
+          {/* 섹션 1: 전체 비중 + KPI 카드 */}
+          <SectionTitle
+            icon={<QueryStatsIcon fontSize="small" />}
+            hint="선택한 비가동이 전체 발생 건수에서 차지하는 비율"
+          >
+            전체 발생건수 대비 비율
+          </SectionTitle>
+
+          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1.5 }}>
+            <Box sx={{ minWidth: 92 }}>
+              <Typography variant="h4" sx={{ fontWeight: 900, lineHeight: 1 }}>
+                {share.toFixed(2)}%
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {fmt(counts.cause)} / {fmt(counts.total)} 건
+              </Typography>
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <LinearProgress
+                variant="determinate"
+                value={Math.max(0, Math.min(100, share))}
+                sx={progressBase()}
+              />
+            </Box>
+          </Stack>
+
+          <Divider sx={{ my: 2 }} />
+
+          <Grid container spacing={1.25} sx={{ mb: 2 }}>
+            <Grid item xs={6} sm={3}>
+              <KpiCard
+                icon={<AccessTimeIcon fontSize="small" />}
+                label="총 실제 비가동"
+                value={`${fmt(ave?.actual_total_min || 0)}`}
+                suffix="분"
+              />
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <KpiCard
+                icon={<AccessTimeIcon fontSize="small" />}
+                label="총 예상 비가동"
+                value={`${fmt(ave?.expected_total_min || 0)}`}
+                suffix="분"
+              />
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <KpiCard
+                icon={<CompareArrowsIcon fontSize="small" />}
+                label="차익(실제-예상)"
+                value={`${fmt(diff)}`}
+                suffix="분"
+              />
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <KpiCard
+                icon={<ListAltIcon fontSize="small" />}
+                label="예상(분/건)"
+                value={`${fmt(ave?.expected_min_per_event || 0)}`}
+              />
+            </Grid>
+          </Grid>
+
+          <Divider sx={{ my: 2 }} />
+
+          {/* 섹션 3: 실제 조치 분포 — 라벨 고정폭으로 바 길이/시작점 고정 */}
+          <SectionTitle
+            icon={<ListAltIcon fontSize="small" />}
+            hint="비고(조치) 카테고리별 건수와 소요 시간 분포"
+          >
+            실제 조치 분포
+          </SectionTitle>
+
+          {dist.length === 0 ? (
+            <Typography color="text.secondary">표시할 조치 분포가 없습니다.</Typography>
+          ) : (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.1 }}>
+              {(() => {
+                const maxMinutes = Math.max(...dist.map((d) => Number(d.minutes || 0)), 1);
+                return dist.map((r, idx) => {
+                  const minutes = Number(r.minutes || 0);
+                  const pct = Math.round((minutes / maxMinutes) * 100);
+                  return (
+                    <Box
+                      key={`${r.label}-${idx}`}
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: `${labelColumnWidth}px 1fr auto auto`,
+                        alignItems: "center",
+                        gap: 1,
+                      }}
+                    >
+                      <Tooltip title={r.label} arrow>
+                        <Typography
+                          noWrap
+                          sx={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis" }}
+                        >
+                          {r.label}
+                        </Typography>
+                      </Tooltip>
+
+                      <LinearProgress
+                        variant="determinate"
+                        value={pct}
+                        sx={{
+                          height: 8,
+                          borderRadius: 4,
+                          backgroundColor: alpha(themeHex, 0.12),
+                          "& .MuiLinearProgress-bar": { borderRadius: 4, backgroundColor: themeHex },
+                        }}
+                      />
+                      <Chip size="small" label={`${r.count} 건`} sx={{ bgcolor: alpha(themeHex, 0.08), color: themeHex }} />
+                      <Typography fontWeight={700}>{fmt(minutes)} 분</Typography>
+                    </Box>
+                  );
+                });
+              })()}
+            </Box>
+          )}
+        </Box>
       )}
     </Paper>
   );

@@ -39,19 +39,22 @@ import {
   CartesianGrid,
   Tooltip as ReTooltip,
   ResponsiveContainer,
-  Legend,
+  RadialBarChart,
+  RadialBar,
+  PolarAngleAxis,
 } from "recharts";
 
 /**
- * AJIN Realtime Dashboard - Frontend-Only Demo (v5.4)
- * ---------------------------------------------------
- * - STOP 시 타임라인 차트 "완전 정지" UX 구현
- *   1) RUN일 때만 Area 애니메이션 활성화, STOP이면 디밍 + 점선
- *   2) STOP이면 마지막 RUN 시점의 차트 스냅샷으로 렌더(뷰포트 고정)
- * - 기타: 정지 오버레이에 "정지 n분" 문구 표시
+ * AJIN Realtime Dashboard (v6.1)
+ * - 타일에서 ‘생산품목’ 제거
+ * - 타임라인 헤더 오른쪽에만 품번 표시 (심플/고정 배지)
+ * - 품번은 초기 1회만 설정 후 고정(랜덤 변경 제거)
+ * - 가동률 75% 하한(시뮬 + 표기) 유지, 초기 100% 시작
+ * - 타임라벨 HH:mm 예: 15:32, 실시간 1s 동기
+ * - 비가동: 24h 총 40~60건 수준 + 시작 20~40초는 조용
  */
 
-// ----------------------------- 팔레트 -----------------------------
+/* ----------------------------- 팔레트 ----------------------------- */
 const PAL = {
   pageBg: "#ffffff",
   panelBg: "#ffffff",
@@ -67,20 +70,28 @@ const PAL = {
   accentRed: "#ef4444",
 };
 
-// ----------------------------- 유틸 -----------------------------
+/* ----------------------------- 유틸 ----------------------------- */
 const pad2 = (n) => String(n).padStart(2, "0");
 const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
 const fmtDate = (d) =>
   `${d.getFullYear()}.${pad2(d.getMonth() + 1)}.${pad2(d.getDate())} (${WEEK[d.getDay()]})`;
 const fmtTime = (d) =>
   `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
-const pct = (num, den) => (den > 0 ? Math.round((num / den) * 100) : 0);
+const timeLabel = (ts) =>
+  new Date(ts).toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" });
 const colorAlpha = (hex, a = 0.15) => {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r},${g},${b},${a})`;
 };
+const pct = (num, den) => (den > 0 ? Math.round((num / den) * 100) : 0);
+
+function availabilityPctFor(runSec, stopSec) {
+  const total = runSec + stopSec;
+  if (total <= 0) return 100; // 시작은 항상 100%
+  return Math.round((runSec / total) * 100);
+}
 function availabilityColor(v) {
   if (v >= 85) return PAL.accentGreen;
   if (v >= 60) return "#06b6d4";
@@ -88,12 +99,11 @@ function availabilityColor(v) {
   return PAL.accentRed;
 }
 
-// -------------------------- 레이아웃 상수 ---------------------------
-const SHIFT_SECONDS = 8 * 3600;
-const STICKY_TOP = 78; // 좌측 타일 sticky 기준
-const TL_EVT_HEIGHT = 360; // 타임라인 고정 높이
+/* -------------------------- 레이아웃 상수 --------------------------- */
+const STICKY_TOP = 78;
+const TL_EVT_HEIGHT = 360;
 
-// -------------------------- 샘플/메타 ---------------------------
+/* -------------------------- 샘플/메타 --------------------------- */
 const DOWNTIME_SLA_MIN = {
   VACUUM_ERR: 8,
   QDC_CLAMP: 12,
@@ -102,17 +112,25 @@ const DOWNTIME_SLA_MIN = {
   CHANGE_DIE: 20,
 };
 
-// 라인별 모터 전류 상한/정상치
 const MOTOR_SPEC = {
   L1500: { upper: 220, nominal: 130 },
   L1200: { upper: 190, nominal: 115 },
   L1000: { upper: 170, nominal: 100 },
-  L800: { upper: 150, nominal: 90 },
+  L800:  { upper: 150, nominal: 90 },
 };
 
+/* ---------- 제품(품번) 목록 ---------- */
+const PRODUCT_CODES = [
+  "64312-S8000","65778-S9000","65788-S9000","71612-P6000","71622-CG000",
+  "71622-P6000","71652-P1000","71652-P1000","71652-P1000","64312-P7900",
+  "69221-T1000","77211-G9000","77221-GI100","66792-K2000","71412-AR000",
+  "71422-AR000","71446-AR000","71632-CG000","71632-CG300","71632-CG310",
+  "66722-N9000-F1","71652-AA000","71662-AA000","64312-CG930"
+];
+
 const INITIAL_LINES = [
-  { id: "L1500", name: "1500T", status: "RUN", plan: 1200, motor: MOTOR_SPEC.L1500 },
-  { id: "L1200", name: "1200T", status: "RUN", plan: 1100, motor: MOTOR_SPEC.L1200 },
+  { id: "L1500", name: "1500T", status: "RUN",  plan: 1200, motor: MOTOR_SPEC.L1500 },
+  { id: "L1200", name: "1200T", status: "RUN",  plan: 1100, motor: MOTOR_SPEC.L1200 },
   {
     id: "L1000",
     name: "1000T",
@@ -121,53 +139,136 @@ const INITIAL_LINES = [
     motor: MOTOR_SPEC.L1000,
     downtimeCode: { code: "SENSOR_ABN", label: "센서이상" },
   },
-  { id: "L800", name: "800T", status: "RUN", plan: 800, motor: MOTOR_SPEC.L800 },
+  // ★ 800T → 1200T PRO
+  { id: "L800",  name: "1200T PRO", status: "RUN", plan: 800, motor: MOTOR_SPEC.L800 },
 ];
 
 const DOWNTIME_POOL = [
   { code: "VACUUM_ERR", label: "진공에러" },
   { code: "QDC_CLAMP", label: "QDC 클램프" },
   { code: "SENSOR_ABN", label: "센서이상" },
-  { code: "MATERIAL", label: "자재공급" },
+  { code: "MATERIAL",  label: "자재공급" },
   { code: "CHANGE_DIE", label: "금형교체" },
 ];
 
-// -------------------------- 루트 ------------------------
+/* -------------------------- 부품/소모품 메타 -------------------------- */
+const DIE_ACCEL = 2.5;      // 금형 타수 가속
+const PART_DEMO_SPEED = 8;  // 데모용 사용량 가속(시간/타수)
+
+/* 각 부품 수명 */
+const PART_LIFE = {
+  DIE:         { unit: "타", label: "금형",     base: 120000 },
+  BEARING:     { unit: "h",  label: "베어링",   base: 2000   },
+  SENSOR:      { unit: "h",  label: "센서",     base: 1500   },
+  HYDRAULIC:   { unit: "h",  label: "유압 장치", base: 3000   },
+  VACUUM_CUP:  { unit: "h",  label: "흡착컵",   base: 400    },
+};
+
+/* -------------------------- 정책 상수 ------------------------ */
+const AVAILABILITY_MIN = 0.75; // 75% 하한(시뮬 + 표기)
+
+/* 초기 시드 생성 + 일부 비정상 강제 */
+function makePartSeeds(lines) {
+  const randPct = () => 0.1 + Math.random() * 0.3; // 10~40%
+  const seeds = {};
+  for (const l of lines) {
+    seeds[l.id] = {
+      DIE:        Math.round(PART_LIFE.DIE.base        * randPct()),
+      BEARING:   +(PART_LIFE.BEARING.base   * randPct()).toFixed(1),
+      SENSOR:    +(PART_LIFE.SENSOR.base    * randPct()).toFixed(1),
+      HYDRAULIC: +(PART_LIFE.HYDRAULIC.base * randPct()).toFixed(1),
+    };
+    forceNonNormalSeeds(seeds[l.id]);
+  }
+  return seeds;
+}
+function forceNonNormalSeeds(seedObj) {
+  const keys = ["DIE", "BEARING", "SENSOR", "HYDRAULIC"];
+  const count = Math.random() < 0.5 ? 1 : 2;
+  const picked = shuffle(keys).slice(0, count);
+  if (picked[0]) setSeedPct(seedObj, picked[0], randRange(0.88, 0.94)); // 교체 예정대
+  if (picked[1]) setSeedPct(seedObj, picked[1], randRange(0.62, 0.75)); // 점검 권장대
+}
+function setSeedPct(seedObj, key, p) {
+  const meta = PART_LIFE[key];
+  const base = meta.base;
+  if (!meta) return;
+  if (meta.unit === "타") seedObj[key] = Math.round(base * p);
+  else seedObj[key] = +(base * p).toFixed(1);
+}
+function randRange(min, max) { return min + Math.random() * (max - min); }
+function shuffle(a) { const x = a.slice(); for (let i=x.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[x[i]]=[x[j]]; [x[j]]=[x[i]]} return x; }
+
+/* -------------------------- 비가동 목표치 ------------------------ */
+const LINES_COUNT = INITIAL_LINES.length;
+/** 하루 40~60건 총량 기준 → 라인당 초당 기본 발생 확률 */
+const TARGET_DT_PER_DAY = Math.round(randRange(40, 60));
+const BASE_DT_PROB_PER_SEC_PER_LINE = (TARGET_DT_PER_DAY / 86400) / Math.max(1, LINES_COUNT);
+
+/* -------------------------- 루트 ------------------------ */
 export default function AjinDashboardDemo() {
   const [now, setNow] = useState(new Date());
   const [eventModalOpen, setEventModalOpen] = useState(false);
-  const [lines, setLines] = useState(() =>
-    INITIAL_LINES.map((l) => ({
+  const [lines, setLines] = useState(() => {
+    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const quiet = () => Date.now() + (20 + Math.floor(Math.random() * 20)) * 1000; // 20~40s
+    return INITIAL_LINES.map((l) => ({
       ...l,
+      currentProduct: pick(PRODUCT_CODES), // 최초 1회만 지정
       produced: 0,
       good: 0,
       defects: 0,
       motorAmp: 0,
-      runtimeSec: l.status === "RUN" ? 1 : 0,
-      stopSec: l.status !== "RUN" ? 1 : 0,
+      runtimeSec: 0, // 100%에서 시작
+      stopSec: 0,    // 100%에서 시작
       timeline: [], // [{ts, run, pcs, amp}]
-    }))
-  );
+      quietUntil: quiet(),
+      lastDowntimeTs: Date.now(),
+    }));
+  });
   const [events, setEvents] = useState([]);
   const [selectedLineId, setSelectedLineId] = useState("L1500");
+
+  const [partSeeds] = useState(() => makePartSeeds(INITIAL_LINES));
+  const dtProbRef = useRef(BASE_DT_PROB_PER_SEC_PER_LINE);
 
   useEffect(() => {
     const tick = setInterval(() => {
       setNow(new Date());
 
-      // 라인 상태/전류 시뮬레이션 + 이벤트 생성
       setLines((prev) => {
         const newEvents = [];
         const updated = prev.map((l) => {
-          // 상태 토글 확률
+          const nowMs = Date.now();
+
+          // --- 상태 토글(현실감 + RUN 쏠림, 조용 구간은 STOP 금지) ---
           let status = l.status;
-          if (Math.random() < 0.04) status = l.status === "RUN" ? "STOP" : "RUN";
+          if (nowMs < l.quietUntil) {
+            status = "RUN";
+          } else {
+            const flipToStop  = l.status === "RUN" ? 0.01 : 0.0; // RUN → STOP: 드물게
+            const flipToRun   = l.status !== "RUN" ? 0.08 : 0.0; // STOP → RUN: 빨리 회복
+            if (l.status === "RUN" && Math.random() < flipToStop) status = "STOP";
+            if (l.status !== "RUN" && Math.random() < flipToRun)  status = "RUN";
+          }
+
+          // --- 가동률 75% 하한 가버너(시뮬레이션) ---
+          let run = status === "RUN" ? 1 : 0;
+          if (run === 0) {
+            const willRun  = l.runtimeSec;
+            const willStop = l.stopSec + 1; // 이번 초 STOP이 추가될 상황
+            const projected = willRun / (willRun + willStop);
+            if (projected < AVAILABILITY_MIN) {
+              status = "RUN";
+              run = 1;
+            }
+          }
 
           // 생산/전류 시뮬
           const pcs = status === "RUN" ? (Math.random() < 0.4 ? 1 : 0) : 0;
           const amp = simulateAmp(status, l.motor);
 
-          // 전류 상한 경보 생성
+          // --- 모터 과전류 이벤트 ---
           if (status === "RUN") {
             const up = l.motor?.upper ?? 9999;
             if (amp > up * 1.2) {
@@ -177,28 +278,44 @@ export default function AjinDashboardDemo() {
             }
           }
 
-          // 랜덤 이벤트(예: 비가동 시작/불량 급증)
-          if (Math.random() < 0.08) {
-            const type = randPick(["downtime_start", "quality_spike"]);
-            const severity = randPick(["info", "warn", "critical"]);
-            const code = type === "downtime_start" ? sampleDowntime()?.code : undefined;
+          // --- 비가동(downtime_start) 확률: 하루 40~60건 수준 + 경과시간 램프업 ---
+          const sinceLast = (nowMs - (l.lastDowntimeTs || nowMs)) / 1000; // sec
+          const ramp = Math.min(10, 1 + sinceLast / 600); // 10분마다 서서히 증가 (최대 10배)
+          const pDowntime = (nowMs < l.quietUntil ? 0 : dtProbRef.current * ramp);
+          if (Math.random() < pDowntime) {
+            const code = sampleDowntime()?.code;
             newEvents.push({
-              ts: Date.now(),
+              ts: nowMs,
               lineId: l.id,
-              type,
+              type: "downtime_start",
               code,
-              severity,
-              message: renderEventMessage(type, l.name, code),
+              severity: randPick(["info", "warn", "critical"]) || "info",
+              message: renderEventMessage("downtime_start", l.name, code),
+            });
+            l = { ...l, lastDowntimeTs: nowMs };
+          }
+
+          // --- 품질 스파이크(소량 유지) ---
+          if (nowMs >= l.quietUntil && Math.random() < 0.002) {
+            newEvents.push({
+              ts: nowMs,
+              lineId: l.id,
+              type: "quality_spike",
+              severity: randPick(["info", "warn"]) || "info",
+              message: renderEventMessage("quality_spike", l.name),
             });
           }
 
-          const ts = Date.now();
-          const run = status === "RUN" ? 1 : 0;
+          // ★ 품번 고정 (랜덤 변경 제거)
+          const currentProduct = l.currentProduct;
+
+          const ts = nowMs;
           const timeline = [...l.timeline, { ts, run, pcs, amp }].slice(-600);
 
           return {
             ...l,
             status,
+            currentProduct,
             produced: l.produced + pcs,
             good: l.good + pcs - (pcs && Math.random() < 0.02 ? 1 : 0),
             defects: l.defects + (pcs && Math.random() < 0.02 ? 1 : 0),
@@ -207,6 +324,7 @@ export default function AjinDashboardDemo() {
             stopSec: l.stopSec + (run ? 0 : 1),
             timeline,
             downtimeCode: status !== "RUN" ? l.downtimeCode ?? sampleDowntime() : null,
+            lastDowntimeTs: l.lastDowntimeTs,
           };
         });
 
@@ -227,7 +345,7 @@ export default function AjinDashboardDemo() {
     const totGood = lines.reduce((a, b) => a + b.good, 0);
     const totRuntime = lines.reduce((a, b) => a + b.runtimeSec, 0);
     const totStop = lines.reduce((a, b) => a + b.stopSec, 0);
-    const availabilityPct = pct(totRuntime, totRuntime + totStop); // ▶︎ 투입시간-비가동시간 / 투입시간
+    const availabilityPct = Math.max(75, availabilityPctFor(totRuntime, totStop)); // 표기 하한 75%
     const qualityPct = totProd > 0 ? Math.round((totGood / totProd) * 100) : 100;
     const OEE = Math.round((availabilityPct / 100) * (qualityPct / 100) * 100);
     return {
@@ -248,7 +366,6 @@ export default function AjinDashboardDemo() {
 
   const onAcknowledge = (idx) => removeEvent(setEvents, idx);
 
-  // 모터 과전류 이벤트만 타임라인에 표시
   const motorEventsForSelected = useMemo(
     () =>
       events.filter(
@@ -261,7 +378,6 @@ export default function AjinDashboardDemo() {
     <Box sx={{ p: 2, bgcolor: PAL.pageBg, color: PAL.text }}>
       <StickyKPIBar now={now} kpi={kpi} events={events} onOpenEvents={() => setEventModalOpen(true)} />
 
-      {/* 이벤트 모달 */}
       <EventsModal
         open={eventModalOpen}
         onClose={() => setEventModalOpen(false)}
@@ -270,7 +386,7 @@ export default function AjinDashboardDemo() {
       />
 
       <Grid container spacing={2} alignItems="stretch" sx={{ mt: 0 }}>
-        {/* 좌측: 라인 타일(Sticky + 내부 스크롤) */}
+        {/* 좌측: 라인 타일 */}
         <Grid item xs={12} md={3} sx={{ alignSelf: "stretch" }}>
           <Paper
             elevation={0}
@@ -300,7 +416,7 @@ export default function AjinDashboardDemo() {
           </Paper>
         </Grid>
 
-        {/* 중앙: 타임라인 + 하단 MiddleBand */}
+        {/* 중앙: 타임라인 + MiddleBand */}
         <Grid item xs={12} md={9} sx={{ minWidth: 0 }}>
           <Paper
             elevation={0}
@@ -312,13 +428,7 @@ export default function AjinDashboardDemo() {
               bgcolor: PAL.panelBg,
             }}
           >
-            <Grid
-              container
-              spacing={2}
-              alignItems="stretch"
-              wrap="nowrap"
-              sx={{ overflowX: { xs: "auto", md: "visible" } }}
-            >
+            <Grid container spacing={2} alignItems="stretch" wrap="nowrap">
               <Grid item xs sx={{ minWidth: 0, display: "flex" }}>
                 <RunTimelinePanel
                   line={selectedLine}
@@ -329,9 +439,8 @@ export default function AjinDashboardDemo() {
               </Grid>
             </Grid>
 
-            {/* 2행: 부품/소모품 상태 모니터링 */}
-            <Box sx={{ mt: 2 }}>
-              <MiddleBand line={selectedLine} events={events} />
+            <Box sx={{ mt: 3 }}>
+              <MiddleBand line={selectedLine} events={events} seed={partSeeds[selectedLine.id]} />
             </Box>
           </Paper>
         </Grid>
@@ -340,7 +449,7 @@ export default function AjinDashboardDemo() {
   );
 }
 
-// ---------------------------- 컴포넌트 ---------------------------
+/* ---------------------------- 컴포넌트 --------------------------- */
 function StickyKPIBar({ now, kpi, events, onOpenEvents }) {
   const { count, sev } = useMemo(() => {
     const c = events.length;
@@ -354,7 +463,6 @@ function StickyKPIBar({ now, kpi, events, onOpenEvents }) {
     warn: "#f59e0b",
     info: PAL.subText,
   };
-
   const Icon = sev === "critical" ? BellActiveIcon : BellIcon;
 
   return (
@@ -411,9 +519,9 @@ function StickyKPIBar({ now, kpi, events, onOpenEvents }) {
   );
 }
 
-/* -------- 이벤트 모달 (리디자인) -------- */
+/* -------- 이벤트 모달 -------- */
 function EventsModal({ open, onClose, events, onAcknowledge }) {
-  const [filter, setFilter] = useState("all"); // all | critical | warn | info
+  const [filter, setFilter] = useState("all");
   const sevCounts = useMemo(() => {
     const base = { all: events.length, critical: 0, warn: 0, info: 0 };
     events.forEach((e) => {
@@ -458,7 +566,6 @@ function EventsModal({ open, onClose, events, onAcknowledge }) {
       </DialogTitle>
 
       <DialogContent sx={{ p: 1.25 }}>
-        {/* 필터 칩 */}
         <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
           <FilterChip label={`전체 ${sevCounts.all}`} active={filter === "all"} onClick={() => setFilter("all")} />
           <FilterChip
@@ -484,7 +591,6 @@ function EventsModal({ open, onClose, events, onAcknowledge }) {
           />
         </Stack>
 
-        {/* 리스트 */}
         <List dense sx={{ maxHeight: 520, overflowY: "auto", px: 0.5 }}>
           {list.length === 0 && (
             <Box sx={{ p: 2 }}>
@@ -512,10 +618,7 @@ function EventsModal({ open, onClose, events, onAcknowledge }) {
                     overflow: "hidden",
                   }}
                 >
-                  {/* 좌측 색 띠 */}
                   <Box sx={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 4, bgcolor: meta.color }} />
-
-                  {/* 아이콘 */}
                   <Box
                     sx={{
                       mt: 0.2,
@@ -529,8 +632,6 @@ function EventsModal({ open, onClose, events, onAcknowledge }) {
                   >
                     {meta.icon}
                   </Box>
-
-                  {/* 본문 */}
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Stack direction="row" alignItems="baseline" justifyContent="space-between">
                       <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
@@ -548,7 +649,6 @@ function EventsModal({ open, onClose, events, onAcknowledge }) {
                     </Stack>
                   </Box>
 
-                  {/* 액션 */}
                   <Tooltip title="조치 완료(목록에서 제거)">
                     <IconButton onClick={() => onAcknowledge(events.indexOf(e))} size="small" sx={{ ml: 0.5 }}>
                       <DoneIcon fontSize="small" />
@@ -575,10 +675,10 @@ function EventsModal({ open, onClose, events, onAcknowledge }) {
 /* ----- 알림 필터 칩 ----- */
 function FilterChip({ label, onClick, active, icon, color = "default" }) {
   const pal = {
-    default: { c: PAL.text, b: PAL.chipBg, bd: PAL.chipBorder },
-    info: { c: PAL.subText, b: "#eef2ff", bd: "#e0e7ff" },
-    warn: { c: "#b45309", b: "#fff7ed", bd: "#ffedd5" },
-    critical: { c: "#991b1b", b: "#fee2e2", bd: "#fecaca" },
+    default:  { c: PAL.text,    b: PAL.chipBg, bd: PAL.chipBorder },
+    info:     { c: PAL.subText, b: "#eef2ff",  bd: "#e0e7ff" },
+    warn:     { c: "#b45309",   b: "#fff7ed",  bd: "#ffedd5" },
+    critical: { c: "#991b1b",   b: "#fee2e2",  bd: "#fecaca" },
   }[color];
 
   return (
@@ -599,13 +699,14 @@ function FilterChip({ label, onClick, active, icon, color = "default" }) {
   );
 }
 
-/* -------- LineTileGrid (스파크라인 없이 카드형) -------- */
+/* -------- LineTileGrid -------- */
 function LineTileGrid({ lines, onSelect, selectedId }) {
   return (
     <Paper elevation={0} sx={{ p: 1.25, bgcolor: "#f8fafc", border: `1px solid ${PAL.border}`, borderRadius: 2 }}>
       <Stack spacing={1.5}>
         {lines.map((l) => {
-          const avail = pct(l.runtimeSec, l.runtimeSec + l.stopSec);
+          const rawAvail = availabilityPctFor(l.runtimeSec, l.stopSec);
+          const avail = Math.max(75, rawAvail); // 표기 하한
           const achv = pct(l.produced, l.plan);
           const col = availabilityColor(avail);
           const isSel = selectedId === l.id;
@@ -632,11 +733,11 @@ function LineTileGrid({ lines, onSelect, selectedId }) {
                 display: "flex",
                 flexDirection: "column",
                 p: 1.3,
-                minHeight: 140,
+                minHeight: 145,
               }}
             >
               {/* 상단: 라인명 + 상태 */}
-              <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1 }}>
+              <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.5 }}>
                 <Typography variant="h6" sx={{ fontWeight: 800 }}>
                   {l.name}
                 </Typography>
@@ -661,7 +762,10 @@ function LineTileGrid({ lines, onSelect, selectedId }) {
                 )}
               </Stack>
 
-              {/* 하단: 달성률 & 가동률 2단 레이아웃 */}
+              {/* NOTE: 타일에서 ‘생산품목’ 표기 제거 */}
+              <Box sx={{ height: 4 }} />
+
+              {/* KPI 바 */}
               <Grid container spacing={1} sx={{ mt: "auto" }}>
                 <Grid item xs={6}>
                   <Typography variant="body2" sx={{ color: PAL.subText, mb: 0.5 }}>
@@ -713,8 +817,8 @@ function LineTileGrid({ lines, onSelect, selectedId }) {
 
 function StatusBadge({ status }) {
   const map = {
-    RUN: { text: "RUN", color: PAL.accentGreen },
-    STOP: { text: "STOP", color: PAL.accentRed },
+    RUN:   { text: "RUN",   color: PAL.accentGreen },
+    STOP:  { text: "STOP",  color: PAL.accentRed },
     SETUP: { text: "SETUP", color: "#f59e0b" },
   };
   const s = map[status] || map.RUN;
@@ -736,37 +840,36 @@ function chipStyle() {
   };
 }
 
-function LinearWithLabel({ label, value }) {
+/* --------- 품번 배지 (심플/고정) --------- */
+function ProductBadge({ code }) {
   return (
-    <Box>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.3 }}>
-        <Typography variant="body2" sx={{ color: PAL.subText }}>
-          {label}
-        </Typography>
-        <Typography variant="body2">
-          <b>{value}%</b>
-        </Typography>
-      </Stack>
-      <LinearProgress
-        variant="determinate"
-        value={value}
-        sx={{
-          height: 6,
-          borderRadius: 1,
-          bgcolor: PAL.chipBg,
-          ".MuiLinearProgress-bar": {
-            bgcolor:
-              value >= 100 ? PAL.accentGreen : value >= 80 ? "#06b6d4" : PAL.accentBlue,
-          },
-        }}
-      />
-    </Box>
+    <Chip
+      label={`품번 ${code}`}
+      sx={{
+        bgcolor: "#f8fafc",
+        border: "1px solid #e2e8f0",
+        color: "#0f172a",
+        borderRadius: 1.5,
+        height: 36,
+        boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+        "& .MuiChip-label": {
+          px: 1.2,
+          fontSize: "0.98rem",
+          fontWeight: 700,
+          letterSpacing: "0.015em",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          fontVariantNumeric: "tabular-nums",
+        },
+        maxWidth: 340,
+      }}
+    />
   );
 }
 
-/* ---------------- 타임라인: 메인 모터 전류 시각화 + 밴딩/마커 + 범례 ---------------- */
+/* ---------------- 타임라인 ---------------- */
 function RunTimelinePanel({ line, data, fixedHeight = TL_EVT_HEIGHT, events = [] }) {
-  const availPct = useMemo(() => pct(line.runtimeSec, line.runtimeSec + line.stopSec), [line.runtimeSec, line.stopSec]);
   const stopMin = useMemo(() => continuousStopMinutes(data), [data]);
   const isStop = line.status !== "RUN";
   const isRunning = line.status === "RUN";
@@ -775,7 +878,7 @@ function RunTimelinePanel({ line, data, fixedHeight = TL_EVT_HEIGHT, events = []
 
   const ampUpper = line?.motor?.upper ?? 0;
 
-  // ✅ 마지막 RUN 차트 스냅샷 보관 → STOP이면 이 데이터로 렌더(뷰포트 고정)
+  // 마지막 RUN 데이터 스냅샷 보관 → STOP이면 마지막 RUN 스냅샷 렌더
   const lastRunDataRef = useRef(data);
   useEffect(() => {
     if (isRunning) lastRunDataRef.current = data;
@@ -783,8 +886,11 @@ function RunTimelinePanel({ line, data, fixedHeight = TL_EVT_HEIGHT, events = []
   const chartData = isRunning ? data : (lastRunDataRef.current || data);
 
   const exceedBands = useMemo(() => computeExceedBands(chartData, ampUpper), [chartData, ampUpper]);
-  const ampAgg = useMemo(() => ampStats(chartData, ampUpper), [chartData, ampUpper]);
-  const eventLabels = useMemo(() => events.map((e) => new Date(e.ts).toLocaleTimeString()), [events]);
+  const eventLabels = useMemo(() => events.map((e) => timeLabel(e.ts)), [events]);
+
+  // 과전류 즉시 피드백 여부(현재 시점)
+  const latest = chartData?.[chartData.length - 1];
+  const isOverNow = !!ampUpper && latest && latest.amp > ampUpper;
 
   return (
     <Card
@@ -797,33 +903,25 @@ function RunTimelinePanel({ line, data, fixedHeight = TL_EVT_HEIGHT, events = []
         border: `1px solid ${PAL.border}`,
         color: PAL.text,
         borderRadius: 2,
+        boxShadow: isOverNow ? `0 0 0 3px ${colorAlpha(PAL.accentRed,0.25)}` : "none",
+        animation: isOverNow ? "overPulse 1.2s ease-in-out infinite" : "none",
+        "@keyframes overPulse": {
+          "0%":   { boxShadow: `0 0 0 0 ${colorAlpha(PAL.accentRed,0.35)}` },
+          "70%":  { boxShadow: `0 0 0 10px ${colorAlpha(PAL.accentRed,0.0)}` },
+          "100%": { boxShadow: `0 0 0 0 ${colorAlpha(PAL.accentRed,0.0)}` },
+        },
       }}
     >
       <CardContent sx={{ display: "flex", flexDirection: "column", flex: 1 }}>
-        {/* 헤더 */}
+        {/* 헤더: 라인명 왼쪽, 품번 배지 오른쪽(한 곳만) */}
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
-          <Stack direction="row" spacing={1} alignItems="baseline">
-            <Typography variant="h6">
-              <b>{line.name}</b> · 타임라인
-            </Typography>
-            <Chip size="small" label={`가동률 ${availPct}%`} sx={chipStyle()} />
-            <Chip size="small" label={`메인 모터 상한 ${ampUpper}A`} sx={chipStyle()} />
-            <Chip size="small" label={`Max ${ampAgg.max}A`} sx={chipStyle()} />
-            {!!ampUpper && (
-              <Chip size="small" label={`초과 ${ampAgg.overSec}s · ${ampAgg.overCnt}건`} sx={chipStyle()} />
-            )}
-          </Stack>
-
-          {isStop && reason && (
-            <Chip
-              size="small"
-              label={`정지 · ${reason}${estMin ? ` · 예상 ${estMin}분` : ""}`}
-              sx={{ bgcolor: "#fee2e2", border: `1px solid ${PAL.accentRed}55`, color: PAL.accentRed }}
-            />
-          )}
+          <Typography variant="h6" sx={{ fontWeight: 800 }}>
+            {line.name} · 타임라인
+          </Typography>
+          {line.currentProduct && <ProductBadge code={line.currentProduct} />}
         </Stack>
 
-        {/* 미니 범례(시선 유도용) */}
+        {/* 수동 범례 */}
         <Stack direction="row" spacing={2} sx={{ mb: 0.5, color: PAL.subText }}>
           <Stack direction="row" spacing={0.75} alignItems="center">
             <Box sx={{ width: 14, height: 3, bgcolor: PAL.accentBlue, borderRadius: 1 }} />
@@ -837,6 +935,25 @@ function RunTimelinePanel({ line, data, fixedHeight = TL_EVT_HEIGHT, events = []
 
         {/* 차트 */}
         <Box sx={{ flex: 1, minHeight: 0, position: "relative" }}>
+          {/* 과전류 경고 배지 */}
+          {isOverNow && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 8, right: 8, zIndex: 2,
+                px: 1, py: 0.5,
+                borderRadius: 1.5,
+                bgcolor: "#fee2e2",
+                border: `1px solid ${PAL.accentRed}66`,
+                color: PAL.accentRed,
+                fontSize: 12,
+                fontWeight: 800,
+              }}
+            >
+              과전류 경고
+            </Box>
+          )}
+
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 34, right: 60, bottom: 8, left: 8 }}>
               <defs>
@@ -847,11 +964,7 @@ function RunTimelinePanel({ line, data, fixedHeight = TL_EVT_HEIGHT, events = []
               </defs>
 
               <CartesianGrid stroke={PAL.grid} strokeDasharray="3 3" />
-              <XAxis
-                dataKey="t"
-                tick={{ fill: PAL.subText, fontSize: 11 }}
-                tickFormatter={(v) => v.split(":").slice(0, 2).join(":")}
-              />
+              <XAxis dataKey="t" tick={{ fill: PAL.subText, fontSize: 11 }} />
               <YAxis yAxisId="run" domain={[0, 1]} hide />
               <YAxis
                 yAxisId="amp"
@@ -897,18 +1010,8 @@ function RunTimelinePanel({ line, data, fixedHeight = TL_EVT_HEIGHT, events = []
                 />
               ))}
 
-              {/* 범례 */}
-              <Legend
-                verticalAlign="top"
-                align="right"
-                height={20}
-                wrapperStyle={{ color: PAL.subText, fontSize: 12 }}
-              />
-
-              {/* 툴팁 */}
               <ReTooltip content={<ChartTooltipRunAmp ampUpper={ampUpper} />} />
 
-              {/* 시리즈 */}
               <Area
                 name="가동 상태 (RUN/STOP)"
                 yAxisId="run"
@@ -934,6 +1037,7 @@ function RunTimelinePanel({ line, data, fixedHeight = TL_EVT_HEIGHT, events = []
             </ComposedChart>
           </ResponsiveContainer>
 
+          {/* STOP 강조 오버레이 */}
           {isStop && (
             <Box
               sx={{
@@ -942,14 +1046,30 @@ function RunTimelinePanel({ line, data, fixedHeight = TL_EVT_HEIGHT, events = []
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                bgcolor: "#ef44440d",
-                border: `1px dashed ${PAL.accentRed}66`,
+                bgcolor: "#fff1f21a",
                 borderRadius: 2,
+                border: `2px dashed ${PAL.accentRed}`,
+                animation: "pulseBorder 1.8s ease-in-out infinite",
+                "@keyframes pulseBorder": {
+                  "0%":   { boxShadow: `0 0 0 0 ${colorAlpha(PAL.accentRed,0.35)}` },
+                  "70%":  { boxShadow: `0 0 0 12px ${colorAlpha(PAL.accentRed,0.0)}` },
+                  "100%": { boxShadow: `0 0 0 0 ${colorAlpha(PAL.accentRed,0.0)}` },
+                },
               }}
             >
-              <Typography variant="h5" sx={{ color: PAL.accentRed, fontWeight: 800 }}>
-                정지 {stopMin}분
-              </Typography>
+              <Stack alignItems="center" spacing={0.6}>
+                <Typography variant="h4" sx={{ fontWeight: 900, color: PAL.accentRed }}>
+                  ● 정지
+                </Typography>
+                {reason && (
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: PAL.accentRed }}>
+                    {reason}{estMin ? ` · 예상 ${estMin}분` : ""}
+                  </Typography>
+                )}
+                <Typography variant="body1" sx={{ color: PAL.subText }}>
+                  경과 {stopMin}분
+                </Typography>
+              </Stack>
             </Box>
           )}
         </Box>
@@ -972,21 +1092,15 @@ function ChartTooltipRunAmp({ active, payload, label, ampUpper }) {
 }
 
 /* ---------------- MiddleBand: 부품/소모품 ---------------- */
-const DIE_ACCEL = 2.5; // 금형 타수 가속(데모)
-
-const PART_LIFE = {
-  DIE: { unit: "타", base: 120000, label: "금형" },
-  BEARING: { unit: "h", base: 2000, label: "베어링" },
-  SENSOR: { unit: "h", base: 1500, label: "센서" },
-  HYDRAULIC: { unit: "h", base: 3000, label: "유압 장치" },
-  VACUUM_CUP: { unit: "h", base: 400, label: "흡착컵" },
-};
-
-function MiddleBand({ line, events }) {
+function MiddleBand({ line, events, seed }) {
   const now = Date.now();
   const DAY = 24 * 60 * 60 * 1000;
   const events24h = useMemo(() => events.filter((e) => now - e.ts <= DAY), [events, now]);
-  const parts = useMemo(() => computePartsForLine(line, events24h), [line, events24h]);
+
+  const parts = useMemo(
+    () => computePartsForLineWithSeed(line, events24h, seed),
+    [line, events24h, seed]
+  );
 
   return (
     <Card sx={{ bgcolor: PAL.panelBg, border: `1px solid ${PAL.border}`, color: PAL.text, borderRadius: 2, width: "100%" }}>
@@ -995,14 +1109,12 @@ function MiddleBand({ line, events }) {
           <Typography variant="subtitle1" noWrap title={`부품/소모품 상태 모니터링 · ${line?.name || ""}`} sx={{ maxWidth: "100%" }}>
             <b>부품/소모품 상태 모니터링</b> · {line?.name}
           </Typography>
-          <Chip size="small" label="최근 24h 기준" sx={chipStyle()} />
         </Stack>
 
-        {/* ✅ 반응형 그리드: 컨테이너 폭에 맞춰 자동 칼럼 수 조정 */}
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(205px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
             gap: 1.25,
             alignItems: "stretch",
           }}
@@ -1016,9 +1128,11 @@ function MiddleBand({ line, events }) {
   );
 }
 
-function computePartsForLine(line, events24h) {
-  if (!line) return [];
-  const usedH = (line.runtimeSec || 0) / 3600;
+function computePartsForLineWithSeed(line, events24h, seed) {
+  if (!line || !seed) return [];
+  const usedHBase = (line.runtimeSec || 0) / 3600;
+  const usedH = usedHBase * PART_DEMO_SPEED;
+
   const counts = { VACUUM_ERR: 0, QDC_CLAMP: 0, SENSOR_ABN: 0, MATERIAL: 0, CHANGE_DIE: 0 };
   events24h
     .filter((e) => e.lineId === line.id && e.type === "downtime_start")
@@ -1026,18 +1140,31 @@ function computePartsForLine(line, events24h) {
       if (counts[e.code] !== undefined) counts[e.code]++;
     });
 
-  const dieUsed = Math.round(line.produced * DIE_ACCEL);
-  const brUsedH = usedH + counts.MATERIAL * 0.5 + counts.CHANGE_DIE * 0.5;
-  const snUsedH = usedH + counts.SENSOR_ABN * 8 + counts.VACUUM_ERR * 2;
-  const hydUsedH = usedH + counts.QDC_CLAMP * 4;
-  const cupUsedH = usedH + counts.VACUUM_ERR * 5;
+  const dieUsed = Math.round(seed.DIE + PART_DEMO_SPEED * (line.produced * DIE_ACCEL));
+
+  const brUsedH  = +(
+    seed.BEARING +
+    usedH +
+    (counts.MATERIAL   * 0.5 + counts.CHANGE_DIE * 0.5) * PART_DEMO_SPEED / 6
+  ).toFixed(1);
+
+  const snUsedH  = +(
+    seed.SENSOR +
+    usedH +
+    (counts.SENSOR_ABN * 8   + counts.VACUUM_ERR * 2) * PART_DEMO_SPEED / 12
+  ).toFixed(1);
+
+  const hydUsedH = +(
+    seed.HYDRAULIC +
+    usedH +
+    (counts.QDC_CLAMP  * 4) * PART_DEMO_SPEED / 10
+  ).toFixed(1);
 
   const parts = [
-    makePart("DIE", PART_LIFE.DIE, dieUsed),
-    makePart("BEARING", PART_LIFE.BEARING, brUsedH),
-    makePart("SENSOR", PART_LIFE.SENSOR, snUsedH),
-    makePart("HYDRAULIC", PART_LIFE.HYDRAULIC, hydUsedH),
-    makePart("VACUUM_CUP", PART_LIFE.VACUUM_CUP, cupUsedH),
+    makePart("DIE",         PART_LIFE.DIE,        dieUsed),
+    makePart("BEARING",     PART_LIFE.BEARING,    brUsedH),
+    makePart("SENSOR",      PART_LIFE.SENSOR,     snUsedH),
+    makePart("HYDRAULIC",   PART_LIFE.HYDRAULIC,  hydUsedH),
   ];
   return parts;
 
@@ -1051,8 +1178,8 @@ function computePartsForLine(line, events24h) {
       name: meta.label,
       unit: meta.unit,
       base,
-      used: Math.max(0, Math.round(used)),
-      remain: Math.max(0, Math.round(remain)),
+      used: Math.max(0, (meta.unit === "타" ? Math.round(used) : +used.toFixed(1))),
+      remain: Math.max(0, (meta.unit === "타" ? Math.round(remain) : +remain.toFixed(1))),
       usagePct,
       status: stat.label,
       color: stat.color,
@@ -1068,9 +1195,16 @@ function statusByUsage(p) {
   if (p >= 60) return { label: "점검 권장", color: "#2563eb", bg: "#eff6ff", border: "#93c5fd" };
   return { label: "정상", color: PAL.text, bg: PAL.chipBg, border: PAL.chipBorder };
 }
-
-/* -------- 부품 카드 -------- */
+function gaugeColor(p) {
+  if (p >= 100) return PAL.accentRed;
+  if (p >= 85)  return "#f59e0b";
+  return PAL.accentBlue;
+}
 function PartHealthCard({ part }) {
+  const percent = part.usagePct;
+  const color   = gaugeColor(percent);
+  const track   = PAL.chipBg;
+
   return (
     <Paper
       elevation={0}
@@ -1086,7 +1220,7 @@ function PartHealthCard({ part }) {
       }}
     >
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.25 }}>
-        <Typography variant="body2">
+        <Typography variant="body2" noWrap>
           <b>{part.name}</b>
         </Typography>
         <Chip
@@ -1096,100 +1230,79 @@ function PartHealthCard({ part }) {
         />
       </Stack>
 
-      <Typography variant="caption" sx={{ color: PAL.subText }}>
-        사용 {part.used.toLocaleString()}
-        {part.unit} <span style={{ color: "#9CA3AF" }}>/</span> 수명 {part.base.toLocaleString()}
-        {part.unit}
-      </Typography>
-      <LinearProgress
-        variant="determinate"
-        value={part.usagePct}
-        sx={{
-          height: 8,
-          borderRadius: 1,
-          bgcolor: PAL.chipBg,
-          ".MuiLinearProgress-bar": {
-            bgcolor: part.usagePct >= 100 ? PAL.accentRed : part.usagePct >= 85 ? "#f59e0b" : PAL.accentBlue,
-          },
-        }}
-      />
+      <Box sx={{ position: "relative", width: "100%", aspectRatio: "2 / 1" }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <RadialBarChart
+            innerRadius="70%"
+            outerRadius="100%"
+            startAngle={180}
+            endAngle={0}
+            data={[{ name: part.name, value: percent }]}
+          >
+            <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+            <RadialBar
+              dataKey="value"
+              cornerRadius={10}
+              background={{ fill: track }}
+              fill={color}
+            />
+          </RadialBarChart>
+        </ResponsiveContainer>
 
-      <Typography variant="caption" sx={{ color: PAL.subText, mt: 0.2 }}>
-        남은 수명: <b>{part.remain.toLocaleString()}{part.unit}</b>
-      </Typography>
-      <LinearProgress
-        variant="determinate"
-        value={Math.max(0, 100 - part.usagePct)}
-        sx={{
-          height: 6,
-          borderRadius: 1,
-          bgcolor: "#F9FAFB",
-          ".MuiLinearProgress-bar": { bgcolor: "#D1D5DB" },
-          mt: 0.4,
-        }}
-      />
+        <Box
+          sx={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: "6%",
+            textAlign: "center",
+            px: 1,
+          }}
+        >
+          <Typography variant="h5" sx={{ fontWeight: 900, lineHeight: 1, color }}>
+            {percent}%
+          </Typography>
+          <Typography variant="caption" sx={{ color: PAL.subText }}>
+            사용 {part.used.toLocaleString()}{part.unit}
+            <span style={{ color: "#9CA3AF" }}> / </span>
+            수명 {part.base.toLocaleString()}{part.unit}
+          </Typography>
+        </Box>
+      </Box>
     </Paper>
   );
 }
 
-// ---------------------------- 헬퍼 ----------------------------
+/* ---------------------------- 헬퍼 ---------------------------- */
 function toRechartsData(arr) {
   return arr.map((x) => ({
-    t: new Date(x.ts).toLocaleTimeString(),
+    t: timeLabel(x.ts), // HH:mm
     run: x.run,
     pcs: x.pcs,
     amp: x.amp ?? 0,
   }));
 }
-function rollingAvailability(data) {
-  if (!data || data.length === 0) return 0;
-  const run = data.reduce((a, b) => a + (b.run ? 1 : 0), 0);
-  return Math.round((run / data.length) * 100);
-}
-function windowAvailability(data, sec = 60) {
-  if (!data || data.length === 0) return 0;
-  const take = data.slice(-sec);
-  const run = take.reduce((a, b) => a + (b.run ? 1 : 0), 0);
-  return Math.round((run / take.length) * 100);
-}
 function continuousStopMinutes(data) {
-  let i = data.length - 1,
-    sec = 0;
+  let i = data.length - 1, sec = 0;
   while (i >= 0 && data[i].run === 0) {
     sec++;
     i--;
   }
   return Math.floor(sec / 60);
 }
-function sampleDowntime() {
-  return randPick(DOWNTIME_POOL);
-}
-function randPick(arr) {
-  if (!arr || arr.length === 0) return null;
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-function sevColor(s) {
-  return s === "critical" ? PAL.accentRed : s === "warn" ? "#f59e0b" : PAL.subText;
-}
-function removeEvent(setter, idx) {
-  setter((prev) => prev.filter((_, i) => i !== idx));
-}
-
+function sampleDowntime() { return randPick(DOWNTIME_POOL); }
+function randPick(arr) { if (!arr || arr.length === 0) return null; return arr[Math.floor(Math.random() * arr.length)]; }
+function removeEvent(setter, idx) { setter((prev) => prev.filter((_, i) => i !== idx)); }
 function renderEventMessage(type, lineName, code) {
   switch (type) {
-    case "downtime_start":
-      return `[${lineName}] 비가동 시작 · ${code || "원인확인"}`;
-    case "quality_spike":
-      return `[${lineName}] 불량 급증 감지`;
-    case "motor_overcurrent":
-      return `[${lineName}] 메인 모터 전류 상한 초과`;
-    default:
-      return `[${lineName}] 이벤트`;
+    case "downtime_start": return `[${lineName}] 비가동 시작 · ${code || "원인확인"}`;
+    case "quality_spike":  return `[${lineName}] 불량 급증 감지`;
+    case "motor_overcurrent": return `[${lineName}] 메인 모터 전류 상한 초과`;
+    default: return `[${lineName}] 이벤트`;
   }
 }
-
 function makeEvent(type, lineId, severity, extra = {}) {
-  const nameMap = { L1500: "1500T", L1200: "1200T", L1000: "1000T", L800: "800T" };
+  const nameMap = { L1500: "1500T", L1200: "1200T", L1000: "1000T", L800: "1200T PRO" };
   const lineName = nameMap[lineId] || lineId;
   const msg =
     type === "motor_overcurrent" && extra.amp && extra.up
@@ -1197,19 +1310,16 @@ function makeEvent(type, lineId, severity, extra = {}) {
       : renderEventMessage(type, lineName, extra.code);
   return { ts: Date.now(), lineId, type, severity: severity || "info", code: extra.code, message: msg };
 }
-
 function simulateAmp(status, motor) {
   const up = motor?.upper ?? 180;
   const nom = motor?.nominal ?? 110;
-  if (status !== "RUN") return Math.max(0, 3 + Math.random() * 5); // 정지 시 거의 0 근처
+  if (status !== "RUN") return Math.max(0, 3 + Math.random() * 5);
   const jitter = (Math.random() - 0.5) * 0.25; // ±12.5%
   let amp = nom * (1 + jitter);
   if (Math.random() < 0.06) amp *= 1.25; // 간헐 스파이크
-  if (Math.random() < 0.02) amp *= 1.45; // 드문 큰 스파이크
+  if (Math.random() < 0.02) amp *= 1.45; // 큰 스파이크
   return Math.min(amp, up * 1.35);
 }
-
-/* ----- 전류 상한 초과 밴드/요약 계산 ----- */
 function computeExceedBands(data, upper) {
   if (!upper || !data?.length) return [];
   const bands = [];
@@ -1225,23 +1335,6 @@ function computeExceedBands(data, upper) {
   if (s !== null) bands.push({ start: data[s].t, end: data[data.length - 1].t });
   return bands;
 }
-function ampStats(data, upper) {
-  if (!data?.length) return { max: 0, overSec: 0, overCnt: 0 };
-  let max = 0,
-    overSec = 0,
-    overCnt = 0,
-    prevOver = false;
-  for (const d of data) {
-    if (d.amp > max) max = d.amp;
-    const over = upper && d.amp > upper;
-    if (over) overSec += 1; // 1s 샘플 가정
-    if (over && !prevOver) overCnt += 1;
-    prevOver = over;
-  }
-  return { max: Math.round(max), overSec, overCnt };
-}
-
-/* ----- 알림용 헬퍼 ----- */
 function timeAgo(ts) {
   const diff = Math.max(0, Date.now() - ts);
   const s = Math.floor(diff / 1000);
@@ -1274,6 +1367,6 @@ function typeKorean(t) {
   );
 }
 function formatLineName(id) {
-  const nameMap = { L1500: "1500T", L1200: "1200T", L1000: "1000T", L800: "800T" };
+  const nameMap = { L1500: "1500T", L1200: "1200T", L1000: "1000T", L800: "1200T PRO" };
   return nameMap[id] || id;
 }
