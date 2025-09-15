@@ -2058,15 +2058,16 @@ class Sidebar extends React.Component {
     // 아이콘 전용 항목(접힘일 때만 사용)
     const items = [
       { key: "dashboard", label: "실시간 관제 시스템", link: "/app/dashboard", iconKey: "dashboard" },
-      { key: "production", label: "생산관리 시스템", link: "/app/production/chart", iconKey: "production" },
-      { key: "mold", label: "금형관리 시스템", link: "/app/mold/chart", iconKey: "mold" },
-      { key: "defect", label: "불량공정 시스템", link: "/app/defect/chart", iconKey: "defect" },
-      { key: "downtime", label: "비가동 통계 시스템", link: "/app/downtime/chart", iconKey: "downtime" },
-      { key: "inspection", label: "초/중/종품 검사 시스템", link: "/app/inspection/chart", iconKey: "inspection" },
-      { key: "admin", label: "관리자 시스템", link: "/admin/users", iconKey: "admin" },
       { key: "ai", label: "AI 분석 시스템", link: "/app/ai/product-forecast", iconKey: "ai" },
-      { key: "email", label: "Email", link: "/app/email", iconKey: "email", badge: 9 },
-      { key: "documentation", label: "Documentation", link: "/documentation", iconKey: "documentation", target: "_blank" },
+      { key: "production", label: "생산관리 시스템", link: "/app/production/chart", iconKey: "production" },
+      { key: "downtime", label: "비가동 통계 시스템", link: "/app/downtime/chart", iconKey: "downtime" },
+      { key: "mold", label: "금형관리 시스템", link: "/app/mold/chart", iconKey: "mold" },
+      { key: "inspection", label: "초/중/종품 검사 시스템", link: "/app/inspection/chart", iconKey: "inspection" },
+      { key: "defect", label: "불량공정 시스템", link: "/app/defect/chart", iconKey: "defect" },
+      { key: "admin", label: "관리자 시스템", link: "/admin/users", iconKey: "admin" },
+      
+      // { key: "email", label: "Email", link: "/app/email", iconKey: "email", badge: 9 },
+      // { key: "documentation", label: "Documentation", link: "/documentation", iconKey: "documentation", target: "_blank" },
     ];
 
     const bottomItems = [
