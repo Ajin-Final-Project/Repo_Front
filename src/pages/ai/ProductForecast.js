@@ -203,7 +203,10 @@ export default function ProductForecast() {
 
   // ✅ 초 → HH:MM 변환
   const secondsToHHMM = (sec) => {
-    if (sec === null || sec === undefined) return "";
+    if (sec == null || isNaN(sec) || sec === undefined) {
+      console.warn(`Invalid seconds value: ${sec}`); // 디버깅 로그 추가
+      return null; // 빈 문자열 대신 null 반환
+    }
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
@@ -240,20 +243,42 @@ export default function ProductForecast() {
 
   const allShiftTimes = [...dayShiftTimes, ...nightShiftTimes];
 
-  // 전체 시간대 기준으로 그래프용 데이터 구성
-  const visibleTimeData = allShiftTimes.map(([start, end], idx) => {
-    const label = `${start}~${end}`;
-    const found = hourlyData.find(
-      (d) => secondsToHHMM(d.slot_start) === start && secondsToHHMM(d.slot_end) === end
-    );
-    const isLast = start === "07:00" && end === "07:50";
 
-    return {
-      time: label,
-      actual: isLast ? null : (found ? found.actual : null),
-      predicted: found ? found.prediction : null,
-    };
-  });
+  // 전체 시간대 기준으로 그래프용 데이터 구성
+  const visibleTimeData = allShiftTimes
+    .map(([start, end], idx) => {
+      const label = `${start}~${end}`;
+      const found = hourlyData.find((d) => {
+        const startTime = secondsToHHMM(d.slot_start);
+        const endTime = secondsToHHMM(d.slot_end);
+        // 유효하지 않은 시간대는 제외
+        if (!startTime || !endTime) {
+          console.warn(`Invalid time slot in hourlyData:`, d); // 디버깅 로그 추가
+          return false;
+        }
+        return startTime === start && endTime === end;
+      });
+      const isLast = start === "07:00" && end === "07:50";
+
+      return {
+        time: label,
+        actual: isLast ? null : (found && found.actual != null ? found.actual : null),
+        predicted: found && found.prediction != null ? found.prediction : null,
+      };
+    })
+    .filter((item) => item.time && item.time !== "null~null");
+
+
+  // 📌 Y축 범위 계산
+  const allValues = visibleTimeData.flatMap(d => [d.actual, d.predicted].filter(v => v != null));
+  const minVal = Math.min(...allValues);
+  const maxVal = Math.max(...allValues);
+
+  // 여유 범위 (±%)
+  const margin = (maxVal - minVal);
+  const yMin = Math.max(0, minVal - margin);
+  const yMax = maxVal + margin;
+
 
   // ✅ 일별 그래프 데이터
   const baseDate = filters.date;
@@ -272,7 +297,7 @@ export default function ProductForecast() {
   }));
 
   // ✅ DataGrid 행 데이터
-  const tableRows = dailyData.map((d, idx) => {
+  let tableRows = dailyData.map((d, idx) => {
     const isFuture = d.date > baseDate;
     let label = "과거";
     if (d.date === baseDate) label = "오늘";
@@ -285,10 +310,18 @@ export default function ProductForecast() {
       predicted: d.pred != null ? Number(d.pred).toFixed(2) : "-",
       actual: isFuture ? "-" : (d.actual != null ? Math.round(d.actual) : "-"),
       diff: isFuture ? "-" : (d.error != null ? Number(d.error).toFixed(2) : "-"),
-      absDiff: isFuture ? "-" : (d.abs_error != null ? Number(d.abs_error).toFixed(2) : "-"),
+      //absDiff: isFuture ? "-" : (d.abs_error != null ? Number(d.abs_error).toFixed(2) : "-"),
       acc: isFuture ? "-" : (d.pct_error != null ? `${(100 - d.pct_error).toFixed(2)}%` : "-"),
       uph: isFuture ? "-" : (d.hourly_avg != null ? Number(d.hourly_avg).toFixed(2) : "-"),
     };
+  });
+
+  // ✅ 미래 > 오늘 > 과거 순으로 정렬
+  tableRows = tableRows.sort((a, b) => {
+    if (a.date > baseDate && b.date <= baseDate) return -1; // 미래 먼저
+    if (a.date === baseDate && b.date < baseDate) return -1; // 오늘은 과거보다 위
+    if (a.date < baseDate && b.date >= baseDate) return 1;  // 과거는 맨 아래
+    return a.date.localeCompare(b.date); // 같은 그룹 내 날짜순 정렬
   });
 
   // ✅ DataGrid 컬럼 정의
@@ -298,7 +331,7 @@ export default function ProductForecast() {
     { field: "predicted", headerName: "예측 생산량", flex: 1 },
     { field: "actual", headerName: "실제 생산량", flex: 1 },
     { field: "diff", headerName: "오차", flex: 1 },
-    { field: "absDiff", headerName: "절대오차", flex: 1 },
+    // { field: "absDiff", headerName: "절대오차", flex: 1 },
     { field: "acc", headerName: "예측 정확도", flex: 1 },
     { field: "uph", headerName: "시간당 생산량", flex: 1 },
   ];
@@ -482,12 +515,55 @@ export default function ProductForecast() {
                 </div>
               </Box>
               <div style={{ height: 530, width: "100%", marginTop: 16 }}>
-                <DataGrid rows={tableRows} columns={tableColumns} pageSize={5} autoHeight />
+                {/* <DataGrid rows={tableRows} columns={tableColumns} pageSize={5} autoHeight 
+                initialState={{
+                  pagination: {
+                    paginationModel: { pageSize: 10 },
+                  },
+                }}
+                pageSizeOptions={[5, 10, 20]}/> */}
+                {/* <DataGrid
+                  rows={tableRows}
+                  columns={tableColumns}
+                  autoHeight
+                  initialState={{
+                    pagination: {
+                      paginationModel: { pageSize: 10 },
+                    },
+                  }}
+                  pageSizeOptions={[5, 10, 20]}
+                  getRowClassName={(params) =>
+                    params.row.type === "내일" ? "highlightTomorrow" : ""
+                  }
+                /> */}
+                <DataGrid
+                  rows={tableRows}
+                  columns={tableColumns}
+                  autoHeight
+                  initialState={{
+                    pagination: {
+                      paginationModel: { pageSize: 10 },
+                    },
+                  }}
+                  pageSizeOptions={[5, 10, 20]}
+                  getRowClassName={(params) =>
+                    params.row.type === "내일" ? "highlightTomorrow" : ""
+                  }
+                  sx={{
+                    "& .highlightTomorrow": {
+                      backgroundColor: `${themeHex}20`, // themeHex + alpha
+                      fontWeight: "bold",
+                      color: themeHex,
+                    },
+                  }}
+                />
               </div>
             </>
           )}
         </CardContent>
       </Card>
+
+
 
       {/* 2) 시간별 생산량 (그래프 + KPI 영역) */}
       <Grid container spacing={2} marginTop={2} marginBottom={3}>
@@ -510,23 +586,48 @@ export default function ProductForecast() {
                   </Button>
                 </Box>
               ) : (
-                <div style={{ width: "100%", height: 300 }}>
-                  <ResponsiveContainer>
-                    <ComposedChart data={visibleTimeData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="time" />
-                      <YAxis domain={['dataMin - 10', 'dataMax + 10']} />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend verticalAlign="top" align="right" wrapperStyle={{ marginBottom: 10 }} />
-                      <Line type="monotone" dataKey="actual" stroke={themeHex} strokeWidth={3} name="실제" />
-                      <Scatter dataKey="predicted" fill="#1E3A8A" name="예측" />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
+                // ✅ 기존 차트 렌더링 코드를 아래로 대체
+                <>
+                  {visibleTimeData.length === 0 && !loading.hourly && !error.hourly ? (
+                    <Typography variant="body1" color="text.secondary">
+                      표시할 시간별 데이터가 없습니다.
+                    </Typography>
+                  ) : (
+                    <div style={{ width: "100%", height: 300 }}>
+
+                      <ResponsiveContainer>
+                        <ComposedChart data={visibleTimeData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="time" />
+                          <YAxis domain={[yMin, yMax]} /> {/* ✅ 동적 Y축 범위 */}
+                          <Tooltip content={<CustomTooltip />} />
+                          <Legend verticalAlign="top" align="right" wrapperStyle={{ marginBottom: 10 }} />
+                          <Line type="monotone" dataKey="actual" stroke={themeHex} strokeWidth={3} name="실제" />
+                          <Scatter dataKey="predicted" fill="#1E3A8A" name="예측" />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+
+                      
+                      {/* <ResponsiveContainer>
+                        <ComposedChart data={visibleTimeData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="time" />
+                          <YAxis domain={['dataMin - 10', 'dataMax + 10']} />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Legend verticalAlign="top" align="right" wrapperStyle={{ marginBottom: 10 }} />
+                          <Line type="monotone" dataKey="actual" stroke={themeHex} strokeWidth={3} name="실제" />
+                          <Scatter dataKey="predicted" fill="#1E3A8A" name="예측" />
+                        </ComposedChart>
+                      </ResponsiveContainer> */}
+
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
         </Grid>
+
 
         {/* 우측 KPI 그룹 */}
         <Grid item xs={12} md={4}>
@@ -651,33 +752,72 @@ export default function ProductForecast() {
           </Typography>
           <Box sx={{ display: { xs: "none", md: "block" } }}>
             <TableContainer component={Paper}>
-              <Table>
+              <Table sx={{ tableLayout: "fixed", width: "100%" }}> {/* ✅ table-layout: fixed로 열 너비 균등화 */}
                 <TableHead>
                   <TableRow>
-                    <TableCell align="center" colSpan={2} sx={{ backgroundColor: "#1E3A8A", color: "white" }}>
-                      주간근무
+                    <TableCell align="center" colSpan={2} sx={{ backgroundColor: "#f5f5f520", fontWeight: "bold",
+                      borderRight: `2px solid ${themeHex}`,}}>
+                      🌞 주간근무
                     </TableCell>
-                    <TableCell align="center" colSpan={2} sx={{ backgroundColor: "#64748B", color: "white" }}>
-                      야간근무
+                    <TableCell align="center" colSpan={2} sx={{ backgroundColor: "#f5f5f520", fontWeight: "bold" }}> {/* ✅ 중립 배경색 */}
+                      🌙 야간근무
                     </TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell>시간</TableCell>
-                    <TableCell>실적</TableCell>
-                    <TableCell>시간</TableCell>
-                    <TableCell>실적</TableCell>
+                    <TableCell sx={{ width: "25%" }}>시간</TableCell> {/* ✅ 고정 너비 25% */}
+                    <TableCell sx={{ width: "25%", borderRight: `2px solid ${themeHex}` }}>실적</TableCell> {/* ✅ 고정 너비 및 세로 선 */}
+                    <TableCell sx={{ width: "25%" }}>시간</TableCell>
+                    <TableCell sx={{ width: "25%" }}>실적</TableCell>
                   </TableRow>
                 </TableHead>
+
                 <TableBody>
-                  {dayShift.map((d, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell>{d.start} – {d.end}</TableCell>
-                      <TableCell>{d.actual !== "-" ? d.actual : "데이터 없음"}</TableCell>
-                      <TableCell>{nightShift[idx].start} – {nightShift[idx].end}</TableCell>
-                      <TableCell>{nightShift[idx].actual !== "-" ? nightShift[idx].actual : "데이터 없음"}</TableCell>
-                    </TableRow>
-                  ))}
+                  {dayShift.map((d, idx) => {
+                    const isTargetTime = d.start === "07:00" && d.end === "07:50"; // ✅ 강조 조건
+
+                    return (
+                      <TableRow key={idx}>
+                        {/* 주간 */}
+                        <TableCell
+                          sx={isTargetTime ? { backgroundColor: `${themeHex}20`, fontWeight: "bold", color: themeHex } : {}}
+                        >
+                          {d.start} – {d.end}
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            borderRight: `2px solid ${themeHex}`,
+                            ...(isTargetTime && {
+                              backgroundColor: `${themeHex}20`,
+                              fontWeight: "bold",
+                              color: themeHex,
+                            }),
+                          }}
+                        >
+                          {d.actual !== "-" ? d.actual : "데이터 없음"}
+                        </TableCell>
+
+                        {/* 야간 */}
+                        <TableCell
+                          sx={nightShift[idx]?.start === "07:00" && nightShift[idx]?.end === "07:50"
+                            ? { backgroundColor: `${themeHex}20`, fontWeight: "bold", color: themeHex }
+                            : {}
+                          }
+                        >
+                          {nightShift[idx]?.start} – {nightShift[idx]?.end}
+                        </TableCell>
+                        <TableCell
+                          sx={nightShift[idx]?.start === "07:00" && nightShift[idx]?.end === "07:50"
+                            ? { backgroundColor: `${themeHex}20`, fontWeight: "bold", color: themeHex }
+                            : {}
+                          }
+                        >
+                          {nightShift[idx]?.actual !== "-" ? nightShift[idx].actual : "데이터 없음"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
+
               </Table>
             </TableContainer>
           </Box>
@@ -709,6 +849,15 @@ export default function ProductForecast() {
           </Box>
         </CardContent>
       </Card>
+      
+
+
+
+
+
+
+
+
     </Box>
   );
 }
