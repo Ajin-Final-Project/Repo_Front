@@ -33,6 +33,7 @@ import {
   Legend,
   Area,
   ResponsiveContainer,
+  Bar,
 } from "recharts";
 import { DataGrid } from "@mui/x-data-grid";
 import {
@@ -301,23 +302,6 @@ export default function ProductForecast() {
   };
 
   // ✅ 시간 문자열을 시간 값으로 변환
-  // const timeToMinutes = (timeStr) => {
-  //   if (!timeStr) return 0;
-  //   const [hours, minutes] = timeStr.split(":").map(Number);
-  //   return hours * 60 + minutes;
-  // };
-
-  // ✅ 시간 문자열을 시간 값으로 변환 (야간 시간대 조정 포함)
-  // const timeToMinutes = (timeStr, isNight = false) => {
-  //   if (!timeStr) return 0;
-  //   const [hours, minutes] = timeStr.split(":").map(Number);
-  //   let totalMinutes = hours * 60 + minutes;
-  //   // 야간 시간대(20:40~07:50)는 다음 날로 간주, 24시간 추가
-  //   if (isNight && (hours < 8 || (hours === 20 && minutes >= 40))) {
-  //     totalMinutes += 24 * 60;
-  //   }
-  //   return totalMinutes;
-  // };
   const timeToMinutes = (timeStr, isNight = false) => {
     if (!timeStr) return 0;
     const [hours, minutes] = timeStr.split(":").map(Number);
@@ -330,124 +314,6 @@ export default function ProductForecast() {
   };
 
   // ✅ 전체 시간대 기준으로 그래프용 데이터 구성
-  // const visibleTimeData = useMemo(() => {
-  //   if (!selectedTimeSlot || !currentTimeSlot) return [];
-
-  //   const selectedIndex = allShiftTimes.findIndex(
-  //     ([start, end]) => `${start}~${end}` === selectedTimeSlot
-  //   );
-  //   const currentIndex = allShiftTimes.findIndex(
-  //     ([start, end]) => `${start}~${end}` === currentTimeSlot
-  //   );
-  //   if (selectedIndex === -1 || currentIndex === -1) return [];
-
-  //   const maxIndex = Math.min(selectedIndex, currentIndex);
-  //   const filteredShiftTimes = allShiftTimes.slice(0, maxIndex + 1);
-  //   const sortedShiftTimes = [...filteredShiftTimes];
-  //   if (selectedIndex <= currentIndex && selectedIndex !== -1) {
-  //     const selectedTime = allShiftTimes[selectedIndex];
-  //     if (selectedTime) {
-  //       sortedShiftTimes.push(selectedTime);
-  //     }
-  //   }
-
-  //   const data = sortedShiftTimes.map(([start, end], idx) => {
-  //     const label = `${start}~${end}`;
-  //     const found = hourlyData.find((d) => {
-  //       const startTime = secondsToHHMM(d.slot_start);
-  //       const endTime = secondsToHHMM(d.slot_end);
-  //       if (!startTime || !endTime) {
-  //         console.warn(`Invalid time slot in hourlyData:`, d);
-  //         return false;
-  //       }
-  //       return startTime === start && endTime === end;
-  //     });
-  //     const isLast = start === "07:00" && end === "07:50";
-  //     const isSelected = label === selectedTimeSlot;
-  //     const isBeforeOrAtCurrent = timeToMinutes(start) <= timeToMinutes(currentTimeSlot?.split("~")[0]);
-  //     const actualValue = isLast || !isBeforeOrAtCurrent || (selectedIndex < currentIndex && !isSelected)
-  //       ? null
-  //       : (found && found.actual != null ? found.actual : null);
-
-  //     console.log(`Time Slot: ${label}, isSelected: ${isSelected}, isBeforeOrAtCurrent: ${isBeforeOrAtCurrent}, actual: ${actualValue}, predicted: ${found?.prediction}`);
-
-  //     return {
-  //       time: label,
-  //       actual: actualValue,
-  //       predicted: found && found.prediction != null ? found.prediction : null,
-  //       isSelected,
-  //     };
-  //   }).filter((item) => item.time && item.time !== "null~null");
-
-  //   console.log("Last Data Point:", data[data.length - 1]);
-
-  //   return data;
-  // }, [hourlyData, selectedTimeSlot, currentTimeSlot]);
-
-
-
-  // ✅ 전체 시간대 기준으로 그래프용 데이터 구성
-  // const visibleTimeData = useMemo(() => {
-  //   if (!selectedTimeSlot) return [];
-
-  //   const selectedIndex = allShiftTimes.findIndex(
-  //     ([start, end]) => `${start}~${end}` === selectedTimeSlot
-  //   );
-  //   if (selectedIndex === -1) return [];
-
-  //   // selectedTimeSlot이 주간인지 야간인지 판단
-  //   const isSelectedDayShift = dayShiftTimes.some(([start, end]) => `${start}~${end}` === selectedTimeSlot);
-
-  //   // 주간 선택 시 야간 제외, 야간 선택 시 모든 시간대 포함
-  //   const filteredShiftTimes = isSelectedDayShift
-  //     ? allShiftTimes.slice(0, dayShiftTimes.length)
-  //     : allShiftTimes.slice(0, selectedIndex + 1);
-
-  //   const data = filteredShiftTimes.map(([start, end], idx) => {
-  //     const isNight = idx >= dayShiftTimes.length;
-  //     const found = hourlyData.find((d) => {
-  //       const startTime = secondsToHHMM(d.slot_start);
-  //       const endTime = secondsToHHMM(d.slot_end);
-  //       if (!startTime || !endTime) {
-  //         console.warn(`Invalid time slot in hourlyData:`, d);
-  //         return false;
-  //       }
-  //       return startTime === start && endTime === end;
-  //     });
-  //     const isLast = start === "07:00" && end === "07:50";
-  //     const isSelected = `${start}~${end}` === selectedTimeSlot;
-  //     const currentStartMinutes = timeToMinutes(start, isNight);
-  //     const selectedStartMinutes = timeToMinutes(selectedTimeSlot.split("~")[0], !isSelectedDayShift);
-
-  //     let isAtOrAfterSelected = false;
-  //     if (isSelectedDayShift && isNight) {
-  //       isAtOrAfterSelected = true;
-  //     } else if (!isSelectedDayShift && !isNight) {
-  //       isAtOrAfterSelected = false;
-  //     } else {
-  //       isAtOrAfterSelected = currentStartMinutes >= selectedStartMinutes;
-  //     }
-
-  //     const actualValue = isLast || isAtOrAfterSelected
-  //       ? null
-  //       : (found && found.actual != null ? found.actual : null);
-
-  //     console.log(
-  //       `Time Slot: ${start}~${end}, isNight: ${isNight}, isSelectedDayShift: ${isSelectedDayShift}, ` +
-  //       `currentStartMinutes: ${currentStartMinutes}, selectedStartMinutes: ${selectedStartMinutes}, ` +
-  //       `isAtOrAfterSelected: ${isAtOrAfterSelected}, isSelected: ${isSelected}, actual: ${actualValue}, predicted: ${found?.prediction}`
-  //     );
-
-  //     return {
-  //       time: `${start}~${end}`,
-  //       actual: actualValue,
-  //       predicted: found && found.prediction != null ? found.prediction : null,
-  //       isSelected,
-  //     };
-  //   }).filter((item) => item.time && item.time !== "null~null");
-
-  //   return data;
-  // }, [hourlyData, selectedTimeSlot]);
   const visibleTimeData = useMemo(() => {
     if (!selectedTimeSlot) return [];
 
@@ -601,142 +467,6 @@ export default function ProductForecast() {
   };
 
   // ✅ 교대별 데이터 (동적 렌더링)
-  // const getShiftData = (timeRanges, isNight = false) => {
-  //   const selectedStartTime = selectedTimeSlot ? selectedTimeSlot.split("~")[0] : null;
-  //   const selectedStartMinutes = selectedStartTime ? timeToMinutes(selectedStartTime) : Infinity;
-  //   const currentStartTime = currentTimeSlot ? currentTimeSlot.split("~")[0] : null;
-  //   const currentStartMinutes = currentStartTime ? timeToMinutes(currentStartTime) : Infinity;
-
-  //   return timeRanges.map(([start, end], idx) => {
-  //     const found = hourlyData.find(
-  //       (d) =>
-  //         secondsToHHMM(d.slot_start) === start &&
-  //         secondsToHHMM(d.slot_end) === end
-  //     );
-  //     const isLastNight = isNight && start === "07:00" && end === "07:50";
-  //     const currentStartMinutesForSlot = timeToMinutes(start);
-  //     const isAfterCurrent = currentStartTime && currentStartMinutesForSlot > currentStartMinutes;
-  //     const isBeforeOrAtSelected = selectedStartTime && currentStartMinutesForSlot <= selectedStartMinutes;
-  //     const isSelected = `${start}~${end}` === selectedTimeSlot;
-  //     const actualValue = isLastNight || isAfterCurrent || (!isSelected && selectedStartMinutes < currentStartMinutes)
-  //       ? "-"
-  //       : (found && found.actual != null ? Math.round(found.actual) : "-");
-
-  //     console.log(`Shift: ${start}~${end}, isAfterCurrent: ${isAfterCurrent}, isBeforeOrAtSelected: ${isBeforeOrAtSelected}, isSelected: ${isSelected}, actual: ${actualValue}`);
-
-  //     return {
-  //       start,
-  //       end,
-  //       actual: actualValue,
-  //       isSelected,
-  //     };
-  //   });
-  // };
-
-  // const getShiftData = (timeRanges, isNight = false) => {
-  //   const selectedStartTime = selectedTimeSlot ? selectedTimeSlot.split("~")[0] : null;
-  //   const selectedStartMinutes = selectedStartTime ? timeToMinutes(selectedStartTime) : Infinity;
-
-  //   // selectedTimeSlot이 주간인지 야간인지 판단
-  //   const isSelectedDayShift = selectedTimeSlot
-  //     ? dayShiftTimes.some(([start, end]) => `${start}~${end}` === selectedTimeSlot)
-  //     : true;
-
-  //   return timeRanges.map(([start, end], idx) => {
-  //     const found = hourlyData.find(
-  //       (d) =>
-  //         secondsToHHMM(d.slot_start) === start &&
-  //         secondsToHHMM(d.slot_end) === end
-  //     );
-  //     const isLastNight = isNight && start === "07:00" && end === "07:50";
-  //     const currentStartMinutesForSlot = timeToMinutes(start);
-  //     let isAtOrAfterSelected = false;
-
-  //     if (isSelectedDayShift && isNight) {
-  //       // 선택된 시간대가 주간이고 현재 처리 중인 시간대가 야간이면 모두 미래 시간대
-  //       isAtOrAfterSelected = true;
-  //     } else if (!isSelectedDayShift && !isNight) {
-  //       // 선택된 시간대가 야간이고 현재 처리 중인 시간대가 주간이면 모두 과거 시간대
-  //       isAtOrAfterSelected = false;
-  //     } else {
-  //       // 동일 교대(주간-주간 또는 야간-야간) 내에서 시간 비교
-  //       isAtOrAfterSelected = selectedStartTime && currentStartMinutesForSlot >= selectedStartMinutes;
-  //     }
-
-  //     const isSelected = `${start}~${end}` === selectedTimeSlot;
-  //     const actualValue = isLastNight || isAtOrAfterSelected
-  //       ? "-"
-  //       : (found && found.actual != null ? Math.round(found.actual) : "-");
-
-  //     console.log(
-  //       `Shift: ${start}~${end}, isNight: ${isNight}, isSelectedDayShift: ${isSelectedDayShift}, ` +
-  //       `isAtOrAfterSelected: ${isAtOrAfterSelected}, isSelected: ${isSelected}, actual: ${actualValue}`
-  //     );
-
-  //     return {
-  //       start,
-  //       end,
-  //       actual: actualValue,
-  //       isSelected,
-  //     };
-  //   });
-  // };
-
-
-  
-
-  // ✅ 교대별 데이터 (동적 렌더링)
-  // const getShiftData = (timeRanges, isNight = false) => {
-  //   const selectedStartTime = selectedTimeSlot ? selectedTimeSlot.split("~")[0] : null;
-  //   const selectedStartMinutes = selectedStartTime
-  //     ? timeToMinutes(selectedStartTime, dayShiftTimes.some(([start, end]) => `${start}~${end}` === selectedTimeSlot) ? false : true)
-  //     : Infinity;
-
-  //   // selectedTimeSlot이 주간인지 야간인지 판단
-  //   const isSelectedDayShift = selectedTimeSlot
-  //     ? dayShiftTimes.some(([start, end]) => `${start}~${end}` === selectedTimeSlot)
-  //     : true;
-
-  //   return timeRanges.map(([start, end], idx) => {
-  //     const found = hourlyData.find(
-  //       (d) =>
-  //         secondsToHHMM(d.slot_start) === start &&
-  //         secondsToHHMM(d.slot_end) === end
-  //     );
-  //     const isLastNight = isNight && start === "07:00" && end === "07:50";
-  //     const currentStartMinutesForSlot = timeToMinutes(start, isNight);
-  //     let isAtOrAfterSelected = false;
-
-  //     if (isSelectedDayShift && isNight) {
-  //       // 선택된 시간대가 주간이고 현재 처리 중인 시간대가 야간이면 모두 미래 시간대
-  //       isAtOrAfterSelected = true;
-  //     } else if (!isSelectedDayShift && !isNight) {
-  //       // 선택된 시간대가 야간이고 현재 처리 중인 시간대가 주간이면 모두 과거 시간대
-  //       isAtOrAfterSelected = false;
-  //     } else {
-  //       // 동일 교대(주간-주간 또는 야간-야간) 내에서 시간 비교
-  //       isAtOrAfterSelected = selectedStartTime && currentStartMinutesForSlot >= selectedStartMinutes;
-  //     }
-
-  //     const isSelected = `${start}~${end}` === selectedTimeSlot;
-  //     const actualValue = isLastNight || isAtOrAfterSelected
-  //       ? "-"
-  //       : (found && found.actual != null ? Math.round(found.actual) : "-");
-
-  //     console.log(
-  //       `Shift: ${start}~${end}, isNight: ${isNight}, isSelectedDayShift: ${isSelectedDayShift}, ` +
-  //       `currentStartMinutes: ${currentStartMinutesForSlot}, selectedStartMinutes: ${selectedStartMinutes}, ` +
-  //       `isAtOrAfterSelected: ${isAtOrAfterSelected}, isSelected: ${isSelected}, actual: ${actualValue}`
-  //     );
-
-  //     return {
-  //       start,
-  //       end,
-  //       actual: actualValue,
-  //       isSelected,
-  //     };
-  //   });
-  // };
   const getShiftData = (timeRanges, isNight = false) => {
     const selectedStartTime = selectedTimeSlot ? selectedTimeSlot.split("~")[0] : null;
     const isSelectedNightShift = selectedTimeSlot
@@ -931,6 +661,7 @@ export default function ProductForecast() {
             <>
               <Box display="flex" justifyContent="center">
                 <div style={{ width: "80%", height: 530 }}>
+
                   <ResponsiveContainer>
                     <ComposedChart data={allDailyData}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -938,6 +669,21 @@ export default function ProductForecast() {
                       <YAxis domain={["dataMin - 10", "dataMax + 10"]} />
                       <Tooltip formatter={(value, name) => [Number(value).toFixed(2), name]} />
                       <Legend verticalAlign="top" align="right" wrapperStyle={{ marginBottom: 10 }} />
+
+
+
+                      {/* ✅ 실제: 막대 먼저 */}
+                      <Bar
+                        dataKey="actual"
+                        fill={themeHex}
+                        name="실제"
+                        barSize={40}
+                        isAnimationActive={true}
+                        animationDuration={2000}
+                        animationBegin={800}
+                      />
+
+                      {/* ✅ 예측: 선 나중에 (항상 위에 보임) */}
                       <Line
                         type="monotone"
                         dataKey="predicted"
@@ -945,43 +691,24 @@ export default function ProductForecast() {
                         strokeWidth={3}
                         name="예측"
                         connectNulls={false}
-                        dot={{ fill: "#1E3A8A", r: 4 }}
+                        dot={{ fill: "#1E3A8A", r: 5 }}
+                        isAnimationActive={true}
+                        animationDuration={2000}
+                        animationBegin={0}
                       />
-                      <Area
-                        type="monotone"
-                        dataKey="actual"
-                        fill={themeHex}
-                        stroke={themeHex}
-                        name="실제"
-                        connectNulls={false}
-                      />
+
+
+                      
                     </ComposedChart>
                   </ResponsiveContainer>
+
+
+
+
+
                 </div>
               </Box>
               <div style={{ height: 530, width: "100%", marginTop: 16 }}>
-                {/* <DataGrid
-                  rows={tableRows}
-                  columns={tableColumns}
-                  autoHeight
-                  initialState={{
-                    pagination: {
-                      paginationModel: { pageSize: 10 },
-                    },
-                  }}
-                  pageSizeOptions={[5, 10, 20]}
-                  getRowClassName={(params) =>
-                    params.row.type === "내일" ? "highlightTomorrow" : ""
-                  }
-                  sx={{
-                    "& .highlightTomorrow": {
-                      backgroundColor: `${themeHex}20`,
-                      fontWeight: "bold",
-                      color: themeHex,
-                    },
-                  }}
-                /> */}
-
 
                 <DataGrid
                   rows={tableRows}
@@ -1000,11 +727,10 @@ export default function ProductForecast() {
                     "& .highlightTomorrow": {
                       backgroundColor: `${themeHex}20`,
                       fontWeight: "bold",
-                      color: "black",   // ✅ 글자색을 검정으로 고정
+                      color: "black",
                     },
                   }}
                 />
-
 
               </div>
             </>
