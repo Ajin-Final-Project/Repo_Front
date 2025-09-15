@@ -136,7 +136,7 @@ class ItemCodeModal extends Component {
       },
       { 
         field: '품목번호', 
-        headerName: '품목번호', 
+        headerName: '품번', 
         width: 250, 
         headerClassName: 'custom-header', 
         cellClassName: 'custom-cell',
@@ -294,7 +294,7 @@ class ItemCodeModal extends Component {
                   label="품목 검색"
                   value={searchTerm}
                   onChange={(e) => this.setState({ searchTerm: e.target.value })}
-                  placeholder="품목번호 또는 품목명으로 검색"
+                  placeholder="품번 또는 품목명으로 검색"
                   size="small"
                   sx={{
                        '& .MuiOutlinedInput-root': {
