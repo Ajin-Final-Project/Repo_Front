@@ -987,12 +987,12 @@ export default function ProductForecast() {
                         {d.actual !== "-" ? d.actual : "데이터 없음"}
                       </TableCell>
                       <TableCell
-                        sx={nightShift[idx]?.isSelected ? { backgroundColor: `${themeHex}40`, fontWeight: "bold", color: themeHex, border: `2px solid ${themeHex}` } : {}}
+                        sx={nightShift[idx]?.isSelected ? { backgroundColor: `${themeHex}40`, fontWeight: "bold", color: "black", border: `2px solid ${themeHex}` } : {}}
                       >
                         {nightShift[idx]?.start} – {nightShift[idx]?.end}
                       </TableCell>
                       <TableCell
-                        sx={nightShift[idx]?.isSelected ? { backgroundColor: `${themeHex}40`, fontWeight: "bold", color: themeHex, border: `2px solid ${themeHex}` } : {}}
+                        sx={nightShift[idx]?.isSelected ? { backgroundColor: `${themeHex}40`, fontWeight: "bold", color: "black", border: `2px solid ${themeHex}` } : {}}
                       >
                         {nightShift[idx]?.actual !== "-" ? nightShift[idx].actual : "데이터 없음"}
                       </TableCell>
