@@ -2141,13 +2141,13 @@ class Sidebar extends React.Component {
           <LinksGroup
             onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
             activeItem={this.props.activeItem}
-            header="실시간 관제 시스템"
+            header="실시간 설비 모니터링"
             isHeader
             link="/app/dashboard"
             index="dashboard"
             exact={false}
             childrenLinks={[
-              { header: "실시간 공장 모니터링", link: "/app/dashboard/analytics" },
+              { header: "프레스 모니터링", link: "/app/dashboard/analytics" },
               // { header: "Visits", link: "/app/dashboard/visits" },
             ]}
           >
@@ -2158,13 +2158,13 @@ class Sidebar extends React.Component {
             <LinksGroup
             onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
             activeItem={this.props.activeItem}
-            header="AI 예측 시뮬레이션"
+            header="AI 예측 시스템"
             isHeader
             link="/app/ai/product-forecast"
             index="ai"
             childrenLinks={[
-              { header: "생산량 예측", link: "/app/ai/product-forecast" },
-              { header: "병목 공정 예측", link: "/app/ai/bottleneck" },
+              { header: "생산량 예측/분석", link: "/app/ai/product-forecast" },
+              { header: "병목 공정 예측/분석", link: "/app/ai/bottleneck" },
             ]}
           >
             <img src={this.themeIcons("ai")} alt="ai" width="24" height="24" />
@@ -2174,7 +2174,7 @@ class Sidebar extends React.Component {
           <LinksGroup
             onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
             activeItem={this.props.activeItem}
-            header="생산관리 시스템"
+            header="생산 관리 시스템"
             isHeader
             link="/app/production/chart"
             index="production"
@@ -2190,7 +2190,23 @@ class Sidebar extends React.Component {
           <LinksGroup
             onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
             activeItem={this.props.activeItem}
-            header="금형관리 시스템"
+            header="비가동 관리 시스템"
+            isHeader
+            link="/app/downtime/chart"
+            index="downtime"
+            childrenLinks={[
+              { header: "비가동 데이터 분석", link: "/app/downtime/chart" },
+              { header: "비가동 데이터 내역 ", link: "/app/downtime/data" },
+            ]}
+          >
+            <img src={this.themeIcons("downtime")} alt="downtime" width="24" height="24" />
+          </LinksGroup>
+
+
+          <LinksGroup
+            onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
+            activeItem={this.props.activeItem}
+            header="금형 관리 시스템"
             isHeader
             link="/app/mold/chart"
             index="mold"
@@ -2204,38 +2220,7 @@ class Sidebar extends React.Component {
           >
             <img src={this.themeIcons("mold")} alt="mold" width="24" height="24" />
           </LinksGroup>
-
-          <LinksGroup
-            onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
-            activeItem={this.props.activeItem}
-            header="불량공정 시스템"
-            isHeader
-            link="/app/defect/chart"
-            index="defect"
-            exact={false}
-            childrenLinks={[
-              { header: "불량공정 분석", link: "/app/defect/chart" },
-              { header: "불량공정 내역", link: "/app/defect/grid" },
-            ]}
-          >
-            <img src={this.themeIcons("defect")} alt="defect" width="24" height="24" />
-          </LinksGroup>
-
-          <LinksGroup
-            onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
-            activeItem={this.props.activeItem}
-            header="비가동 관리 시스템"
-            isHeader
-            link="/app/downtime/chart"
-            index="downtime"
-            childrenLinks={[
-              { header: "비가동 데이터 분석", link: "/app/downtime/chart" },
-              { header: "비가동 데이터 이력 ", link: "/app/downtime/data" },
-            ]}
-          >
-            <img src={this.themeIcons("downtime")} alt="downtime" width="24" height="24" />
-          </LinksGroup>
-
+  
           <LinksGroup
             onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
             activeItem={this.props.activeItem}
@@ -2245,10 +2230,26 @@ class Sidebar extends React.Component {
             index="inspection"
             childrenLinks={[
               { header: "검사 데이터 분석", link: "/app/inspection/chart" },
-              { header: "검사 데이터 이력", link: "/app/inspection/data" },
+              { header: "검사 데이터 내역", link: "/app/inspection/data" },
             ]}
           >
             <img src={this.themeIcons("inspection")} alt="inspection" width="24" height="24" />
+          </LinksGroup>
+
+             <LinksGroup
+            onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
+            activeItem={this.props.activeItem}
+            header="불량 관리 시스템"
+            isHeader
+            link="/app/defect/chart"
+            index="defect"
+            exact={false}
+            childrenLinks={[
+              { header: "불량 데이터 분석", link: "/app/defect/chart" },
+              { header: "불량 데이터 내역", link: "/app/defect/grid" },
+            ]}
+          >
+            <img src={this.themeIcons("defect")} alt="defect" width="24" height="24" />
           </LinksGroup>
           
           {this.props.role ==='시스템관리자' && (
