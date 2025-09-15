@@ -208,24 +208,6 @@ class Helper extends Component {
             />
           </div>
 
-          <div className="mt-5">
-            <Button
-              href="https://flatlogic.com/admin-dashboards/sing-app-react"
-              target="_blank"
-              className="btn-block fs-mini purchase-button"
-              style={{ backgroundColor: "#323232" }}
-            >
-              <span className="text-white">Purchase</span>
-            </Button>
-            <Button
-              href="http://demo.flatlogic.com/sing-app/documentation/"
-              target="_blank"
-              className="btn-block fs-mini text-white mt-3"
-              color="warning"
-            >
-              Documentation
-            </Button>
-          </div>
         </Widget>
       </div>
     );
