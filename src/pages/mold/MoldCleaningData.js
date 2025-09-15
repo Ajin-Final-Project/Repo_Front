@@ -1,5 +1,6 @@
 // src/pages/mold/MoldCleaningData.js
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import {
   Box,
   Paper,
@@ -27,6 +28,7 @@ import {
 
 import s from './MoldCleaningData.module.scss';
 import config from '../../config';
+import { selectThemeHex, selectThemeKey } from '../../reducers/layout';
 class MoldCleaningData extends Component {
   constructor(props) {
     super(props);
@@ -201,6 +203,7 @@ class MoldCleaningData extends Component {
   ];
 
   render() {
+    const { themeHex } = this.props;
     const { filters, filterExpanded, rows, loading, error } = this.state;
 
     return (
@@ -214,7 +217,7 @@ class MoldCleaningData extends Component {
         {/* 헤더 */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="h4" gutterBottom sx={{ 
-            color: '#ffb300',
+            color: themeHex,
             fontWeight: 'bold',
             display: 'flex',
             alignItems: 'center',
@@ -248,7 +251,7 @@ class MoldCleaningData extends Component {
               </IconButton>
             }
             sx={{ 
-              backgroundColor: '#ff8f00',
+              backgroundColor: themeHex,
               color: 'white',
               borderRadius: 1,
               mb: 2
@@ -363,7 +366,7 @@ class MoldCleaningData extends Component {
                 variant="contained"
                 startIcon={<SearchIcon />}
                 size="large"
-                sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}
+                sx={{ backgroundColor: themeHex, '&:hover': { backgroundColor: '#f57c00' } }}
                 onClick={this.handleSearch}
               >
                 검색
@@ -377,7 +380,7 @@ class MoldCleaningData extends Component {
           <Box sx={{ height: '100%', width: '100%' }}>
             {loading && (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
-                <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
+                <CircularProgress size={60} sx={{ color: themeHex }} />
               </Box>
             )}
 
@@ -387,7 +390,7 @@ class MoldCleaningData extends Component {
                 <Button
                   variant="contained"
                   onClick={this.fetchData}
-                  sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}
+                  sx={{ backgroundColor: themeHex, '&:hover': { backgroundColor: '#f57c00' } }}
                 >
                   다시 시도
                 </Button>
@@ -412,7 +415,7 @@ class MoldCleaningData extends Component {
                 }}
                 sx={{
                   '& .super-app-theme--header': {
-                    backgroundColor: '#ff8f00',
+                    backgroundColor: themeHex,
                     color: 'white',
                     fontWeight: 'bold',
                   },
@@ -441,4 +444,11 @@ class MoldCleaningData extends Component {
   }
 }
 
-export default MoldCleaningData;
+function mapStateToProps(state) {
+  return {
+    themeHex: selectThemeHex(state),
+    themeKey: selectThemeKey(state)
+  };
+}
+
+export default connect(mapStateToProps)(MoldCleaningData);

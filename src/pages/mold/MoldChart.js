@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import { 
   BarChart, 
   Bar, 
@@ -39,7 +40,8 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableRow
+  TableRow,
+  Menu
 } from '@mui/material';
 import { 
   BarChart as BarChartIcon,
@@ -50,11 +52,58 @@ import {
   Search as SearchIcon,
   ExpandLess as ExpandLessIcon,
   ExpandMore as ExpandMoreIcon,
-  KeyboardArrowDown as KeyboardArrowDownIcon
+  KeyboardArrowDown as KeyboardArrowDownIcon,
+  Clear as ClearIcon
 } from '@mui/icons-material';
 import s from './MoldCleaningChart.module.scss';
 import config from '../../config';
 import ItemCodeModal from '../common/ItemCodeModal';
+import { selectThemeHex, selectThemeKey } from '../../reducers/layout';
+
+// 날짜 관련 헬퍼 함수들 
+const iso = (d) => d.toLocaleDateString("sv-SE"); // YYYY-MM-DD
+const today0 = () => {
+  const t = new Date();
+  return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+};
+const lastOfMonth = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0);
+
+/** 버튼 기준 화면 좌표 → Menu anchorPosition */
+const getAnchorPos = (el) => {
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return { top: Math.round(r.bottom + window.scrollY), left: Math.round(r.left + window.scrollX) };
+};
+
+/** 월요일 시작 주간 */
+const startOfWeek = (d) => {
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1) - day;
+  const s = new Date(d);
+  s.setDate(d.getDate() + diff);
+  return new Date(s.getFullYear(), s.getMonth(), s.getDate());
+};
+const endOfWeek = (d) => {
+  const s = startOfWeek(d);
+  return new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6);
+};
+const getWeeksOfMonth = (year, month) => {
+  const first = new Date(year, month - 1, 1);
+  const last = lastOfMonth(first);
+  let cur = startOfWeek(first);
+  const out = [];
+  let idx = 1;
+  while (cur <= last) {
+    const s = new Date(cur),
+      e = endOfWeek(cur);
+    const clipS = new Date(Math.max(s, first));
+    const clipE = new Date(Math.min(e, last));
+    out.push({ label: `${idx}주차`, start: clipS, end: clipE });
+    idx += 1;
+    cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 7);
+  }
+  return out;
+};
 
 // API 엔드포인트들
 const API_ENDPOINTS = {
@@ -87,6 +136,16 @@ class MoldChart extends Component {
       quickRange: 'year',
       itemCodeModalOpen: false,
       
+      // 프리셋 상태/앵커
+      selectedYear: new Date().getFullYear(),
+      selectedMonth: new Date().getMonth() + 1,
+      yearAnchorPos: null,
+      monthAnchorPos: null,
+      weekAnchorPos: null,
+      
+      // 연도 목록
+      years: [],
+      
       // 차트 데이터
       workCountData: [],
       runtimeData: [],
@@ -105,22 +164,34 @@ class MoldChart extends Component {
   }
 
   componentDidMount() {
+    this.loadYears();
     this.fetchEquipmentList();
     this.fetchAllData();
   }
 
   componentDidUpdate(prevProps, prevState) {
-    // 필터가 변경되면 모든 데이터를 다시 가져옴
-    if (
-      prevState.filters.start_date !== this.state.filters.start_date ||
-      prevState.filters.end_date !== this.state.filters.end_date ||
-      prevState.filters.line !== this.state.filters.line ||
-      prevState.filters.itemName !== this.state.filters.itemName ||
-      prevState.filters.equipment_detail !== this.state.filters.equipment_detail
-    ) {
-      this.fetchAllData();
-    }
+    // 필터 변경 시에는 데이터를 지우기만 하고, 검색 버튼을 눌러야만 데이터 로드
+    // 자동 API 호출은 제거됨
   }
+
+  /** 연도 옵션 (서버 없으면 fallback) */
+  loadYears = async () => {
+    try {
+      // 서버에서 연도 목록을 가져오는 API가 있다면 여기에 추가
+      // const response = await fetch(`${config.baseURLApi}/smartFactory/mold-chart/years`);
+      // const result = await response.json();
+      // const years = result.data || [];
+      
+      // 현재는 클라이언트에서 생성
+      const y = new Date().getFullYear();
+      const years = [y, y - 1, y - 2, y - 3, y - 4];
+      this.setState({ years, selectedYear: y });
+    } catch {
+      const y = new Date().getFullYear();
+      const years = [y, y - 1, y - 2, y - 3, y - 4];
+      this.setState({ years, selectedYear: y });
+    }
+  };
 
   // 모든 데이터를 가져오는 메서드
   fetchAllData = async () => {
@@ -428,55 +499,33 @@ class MoldChart extends Component {
   // 빠른 기간 선택 메서드
   toYMD = (d) => d.toLocaleDateString('sv-SE'); // YYYY-MM-DD
 
-  setQuickRange = (type) => {
-    const now = new Date();
-    const today = this.toYMD(now);
-
-    let start = today;
-    let end = today;
-
-    if (type === 'today') {
-      // 금일: 오늘~오늘
-      start = today;
-      end = today;
-    } else if (type === 'week') {
-      // 주간: 월요일~오늘 (한국/ISO 기준 월요일 시작)
-      const d = new Date(now);
-      const day = d.getDay();           // 0(일)~6(토)
-      const diffToMonday = (day + 6) % 7; // 월=1 -> 0, 일=0 -> 6
-      d.setDate(d.getDate() - diffToMonday);
-      start = this.toYMD(d);
-      end = today;
-    } else if (type === 'month') {
-      // 월간: 1일~오늘
-      const d = new Date(now.getFullYear(), now.getMonth(), 1);
-      start = this.toYMD(d);
-      end = today;
-    } else if (type === 'year') {
-      // 년간: 1월1일~오늘
-      const d = new Date(now.getFullYear(), 0, 1);
-      start = this.toYMD(d);
-      end = today;
-    }
-
-    this.setState(prev => ({
-      quickRange: type,
-      filters: {
-        ...prev.filters,
-        start_date: start,
-        end_date: end,
-      }
-    }));
-  };
 
   toggleFilterExpansion = () => {
     this.setState(prev => ({ filterExpanded: !prev.filterExpanded }));
   };
 
   handleFilterChange = (field, value) => {
-    this.setState(prev => ({
-      filters: { ...prev.filters, [field]: value }
-    }));
+    this.setState(prev => {
+      const newFilters = { ...prev.filters, [field]: value };
+      
+      // 품번, 품목명, 날짜가 변경되면 차트 데이터 초기화
+      const shouldClearData = ['itemCode', 'itemName', 'start_date', 'end_date'].includes(field);
+      
+      const clearData = shouldClearData ? {
+        workCountData: [],
+        runtimeData: [],
+        breakdownData: [],
+        equipmentRankingData: [],
+        cleaningRankedData: [],
+        moldAnalysisData: {},
+        summaryData: {}
+      } : {};
+      
+      return {
+        filters: newFilters,
+        ...clearData
+      };
+    });
   };
 
   openItemCodeModal = () => {
@@ -498,7 +547,83 @@ class MoldChart extends Component {
     }));
   };
 
-  renderWorkCountChart = () => {
+  /** 날짜 프리셋/범위 */
+  setDateRange = (start, end) => {
+    const start_date = iso(start);
+    const end_date = iso(end);
+    this.setState((prev) => ({
+      filters: { ...prev.filters, start_date, end_date },
+      // 날짜 변경 시 차트 데이터 초기화 (API 호출 없음)
+      workCountData: [],
+      runtimeData: [],
+      breakdownData: [],
+      equipmentRankingData: [],
+      cleaningRankedData: [],
+      moldAnalysisData: {},
+      summaryData: {}
+    }));
+  };
+
+  applyToday = () => {
+    const t = today0();
+    this.setDateRange(t, t);
+  };
+
+  selectYear = (y) => {
+    const s = new Date(y, 0, 1);
+    const e = new Date(y, 11, 31);
+    this.setState({ selectedYear: y, yearAnchorPos: null });
+    this.setDateRange(s, e);
+  };
+
+  selectMonth = (m) => {
+    const y = this.state.selectedYear;
+    const s = new Date(y, m - 1, 1);
+    const e = lastOfMonth(s);
+    this.setState({ monthAnchorPos: null, selectedMonth: m });
+    this.setDateRange(s, e);
+  };
+
+  selectWeek = (w) => {
+    this.setState({ weekAnchorPos: null });
+    this.setDateRange(w.start, w.end);
+  };
+
+  /** 필터 초기화 */
+  resetFilters = () => {
+    const currentYear = new Date().getFullYear();
+    const defaultFilters = {
+      plant: "아진산업-경산(본사)",
+      worker: "프레스",
+      line: "1500T",
+      itemCode: '',
+      itemName: '',
+      start_date: `${currentYear}-01-01`,
+      end_date: `${currentYear}-12-31`,
+      equipment_detail: '전체'
+    };
+    
+    this.setState({
+      filters: defaultFilters,
+      quickRange: null,
+      selectedYear: currentYear,
+      selectedMonth: new Date().getMonth() + 1,
+      workCountData: [],
+      runtimeData: [],
+      breakdownData: [],
+      equipmentRankingData: [],
+      cleaningRankedData: [],
+      moldAnalysisData: {},
+      summaryData: {}
+    });
+  };
+
+  /** 검색 실행 */
+  handleSearch = async () => {
+    this.fetchAllData();
+  };
+
+  renderWorkCountChart = (themeHex) => {
     const { workCountData, loading } = this.state;
 
     return (
@@ -507,7 +632,7 @@ class MoldChart extends Component {
                   display: 'flex', 
                   alignItems: 'center', 
                   gap: 1,
-                  color: '#ffb300',
+                  color: themeHex,
                   mb: 2
                 }}>
           <BarChartIcon />
@@ -516,15 +641,18 @@ class MoldChart extends Component {
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
-            <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
+            <CircularProgress size={60} sx={{ color: themeHex }} />
           </Box>
         ) : workCountData.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300, flexDirection: 'column' }}>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-              데이터가 없습니다.
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="h5" sx={{ color: '#666', mb: 2 }}>
               품목을 선택해주세요
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              막대그래프를 보려면 상단의 품번 또는 품목명을 선택해주세요.
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              품목을 선택하면 해당 제품의 월간 생산량 데이터가 표시됩니다.
             </Typography>
           </Box>
         ) : (
@@ -540,12 +668,12 @@ class MoldChart extends Component {
                   dataKey="월" 
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 12, fill: '#666' }}
+                  tick={{ fontSize: 12, fill: themeHex }}
                 />
                 <YAxis 
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 12, fill: '#666' }}
+                  tick={{ fontSize: 12, fill: themeHex }}
                   allowDecimals={false}
                   tickFormatter={(v) => (v?.toLocaleString?.() ?? v)}
                 />
@@ -561,7 +689,7 @@ class MoldChart extends Component {
                 <Legend />
 
                 {this.state.filters.line === '1000T' && (
-                  <Bar dataKey="sum_1000T" fill="#8884d8" radius={[4, 4, 0, 0]} name="1000T" isAnimationActive={false}>
+                  <Bar dataKey="sum_1000T" fill={themeHex} radius={[4, 4, 0, 0]} name="1000T" isAnimationActive={false}>
                     <LabelList
                   dataKey="sum_1000T" 
                       position="top"
@@ -578,7 +706,7 @@ class MoldChart extends Component {
                 )}
 
                 {this.state.filters.line === '1200T' && (
-                  <Bar dataKey="sum_1200T" fill="#82ca9d" radius={[4, 4, 0, 0]} name="1200T" isAnimationActive={false}>
+                  <Bar dataKey="sum_1200T" fill={themeHex} radius={[4, 4, 0, 0]} name="1200T" isAnimationActive={false}>
                     <LabelList
                   dataKey="sum_1200T" 
                       position="top"
@@ -595,7 +723,7 @@ class MoldChart extends Component {
                 )}
 
                 {this.state.filters.line === '1500T' && (
-                  <Bar dataKey="sum_1500T" fill="#ffc658" radius={[4, 4, 0, 0]} name="1500T" isAnimationActive={false}>
+                  <Bar dataKey="sum_1500T" fill={themeHex} radius={[4, 4, 0, 0]} name="1500T" isAnimationActive={false}>
                     <LabelList
                   dataKey="sum_1500T" 
                       position="top"
@@ -612,7 +740,7 @@ class MoldChart extends Component {
                 )}
 
                 {this.state.filters.line === '1000T-PRO' && (
-                  <Bar dataKey="sum_1000T_PRO" fill="#ff7300" radius={[4, 4, 0, 0]} name="1000T PRO" isAnimationActive={false}>
+                  <Bar dataKey="sum_1000T_PRO" fill={themeHex} radius={[4, 4, 0, 0]} name="1000T PRO" isAnimationActive={false}>
                     <LabelList
                   dataKey="sum_1000T_PRO" 
                       position="top"
@@ -635,7 +763,7 @@ class MoldChart extends Component {
     );
   }
 
-  renderRuntimeChart = () => {
+  renderRuntimeChart = (themeHex) => {
     const { runtimeData, loading } = this.state;
 
     return (
@@ -644,7 +772,7 @@ class MoldChart extends Component {
                   display: 'flex', 
                   alignItems: 'center', 
                   gap: 1,
-                  color: '#ffb300',
+                  color: themeHex,
                   mb: 2
                 }}>
           <TrendingUpIcon />
@@ -653,15 +781,18 @@ class MoldChart extends Component {
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
-            <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
+            <CircularProgress size={60} sx={{ color: themeHex }} />
           </Box>
         ) : runtimeData.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300, flexDirection: 'column' }}>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-              데이터가 없습니다.
+            <Typography variant="h5" sx={{ color: '#666', mb: 2 }}>
+              품목을 선택해주세요
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              콘솔에서 API 응답을 확인해주세요.
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              막대그래프를 보려면 상단의 품번 또는 품목명을 선택해주세요.
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              품목을 선택하면 해당 제품의 월간 생산량 데이터가 표시됩니다.
             </Typography>
           </Box>
         ) : (
@@ -673,12 +804,12 @@ class MoldChart extends Component {
                   dataKey="월" 
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 12, fill: '#666' }}
+                  tick={{ fontSize: 12, fill: themeHex }}
                 />
                 <YAxis 
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 12, fill: '#666' }}
+                  tick={{ fontSize: 12, fill: themeHex }}
                 />
                 <Tooltip 
                   contentStyle={{
@@ -693,10 +824,10 @@ class MoldChart extends Component {
                 <Line 
                   type="monotone" 
                   dataKey="1000T" 
-                  stroke="#8884d8"
+                  stroke={themeHex}
                   strokeWidth={3}
                   name="1000T"
-                  dot={{ fill: '#8884d8', strokeWidth: 2, r: 6 }}
+                  dot={{ fill: themeHex, strokeWidth: 2, r: 6 }}
                   activeDot={{ r: 8 }}
                 />
                  )}
@@ -704,10 +835,10 @@ class MoldChart extends Component {
                 <Line 
                   type="monotone" 
                   dataKey="1200T" 
-                  stroke="#82ca9d"
+                  stroke={themeHex}
                   strokeWidth={3}
                   name="1200T"
-                  dot={{ fill: '#82ca9d', strokeWidth: 2, r: 6 }}
+                  dot={{ fill: themeHex, strokeWidth: 2, r: 6 }}
                   activeDot={{ r: 8 }}
                 />
                  )}
@@ -715,10 +846,10 @@ class MoldChart extends Component {
                 <Line 
                   type="monotone" 
                   dataKey="1500T" 
-                  stroke="#ffc658"
+                  stroke={themeHex}
                   strokeWidth={3}
                   name="1500T"
-                  dot={{ fill: '#ffc658', strokeWidth: 2, r: 6 }}
+                  dot={{ fill: themeHex, strokeWidth: 2, r: 6 }}
                   activeDot={{ r: 8 }}
                 />
                  )}
@@ -726,10 +857,10 @@ class MoldChart extends Component {
                 <Line 
                   type="monotone" 
                   dataKey="1000T PRO" 
-                  stroke="#ff7300"
+                  stroke={themeHex}
                   strokeWidth={3}
                   name="1000T PRO"
-                  dot={{ fill: '#ff7300', strokeWidth: 2, r: 6 }}
+                  dot={{ fill: themeHex, strokeWidth: 2, r: 6 }}
                   activeDot={{ r: 8 }}
                 />
                  )}
@@ -741,7 +872,7 @@ class MoldChart extends Component {
     );
   }
 
-  renderBreakdownChart = () => {
+  renderBreakdownChart = (themeHex) => {
     const { breakdownData, loading, equipmentTypes } = this.state;
 
     return (
@@ -750,7 +881,7 @@ class MoldChart extends Component {
                   display: 'flex', 
                   alignItems: 'center', 
                   gap: 1,
-                  color: '#ffb300',
+                  color: themeHex,
                   mb: 2
                 }}>
           <WarningIcon />
@@ -759,15 +890,18 @@ class MoldChart extends Component {
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
-            <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
+            <CircularProgress size={60} sx={{ color: themeHex }} />
           </Box>
         ) : breakdownData.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300, flexDirection: 'column' }}>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-              데이터가 없습니다.
+            <Typography variant="h5" sx={{ color: '#666', mb: 2 }}>
+              품목을 선택해주세요
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              콘솔에서 API 응답을 확인해주세요.
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              막대그래프를 보려면 상단의 품번 또는 품목명을 선택해주세요.
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              품목을 선택하면 해당 제품의 월간 생산량 데이터가 표시됩니다.
             </Typography>
           </Box>
         ) : (
@@ -803,7 +937,7 @@ class MoldChart extends Component {
                 <Legend />
                 <Bar 
                   dataKey="order_cnt" 
-                  fill="#8884d8"
+                  fill={themeHex}
                   radius={[4, 4, 0, 0]}
                   name="고장 건수"
                   isAnimationActive={false}
@@ -842,7 +976,7 @@ class MoldChart extends Component {
     );
   }
 
-  renderEquipmentRankingChart = () => {
+  renderEquipmentRankingChart = (themeHex) => {
     const { equipmentRankingData, loading } = this.state;
 
     return (
@@ -851,7 +985,7 @@ class MoldChart extends Component {
                   display: 'flex', 
                   alignItems: 'center', 
                   gap: 1,
-                  color: '#ffb300',
+                  color: themeHex,
                   mb: 2
                 }}>
           <PieChartIcon />
@@ -860,15 +994,18 @@ class MoldChart extends Component {
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
-            <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
+            <CircularProgress size={60} sx={{ color: themeHex }} />
           </Box>
         ) : equipmentRankingData.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300, flexDirection: 'column' }}>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-              데이터가 없습니다.
+            <Typography variant="h5" sx={{ color: '#666', mb: 2 }}>
+              품목을 선택해주세요
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              콘솔에서 API 응답을 확인해주세요.
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              막대그래프를 보려면 상단의 품번 또는 품목명을 선택해주세요.
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              품목을 선택하면 해당 제품의 월간 생산량 데이터가 표시됩니다.
             </Typography>
           </Box>
         ) : (
@@ -884,7 +1021,7 @@ class MoldChart extends Component {
                   outerRadius={120}
                   innerRadius={40}
                   paddingAngle={3}
-                  fill="#8884d8"
+                  fill={themeHex}
                   dataKey="설비횟수"
                 >
                   {equipmentRankingData.map((entry, index) => (
@@ -909,7 +1046,7 @@ class MoldChart extends Component {
   }
 
   // 선택된 월의 상세 데이터를 테이블로 표시
-  renderSelectedMonthDetail = () => {
+  renderSelectedMonthDetail = (themeHex) => {
     const { selectedMonthDetail } = this.state;
     
         if (!selectedMonthDetail || selectedMonthDetail.length === 0) {
@@ -919,7 +1056,7 @@ class MoldChart extends Component {
                   display: 'flex', 
                   alignItems: 'center', 
                   gap: 1,
-                  color: '#ffb300',
+                  color: themeHex,
                   mb: 2
                 }}>
             <WarningIcon />
@@ -929,7 +1066,7 @@ class MoldChart extends Component {
             <Typography variant="body1" color="text.secondary">
               막대그래프에서 월을 클릭하여 상세 데이터를 확인하세요.
               </Typography>
-          </Box>
+          </Box> 
         </Paper>
       );
     }
@@ -940,7 +1077,7 @@ class MoldChart extends Component {
                   display: 'flex', 
                   alignItems: 'center', 
                   gap: 1,
-                  color: '#ffb300',
+                  color: themeHex,
                   mb: 2
                 }}>
           <WarningIcon />
@@ -974,7 +1111,7 @@ class MoldChart extends Component {
   }
 
   // 금형 세척주기 랭킹 그리드를 렌더링하는 메서드
-  renderCleaningRankedGrid = () => {
+  renderCleaningRankedGrid = (themeHex) => {
     const { cleaningRankedData } = this.state;
     
     return (
@@ -986,7 +1123,7 @@ class MoldChart extends Component {
           boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
         }}
       >
-        <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#1976d2' }}>
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: themeHex }}>
           세척 금형 내역
         </Typography>
         
@@ -1021,14 +1158,16 @@ class MoldChart extends Component {
             </Table>
           </TableContainer>
         ) : (
-          <Box sx={{ 
-            height: 300, 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            color: '#666'
-          }}>
-            <Typography>데이터가 없습니다</Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300, flexDirection: 'column' }}>
+            <Typography variant="h5" sx={{ color: '#666', mb: 2 }}>
+              품목을 선택해주세요
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              막대그래프를 보려면 상단의 품번 또는 품목명을 선택해주세요.
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              품목을 선택하면 해당 제품의 월간 생산량 데이터가 표시됩니다.
+            </Typography>
           </Box>
         )}
       </Paper>
@@ -1036,13 +1175,13 @@ class MoldChart extends Component {
   }
 
   // 금형 점검 분석 파이차트와 요약카드를 렌더링하는 메서드
-  renderMoldAnalysis = () => {
+  renderMoldAnalysis = (themeHex) => {
     const { moldAnalysisData } = this.state;
     
     // 파이차트 데이터 준비
     const progressRate = moldAnalysisData['진행률(%)'] || 0;
     const pieData = [
-      { name: '소모한 점검타수', value: progressRate, fill: '#8884d8' },
+      { name: '소모한 점검타수', value: progressRate, fill: themeHex },
       { name: '남은 점검타수', value: 100 - progressRate, fill: '#e0e0e0' }
     ];
 
@@ -1055,7 +1194,7 @@ class MoldChart extends Component {
           boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
         }}
       >
-        <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#1976d2' }}>
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: themeHex }}>
           진행률 분석
         </Typography>
         
@@ -1119,7 +1258,7 @@ class MoldChart extends Component {
                 <Typography variant="caption" sx={{ color: '#666', display: 'block', mb: 1 }}>
                   총 점검수
                 </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                <Typography variant="h5" sx={{ fontWeight: 'bold', color: themeHex }}>
                   {moldAnalysisData['총 점검수'] || '-'}
                 </Typography>
               </Paper>
@@ -1221,7 +1360,7 @@ class MoldChart extends Component {
     );
   }
 
-        renderSummaryCards = () => {
+        renderSummaryCards = (themeHex) => {
     const { summaryData } = this.state;
     
     // summaryData가 배열인 경우 첫 번째 요소를 사용
@@ -1233,7 +1372,7 @@ class MoldChart extends Component {
                   display: 'flex', 
                   alignItems: 'center', 
                   gap: 1,
-                  color: '#ffb300',
+                  color: themeHex,
                   mb: 1.5,
                   fontSize: '0.9rem'
                 }}>
@@ -1286,6 +1425,7 @@ class MoldChart extends Component {
   }
 
   render() {
+    const { themeHex } = this.props;
     const { filters, filterExpanded, error } = this.state;
 
     return (
@@ -1299,7 +1439,7 @@ class MoldChart extends Component {
         {/* 헤더 섹션 */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="h4" gutterBottom sx={{ 
-            color: '#ffb300',
+            color: themeHex,
             fontWeight: 'bold',
             display: 'flex',
             alignItems: 'center',
@@ -1334,57 +1474,106 @@ class MoldChart extends Component {
             }
             action={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                {/* 빠른 기간 버튼 */}
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button
-                    size="small"
-                    variant={this.state.quickRange === 'today' ? 'contained' : 'outlined'}
-                    onClick={() => this.setQuickRange('today')}
-                    sx={{
-                      borderColor: 'white',
-                      color: 'white',
-                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+                {/* 연간 */}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="success"
+                  endIcon={<ExpandMoreIcon />}
+                  onClick={(e) => this.setState({ yearAnchorPos: getAnchorPos(e.currentTarget) })}
+                  sx={{ textTransform: "none", fontWeight: 700, borderColor: "white", color: "white" }}
+                >
+                  연간
+                </Button>
+                <Menu
+                  open={!!this.state.yearAnchorPos}
+                  onClose={() => this.setState({ yearAnchorPos: null })}
+                  anchorReference="anchorPosition"
+                  anchorPosition={this.state.yearAnchorPos || { top: 0, left: 0 }}
+                >
+                  <MenuItem dense onClick={() => this.selectYear(new Date().getFullYear())}>
+                    올해
+                  </MenuItem>
+                  {this.state.years.map((y) => (
+                    <MenuItem key={y} dense onClick={() => this.selectYear(y)}>
+                      {y}년
+                    </MenuItem>
+                  ))}
+                </Menu>
+
+                {/* 월간 */}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="success"
+                  endIcon={<ExpandMoreIcon />}
+                  onClick={(e) => this.setState({ monthAnchorPos: getAnchorPos(e.currentTarget) })}
+                  sx={{ textTransform: "none", fontWeight: 700, borderColor: "white", color: "white" }}
+                >
+                  월간
+                </Button>
+                <Menu
+                  open={!!this.state.monthAnchorPos}
+                  onClose={() => this.setState({ monthAnchorPos: null })}
+                  anchorReference="anchorPosition"
+                  anchorPosition={this.state.monthAnchorPos || { top: 0, left: 0 }}
+                >
+                  <MenuItem
+                    dense
+                    onClick={() => {
+                      this.setState({ selectedYear: new Date().getFullYear() }, () => this.selectMonth(new Date().getMonth() + 1));
                     }}
                   >
-                    금일
-                  </Button>
-                  <Button
-                    size="small"
-                    variant={this.state.quickRange === 'week' ? 'contained' : 'outlined'}
-                    onClick={() => this.setQuickRange('week')}
-                    sx={{
-                      borderColor: 'white',
-                      color: 'white',
-                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
-                    }}
-                  >
-                    주간
-                  </Button>
-                  <Button
-                    size="small"
-                    variant={this.state.quickRange === 'month' ? 'contained' : 'outlined'}
-                    onClick={() => this.setQuickRange('month')}
-                    sx={{
-                      borderColor: 'white',
-                      color: 'white',
-                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
-                    }}
-                  >
-                    월간
-                  </Button>
-                  <Button
-                    size="small"
-                    variant={this.state.quickRange === 'year' ? 'contained' : 'outlined'}
-                    onClick={() => this.setQuickRange('year')}
-                    sx={{
-                      borderColor: 'white',
-                      color: 'white',
-                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
-                    }}
-                  >
-                    년간
-                  </Button>
-                </Box>
+                    이번달
+                  </MenuItem>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                    <MenuItem key={m} dense onClick={() => this.selectMonth(m)}>
+                      {this.state.selectedYear}년 {m}월
+                    </MenuItem>
+                  ))}
+                </Menu>
+
+                {/* 주간 */}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="success"
+                  endIcon={<ExpandMoreIcon />}
+                  onClick={(e) => this.setState({ weekAnchorPos: getAnchorPos(e.currentTarget) })}
+                  sx={{ textTransform: "none", fontWeight: 700, borderColor: "white", color: "white" }}
+                >
+                  주간
+                </Button>
+                <Menu
+                  open={!!this.state.weekAnchorPos}
+                  onClose={() => this.setState({ weekAnchorPos: null })}
+                  anchorReference="anchorPosition"
+                  anchorPosition={this.state.weekAnchorPos || { top: 0, left: 0 }}
+                >
+                  <MenuItem dense onClick={() => {
+                    const now = today0();
+                    const thisWeek = { start: startOfWeek(now), end: endOfWeek(now) };
+                    this.selectWeek(thisWeek);
+                  }}>
+                    이번주 ({iso(startOfWeek(today0()))}~{iso(endOfWeek(today0()))})
+                  </MenuItem>
+                  {getWeeksOfMonth(this.state.selectedYear, this.state.selectedMonth).map((w, i) => (
+                    <MenuItem key={i} dense onClick={() => this.selectWeek(w)}>
+                      {this.state.selectedYear}년 {this.state.selectedMonth}월 {w.label} ({iso(w.start)}~{iso(w.end)})
+                    </MenuItem>
+                  ))}
+                </Menu>
+
+                {/* 오늘 */}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="success"
+                  onClick={this.applyToday}
+                  sx={{ textTransform: "none", fontWeight: 700, borderColor: "white", color: "white" }}
+                >
+                  오늘
+                </Button>
 
                 {/* 구분자 파이프(옵션) */}
                 <Typography sx={{ color: 'white', opacity: 0.8, mx: 0.5 }}>|</Typography>
@@ -1416,7 +1605,7 @@ class MoldChart extends Component {
               </Box>
             }
             sx={{
-              backgroundColor: '#ff8f00',
+              backgroundColor: themeHex,
               color: 'white',
               borderRadius: 1,
               mb: 2,
@@ -1559,14 +1748,48 @@ class MoldChart extends Component {
               </Grid>
             </Grid>
           </Collapse>
+
+          {/* 버튼 섹션 */}
+          <Box sx={{ mt: 2, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+            <Button 
+              variant="outlined" 
+              startIcon={<ClearIcon />} 
+              onClick={this.resetFilters} 
+              size="large" 
+              color="secondary"
+              sx={{
+                borderColor: '#666',
+                color: '#666',
+                '&:hover': {
+                  borderColor: '#333',
+                  backgroundColor: '#f5f5f5'
+                }
+              }}
+            >
+              필터 초기화
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<SearchIcon />}
+              size="large"
+              onClick={this.handleSearch}
+              sx={{ 
+                backgroundColor: themeHex, 
+                '&:hover': { backgroundColor: '#e65100' },
+                fontWeight: 'bold'
+              }}
+            >
+              검색
+            </Button>
+          </Box>
         </Paper>
 
         <Grid container spacing={3}>
           <Grid item xs={12} lg={6}>
-            {this.renderBreakdownChart()}
+            {this.renderBreakdownChart(themeHex)}
           </Grid>
           <Grid item xs={12} lg={6}>
-             {this.renderSelectedMonthDetail()}
+             {this.renderSelectedMonthDetail(themeHex)}
           </Grid>
         </Grid>
 
@@ -1576,23 +1799,23 @@ class MoldChart extends Component {
                         {/* 프레스 작업횟수, 가동시간, 요약정보를 한 줄로 배치 */}
         <Grid container spacing={3}>
            <Grid item xs={12} lg={5}>
-             {this.renderWorkCountChart()}
+             {this.renderWorkCountChart(themeHex)}
            </Grid>
            <Grid item xs={12} lg={5}>
-             {this.renderRuntimeChart()}
+             {this.renderRuntimeChart(themeHex)}
            </Grid>
            <Grid item xs={12} lg={2}>
-        {this.renderSummaryCards()}
+        {this.renderSummaryCards(themeHex)}
            </Grid>
          </Grid>
 
                   {/* 금형 세척주기 랭킹 그리드와 분석 차트 */}
          <Grid container spacing={3}>
            <Grid item xs={12} lg={7}>
-            {this.renderCleaningRankedGrid()}
+            {this.renderCleaningRankedGrid(themeHex)}
           </Grid>
           <Grid item xs={12} lg={5}>
-            {this.renderMoldAnalysis()}
+            {this.renderMoldAnalysis(themeHex)}
           </Grid>
         </Grid>
 
@@ -1602,7 +1825,7 @@ class MoldChart extends Component {
          {/* 고장점검 설비 순위 Top10 - 맨 아래로 이동 */}
          <Grid container spacing={3}>
            <Grid item xs={12}>
-            {this.renderEquipmentRankingChart()}
+            {this.renderEquipmentRankingChart(themeHex)}
           </Grid>
         </Grid>
 
@@ -1630,4 +1853,11 @@ class MoldChart extends Component {
   }
 }
 
-export default MoldChart;
+function mapStateToProps(state) {
+  return {
+    themeHex: selectThemeHex(state),
+    themeKey: selectThemeKey(state)
+  };
+}
+
+export default connect(mapStateToProps)(MoldChart);

@@ -120,7 +120,7 @@ class Chatbot extends Component {
         {/* 챗봇 사이드바 */}
         <div className={`chatbot-sidebar ${isOpen ? 'open' : ''}`}>
           <div className="chatbot-header">
-            <h3> AJIN 무물보 챗봇입니다</h3>
+            <h3> A-JINI에게 물어보세요</h3>
             <button className="chatbot-close-btn" onClick={onClose}>
               ✕
             </button>
@@ -129,7 +129,7 @@ class Chatbot extends Component {
           <div className="chatbot-messages">
             {messages.length === 0 ? (
               <div className="welcome-message">
-                <h4>안녕하세요! AJIN 스마트팩토리 챗봇입니다.</h4>
+                <h4>안녕하세요! 저는 A-JINI예요.</h4>
                 <p>생산 데이터, 금형 현황, 불량 분석 등에 대해 질문해보세요.</p>
               </div>
             ) : (

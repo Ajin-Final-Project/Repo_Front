@@ -20,3 +20,4 @@ const ChatIcon = ({ onClick, isOpen }) => {
 
 export default ChatIcon
 
+
