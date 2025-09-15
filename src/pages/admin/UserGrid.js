@@ -119,6 +119,10 @@
 //   );
 // }
 
+import { connect } from 'react-redux';
+import { selectThemeHex } from '../../reducers/layout';
+
+import { alpha } from '@mui/material/styles';
 
 // src/pages/admin/UserGrid.js
 import config from '../../config';
@@ -343,11 +347,11 @@ class UserGrid extends Component {
 
   /** DataGrid 컬럼 정의 (응답 키 = 한글 컬럼명) */
   columns = [
-    { field: 'id', headerName: 'No', width: 80, type: 'number',
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'id', headerName: 'No', width: 80, type: 'number', },
+      // headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
     {
       field: 'ID', headerName: 'ID', width: 140,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'
+      // headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'
     },
     // {
     //   field: 'PW', headerName: 'PW', width: 160,
@@ -359,7 +363,7 @@ class UserGrid extends Component {
     // },  // 제거
     {
       field: '이름', headerName: '이름', width: 120,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'
+      // headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'
     },
     {
       field: '나이',
@@ -372,37 +376,44 @@ class UserGrid extends Component {
       cellClassName: 'super-app-theme--cell',
     },
     { field: '본부', headerName: '본부', width: 140,    // 추가
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+      // headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    },
     {
       field: '부서', headerName: '부서', width: 140,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'
+      // headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'
     },
     { field: '직급', headerName: '직급', width: 120,    // 추가
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+      // headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    },
     { field: '권한', headerName: '권한', width: 140,    // 추가
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+      // headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    },
     {
       field: '메일', headerName: '메일', width: 220,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'
+      // headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'
     },
     {
       field: '전화번호', headerName: '전화번호', width: 160,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'
+      // headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'
     },
     {
       field: '주소', headerName: '주소', width: 260,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'
+      // headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell'
     },
   ];
 
   render() {
-    const { filters, filterExpanded, showPw, rows, loading, error } = this.state;
-
+    // const { filters, filterExpanded, showPw, rows, loading, error } = this.state;
+    const { filters, filterExpanded, rows, loading, error } = this.state;
+    const { themeHex } = this.props;
     return (
-      <Box className={s.root} sx={{ height: '100vh', p: 3, display: 'flex', flexDirection: 'column', backgroundColor: '#f5f5f5' }}>
+      // <Box className={s.root} sx={{ height: '100vh', p: 3, display: 'flex', flexDirection: 'column', backgroundColor: '#f5f5f5' }}>
+      <Box className={s.root} sx={{ height: '100vh', p: 3, display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+
         {/* 헤더 */}
         <Box sx={{ mb: 3 }}>
-          <Typography variant="h4" gutterBottom sx={{ color: '#ffb300', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* <Typography variant="h4" gutterBottom sx={{ color: '#ffb300', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}> */}
+          <Typography variant="h4" gutterBottom sx={{ color: themeHex, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
             사원 관리 데이터
           </Typography>
           <Typography variant="body1" color="text.secondary">
@@ -423,7 +434,15 @@ class UserGrid extends Component {
                 {filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
               </IconButton>
             )}
-            sx={{ backgroundColor: '#ff8f00', color: 'white', borderRadius: 1, mb: 2 }}
+            // sx={{ backgroundColor: '#ff8f00', color: 'white', borderRadius: 1, mb: 2 }}
+            // sx={{ backgroundColor: 'primary.main', color: 'primary.contrastText', borderRadius: 1, mb: 2 }}
+            // sx={{ backgroundColor: themeHex, color: theme.palette.getContrastText(themeHex), borderRadius: 1, mb: 2 }}
+            sx={(theme) => ({
+              bgcolor: themeHex,
+              color: theme.palette.getContrastText(themeHex),
+              borderRadius: 1,
+              mb: 2,
+            })}
           />
 
           {/* 기본 필터 */}
@@ -512,13 +531,20 @@ class UserGrid extends Component {
             /> */}
             {/* PW 보기 토글 제거 */}
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button variant="outlined" startIcon={<ClearIcon />} onClick={this.clearFilters} size="large" color="secondary">
+              {/* <Button variant="outlined" startIcon={<ClearIcon />} onClick={this.clearFilters} size="large" color="secondary"> */}
+              <Button variant="outlined" color="secondary" startIcon={<ClearIcon />} onClick={this.clearFilters} size="large">
                 필터 초기화
               </Button>
-              <Button variant="contained" startIcon={<SearchIcon />} size="large"
-                      sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}
+              {/* <Button variant="contained"   color="primary" startIcon={<SearchIcon />} size="large"
+                      // sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}
                       onClick={this.handleSearch}>
                 검색
+              </Button> */}
+              <Button variant="contained" startIcon={<SearchIcon/>}
+              sx={{ bgcolor: themeHex, color: '#fff', '&:hover': { bgcolor: themeHex } }}
+              onClick={this.handleSearch}
+              >
+              검색
               </Button>
             </Box>
           </Grid>
@@ -529,15 +555,18 @@ class UserGrid extends Component {
           <Box sx={{ height: '100%', width: '100%' }}>
             {loading && (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-                <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
+                {/* <CircularProgress size={60} sx={{ color: 'primary.main' }} /> */}
+                <CircularProgress size={60} sx={{ color: themeHex }} />
               </Box>
             )}
 
             {error && (
               <Box sx={{ p: 3 }}>
                 <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
-                <Button variant="contained" onClick={this.fetchUserData}
-                        sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}>
+                {/* <Button variant="contained" onClick={this.fetchUserData} */}
+                        {/* sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}> */}
+                    <Button variant="contained" sx={{ bgcolor: themeHex, '&:hover': { bgcolor: themeHex } }}
+                     onClick={this.fetchUserData}>
                   다시 시도
                 </Button>
               </Box>
@@ -555,34 +584,75 @@ class UserGrid extends Component {
                 density="compact"
                 slots={{ toolbar: GridToolbar }}
                 slotProps={{ toolbar: { showQuickFilter: true, quickFilterProps: { debounceMs: 500 } } }}
-                sx={{
-                  '& .super-app-theme--header': {
-                    backgroundColor: '#ff8f00',
-                    color: 'white',
-                    fontWeight: 'bold',
+                // sx={{
+                //   '& .super-app-theme--header': {
+                //     backgroundColor: '#ff8f00',
+                //     color: 'white',
+                //     fontWeight: 'bold',
+                //   },
+                //   '& .super-app-theme--cell': {
+                //     borderBottom: '1px solid #e0e0e0',
+                //   },
+                //   '& .MuiDataGrid-root': {
+                //     border: 'none',
+                //   },
+                //   '& .MuiDataGrid-cell': {
+                //     borderBottom: '1px solid #e0e0e0',
+                //   },
+                //   '& .MuiDataGrid-virtualScroller': {
+                //     backgroundColor: '#fafafa',
+                //   },
+                //   '& .MuiDataGrid-footerContainer': {
+                //     borderTop: '2px solid #e0e0e0',
+                //     backgroundColor: '#f5f5f5',
+                //   },
+                //   '& .MuiDataGrid-toolbarContainer': {
+                //     backgroundColor: '#f8f9fa',
+                //     borderBottom: '1px solid #e0e0e0',
+                //     padding: '8px 16px',
+                //   },
+                // }}
+                sx={(theme) => ({
+                  // 헤더 바탕/글자
+                  '& .MuiDataGrid-columnHeaders': {
+                    // backgroundColor: theme.palette.primary.main,
+                    // color: theme.palette.getContrastText(theme.palette.primary.main),
+                    backgroundColor: `${themeHex} !important`,
+                    color: `${theme.palette.getContrastText(themeHex)} !important`, 
+                    borderBottom: 'none',
                   },
-                  '& .super-app-theme--cell': {
-                    borderBottom: '1px solid #e0e0e0',
+                  '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 700 },
+
+                  // 행 호버/선택 색
+                  '& .MuiDataGrid-row:hover': {
+                    backgroundColor: theme.palette.action.hover,
                   },
-                  '& .MuiDataGrid-root': {
-                    border: 'none',
+                  '& .MuiDataGrid-row.Mui-selected, & .MuiDataGrid-row.Mui-selected:hover': {
+                    backgroundColor: theme.palette.action.selected,
                   },
+
+                  // 셀 보더/글자 톤
                   '& .MuiDataGrid-cell': {
-                    borderBottom: '1px solid #e0e0e0',
+                    borderColor: theme.palette.divider,
+                    color: theme.palette.text.primary,
                   },
-                  '& .MuiDataGrid-virtualScroller': {
-                    backgroundColor: '#fafafa',
-                  },
-                  '& .MuiDataGrid-footerContainer': {
-                    borderTop: '2px solid #e0e0e0',
-                    backgroundColor: '#f5f5f5',
-                  },
+
+                  // 툴바/푸터
                   '& .MuiDataGrid-toolbarContainer': {
-                    backgroundColor: '#f8f9fa',
-                    borderBottom: '1px solid #e0e0e0',
+                    backgroundColor: theme.palette.background.paper,
+                    color: theme.palette.text.primary,
+                    borderBottom: `1px solid ${theme.palette.divider}`,
                     padding: '8px 16px',
                   },
-                }}
+                  '& .MuiDataGrid-footerContainer': {
+                    backgroundColor: theme.palette.background.paper,
+                    color: theme.palette.text.primary,
+                    borderTop: `1px solid ${theme.palette.divider}`,
+                  },
+
+                  // (선택) 가로 스크롤바 높이
+                  '& .MuiDataGrid-scrollbar--horizontal': { minHeight: 12 },
+                })}
               />
             )}
           </Box>
@@ -592,6 +662,9 @@ class UserGrid extends Component {
   }
 }
 
-export default UserGrid;
+// export default UserGrid;
+export default connect((state) => ({
+  themeHex: selectThemeHex(state),
+}))(UserGrid);
 
 // 권한(role)을 Select로 바꿔서 ENUM 값(시스템관리자/임원/관리자/직원/열람전용)만 선택하도록 UI 수정 가능..
