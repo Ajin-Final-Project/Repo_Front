@@ -149,6 +149,9 @@ class DowntimeChart extends Component {
   toYMD = (d) => (d ? (d instanceof Date ? d : new Date(d)).toLocaleDateString("sv-SE") : "");
   iso = (d) => (d instanceof Date ? d.toLocaleDateString("sv-SE") : this.toYMD(d));
 
+  // Promise 기반 setState 유틸(await 사용)
+  setStateAsync = (updater) => new Promise((resolve) => this.setState(updater, resolve));
+
   // === 연/월/주 계산 & 앵커 ===
   today0 = () => {
     const t = new Date();
@@ -738,7 +741,7 @@ class DowntimeChart extends Component {
               sx={{ backgroundColor: themeHex, color: "white", borderRadius: 1, mb: 2 }}
             />
 
-            {/* 이하 기존 폼/필터 UI 그대로 */}
+            {/* 폼/필터 UI */}
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6} md={2}>
                 <TextField select fullWidth label="공장" size="small"
@@ -767,7 +770,7 @@ class DowntimeChart extends Component {
                 </TextField>
               </Grid>
               <Grid item xs={12} sm={6} md={2}>
-                <TextField fullWidth label="품목코드" size="small" value={uiFilters.itemCode||""}
+                <TextField fullWidth label="품번" size="small" value={uiFilters.itemCode||""}
                   onClick={this.openItemCodeModal}
                   InputProps={{ readOnly:true, style:{cursor:"pointer"}, endAdornment:(<InputAdornment position="end"><KeyboardArrowDownIcon sx={{ color:"text.secondary" }}/></InputAdornment>) }}
                   sx={{ "& .MuiInputBase-root":{ cursor:"pointer", "&:hover":{ backgroundColor:"#f5f5f5" } } }}
@@ -785,7 +788,6 @@ class DowntimeChart extends Component {
             <Collapse in={filterExpanded} timeout="auto" unmountOnExit>
               <Divider sx={{ my: 2 }} />
               <Grid container spacing={2}>
-                {/* (확장 필터들은 기존 그대로) */}
                 <Grid item xs={12} sm={6} md={3}><TextField fullWidth size="small" label="차종" value={uiFilters.carModel} onChange={(e)=>this.handleFilterChange("carModel", e.target.value)} /></Grid>
                 <Grid item xs={12} sm={6} md={3}><TextField fullWidth size="small" label="비가동코드" value={uiFilters.downtimeCode} onChange={(e)=>this.handleFilterChange("downtimeCode", e.target.value)} InputProps={{ startAdornment:(<InputAdornment position="start"><SearchIcon/></InputAdornment>) }} /></Grid>
                 <Grid item xs={12} sm={6} md={3}><TextField fullWidth size="small" label="비가동명" value={uiFilters.downtimeName} onChange={(e)=>this.handleFilterChange("downtimeName", e.target.value)} /></Grid>
@@ -872,7 +874,7 @@ class DowntimeChart extends Component {
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12}>
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{display: "flex", alignItems: "center", fontSize: "24px", fontWeight: "600"}}>설비적 비가동 현황</span>
+              <span style={{display: "flex", alignItems: "center", fontSize: "24px", fontWeight: "600"}}>설비 비가동 현황</span>
               <Paper
                 elevation={0}
                 variant="outlined"
