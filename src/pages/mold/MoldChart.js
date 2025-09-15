@@ -961,7 +961,7 @@ class MoldChart extends Component {
                       if (!value) return null;
                       return (
                         <text x={x + width / 2} y={y - 6} textAnchor="middle" fontSize={12} fill="#333">
-                          {Number(value).toLocaleString()}
+                          {Number(value).toLocaleString() + '건'}
                         </text>
                       );
                     }}
@@ -1758,10 +1758,10 @@ class MoldChart extends Component {
               size="large" 
               color="secondary"
               sx={{
-                borderColor: '#666',
-                color: '#666',
+                borderColor:"secondary",
+                color: "secondary",
                 '&:hover': {
-                  borderColor: '#333',
+                  // borderColor: '#333',
                   backgroundColor: '#f5f5f5'
                 }
               }}

@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList  } from 'recharts';
 import {
   Box,
   Paper,
@@ -115,6 +115,10 @@ function mapStateToProps(state) {
     themeKey: selectThemeKey(state)
   };
 }
+
+const numberWithCommas = (value) => {
+  return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
 
 class ProductionChart extends Component {
   constructor(props) {
@@ -529,6 +533,7 @@ class ProductionChart extends Component {
       itemCodeModalOpen: false // 선택 후 모달 닫기
     }));
   };
+  
 
   renderPieCharts = (themeHex) => {
     const { pieChartData, loading } = this.state;
@@ -662,13 +667,57 @@ class ProductionChart extends Component {
 
         <Box sx={{ display: 'flex', gap: 3 }}>
           <Box sx={{ flex: 1, height: 350 }}>
+           
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={barChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#666' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#666' }} />
-                <Tooltip formatter={(value) => [value, '양품수량']} labelFormatter={(label) => `${label} 양품수량`} contentStyle={{ backgroundColor: 'white', border: '1px solid #e0e0e0', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                <Bar dataKey="quantity" fill={themeHex} radius={[4, 4, 0, 0]} name="양품수량" />
+                <XAxis 
+                  dataKey="month" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 12, fill: '#666' }} 
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 12, fill: '#666' }} 
+                />
+                <Tooltip 
+                  formatter={(value) => [numberWithCommas(value), '양품수량']} 
+                  labelFormatter={(label, payload) => {
+                    const year = payload?.[0]?.payload?.year || '';
+                    return `${year}년 ${label}`;
+                  }} 
+                  contentStyle={{ 
+                    backgroundColor: 'white', 
+                    border: '1px solid #e0e0e0', 
+                    borderRadius: '8px', 
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)' 
+                  }} 
+                />
+                <Bar 
+                  dataKey="quantity" 
+                  fill={themeHex} 
+                  radius={[4, 4, 0, 0]} 
+                  name="양품수량"
+                >
+                  {/* ✅ LabelList 커스텀 */}
+                  <LabelList 
+                    dataKey="quantity" 
+                    position="top" 
+                    content={({ value, x, y, width }) => (
+                      <text 
+                        x={x + width / 2} 
+                        y={y - 5} 
+                        fill="#333" 
+                        fontSize={12} 
+                        textAnchor="middle"
+                      >
+                        {numberWithCommas(value)}
+                      </text>
+                    )}
+                  />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </Box>
@@ -1310,10 +1359,10 @@ class ProductionChart extends Component {
                     size="large" 
                     color="secondary"
                     sx={{
-                      borderColor: '#666',
-                      color: '#666',
+                      borderColor: "secondary",
+                      color: "secondary",
                       '&:hover': {
-                        borderColor: '#333',
+                        // borderColor: '#333',
                         backgroundColor: '#f5f5f5'
                       }
                     }}
