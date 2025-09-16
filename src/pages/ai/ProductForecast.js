@@ -92,8 +92,8 @@ export default function ProductForecast() {
   const [selectedSku, setSelectedSku] = useState("SKU1");
   const [hourlyData, setHourlyData] = useState([]);
   const [dailyData, setDailyData] = useState([]);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
-  const [currentTimeSlot, setCurrentTimeSlot] = useState(null); // 현재 시간대
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState("22:40~23:40");
+  const [currentTimeSlot, setCurrentTimeSlot] = useState("22:40~23:40");
   const [autoCycle, setAutoCycle] = useState(false);
 
   // ✅ 로딩/에러 상태
@@ -104,9 +104,21 @@ export default function ProductForecast() {
 
   // ✅ 검색 필터 상태
   const [quickRange] = useState("day");
+
   const [filters, setFilters] = useState({
-    date: "2025-06-27",
+    start_date: "2025-06-17",  // ✅ 기본 시작일
+    end_date: "2025-06-26",    // ✅ 기본 종료일
   });
+
+  // 종료일 보정 (오늘이 DB 이후라면 2025-06-30으로)
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0,10);
+    if (filters.end_date > "2025-06-30") {
+      setFilters((prev) => ({ ...prev, end_date: "2025-06-30" }));
+    } else if (filters.end_date > today) {
+      setFilters((prev) => ({ ...prev, end_date: today }));
+    }
+  }, [filters.end_date]);
 
   // ✅ 초 → HH:MM 변환
   const secondsToHHMM = (sec) => {
@@ -150,24 +162,6 @@ export default function ProductForecast() {
 
   const allShiftTimes = [...dayShiftTimes, ...nightShiftTimes];
 
-  // ✅ 현재 시간 기반 초기 시간대 설정
-  useEffect(() => {
-    if (!selectedTimeSlot || !currentTimeSlot) {
-      const now = new Date(); // 현재 시간: 2025-09-15 13:25 KST
-      const hours = String(now.getHours()).padStart(2, "0");
-      const minutes = String(now.getMinutes()).padStart(2, "0");
-      const currentTime = `${hours}:${minutes}`;
-      const currentSlot = allShiftTimes.find(([start, end]) => {
-        return currentTime >= start && currentTime <= end;
-      });
-      const initialSlot = currentSlot
-        ? `${currentSlot[0]}~${currentSlot[1]}`
-        : "12:40~13:40"; // 폴백
-      setSelectedTimeSlot(initialSlot);
-      setCurrentTimeSlot(initialSlot);
-      console.log(`Initial Time Slot: ${initialSlot}, Current Time Slot: ${initialSlot}`);
-    }
-  }, [selectedTimeSlot, currentTimeSlot]);
 
   // ✅ fetchHourly
   const fetchHourly = async () => {
@@ -199,14 +193,28 @@ export default function ProductForecast() {
     setLoading((s) => ({ ...s, daily: true }));
     setError((s) => ({ ...s, daily: null }));
     try {
-      const baseDate = new Date(filters.date);
-      const startDate = new Date(baseDate);
-      startDate.setDate(baseDate.getDate() - 6);
-      const endDate = new Date(baseDate);
-      endDate.setDate(baseDate.getDate() + 1);
+      // ✅ 시작일 / 종료일 가져오기
+      const startDate = new Date(filters.start_date);
+      const endDate = new Date(filters.end_date);
+
+      // 미래 3일 추가
+      const futureDates = Array.from({ length: 3 }, (_, i) => {
+        const d = new Date(endDate);
+        d.setDate(d.getDate() + i + 1);
+        const str = d.toISOString().slice(0, 10);
+        // ✅ DB 마지막 일자 넘어가면 추가 안 함
+        if (str > "2025-06-30") return null;
+        return str;
+      }).filter(Boolean);
+
 
       const startStr = startDate.toISOString().slice(0, 10);
       const endStr = endDate.toISOString().slice(0, 10);
+
+      // ➕ 예측 포함해서 3일 뒤까지 쿼리
+      const endStrForQuery = new Date(endDate);
+      endStrForQuery.setDate(endStrForQuery.getDate() + 3);
+      const endStrQuery = endStrForQuery.toISOString().slice(0, 10);
 
       const json = await fetchJson(
         API("/forecast/daily"),
@@ -216,12 +224,14 @@ export default function ProductForecast() {
           body: JSON.stringify({
             sku: selectedSku,
             start_work_date: startStr,
-            end_work_date: endStr,
+            end_work_date: endStrQuery,
           }),
         },
         "daily-forecast"
       );
 
+
+      // DB 데이터 + 미래 3일 합치기
       const filled = [];
       let cur = new Date(startDate);
       while (cur <= endDate) {
@@ -229,29 +239,22 @@ export default function ProductForecast() {
         const found = Array.isArray(json?.data)
           ? json.data.find((d) => d.date === curStr)
           : null;
-        filled.push(
-          found
-            ? {
-                date: curStr,
-                pred: found.pred ?? null,
-                actual: found.actual ?? null,
-                error: found.error ?? null,
-                abs_error: found.abs_error ?? null,
-                pct_error: found.pct_error ?? null,
-                hourly_avg: found.hourly_avg ?? null,
-              }
-            : {
-                date: curStr,
-                pred: null,
-                actual: null,
-                error: null,
-                abs_error: null,
-                pct_error: null,
-                hourly_avg: null,
-              }
-        );
+        filled.push(found ? { ...found } : { date: curStr, pred: null, actual: null });
         cur.setDate(cur.getDate() + 1);
       }
+      // ➕ 미래 3일 append (단, DB 마지막일 넘어가면 제외됨)
+      futureDates.forEach(date => {
+        const found = Array.isArray(json?.data)
+          ? json.data.find((d) => d.date === date)
+          : null;
+        if (found) {
+          filled.push({ ...found, actual: null });
+        } else {
+          filled.push({ date, pred: 0, actual: null });
+        }
+      });
+
+
       setDailyData(filled);
     } catch (e) {
       setError((s) => ({ ...s, daily: e.message || "일별 데이터 조회 실패" }));
@@ -260,6 +263,7 @@ export default function ProductForecast() {
       setLoading((s) => ({ ...s, daily: false }));
     }
   };
+
 
   // ✅ fetchAll
   const fetchAll = useCallback(async () => {
@@ -398,19 +402,20 @@ export default function ProductForecast() {
   const yMax = maxVal + margin;
 
   // ✅ 일별 그래프 데이터
-  const baseDate = filters.date;
+  const baseDate = filters.end_date;
   const allDailyData = dailyData.map((d) => ({
     date: d.date,
     actual: d.date <= baseDate ? d.actual : null,
-    predicted: d.pred,
+    predicted: d.pred != null ? Number(d.pred) : null,   // ✅ 미래일자는 값 유지
   }));
+
 
   // ✅ DataGrid 행 데이터
   let tableRows = dailyData.map((d, idx) => {
     const isFuture = d.date > baseDate;
     let label = "과거";
     if (d.date === baseDate) label = "오늘";
-    if (d.date > baseDate) label = "내일";
+    if (d.date > baseDate) label = "미래";
 
     return {
       id: idx + 1,
@@ -421,15 +426,13 @@ export default function ProductForecast() {
       diff: isFuture ? "-" : (d.error != null ? Number(d.error).toFixed(2) : "-"),
       acc: isFuture ? "-" : (d.pct_error != null ? `${(d.pct_error).toFixed(2)}%` : "-"),
       uph: isFuture ? "-" : (d.hourly_avg != null ? Number(d.hourly_avg).toFixed(2) : "-"),
+      isFuture,
     };
   });
 
   // ✅ 미래 > 오늘 > 과거 순으로 정렬
   tableRows = tableRows.sort((a, b) => {
-    if (a.date > baseDate && b.date <= baseDate) return -1;
-    if (a.date === baseDate && b.date < baseDate) return -1;
-    if (a.date < baseDate && b.date >= baseDate) return 1;
-    return a.date.localeCompare(b.date);
+    return new Date(b.date) - new Date(a.date);
   });
 
   // ✅ DataGrid 컬럼 정의
@@ -592,19 +595,6 @@ export default function ProductForecast() {
         <Grid container spacing={2} alignItems="center">
           
           <Grid item>
-            <Typography sx={{ mr: 1 }}>일자</Typography>
-          </Grid>
-          <Grid item>
-            <TextField
-              type="date"
-              value={filters.date}
-              onChange={(e) => handleFilterChange("date", e.target.value)}
-              size="small"
-              variant="outlined"
-              sx={{ backgroundColor: "white", borderRadius: 1, minWidth: 160 }}
-            />
-          </Grid>
-          <Grid item>
             <Typography sx={{ ml: 2 }}>품번(SKU)</Typography>
           </Grid>
           <Grid item>
@@ -617,6 +607,33 @@ export default function ProductForecast() {
               </Select>
             </FormControl>
           </Grid>
+
+          <Grid item>
+            <Typography>시작일</Typography>
+          </Grid>
+          <Grid item>
+            <TextField
+              type="date"
+              value={filters.start_date}
+              onChange={(e) => handleFilterChange("start_date", e.target.value)}
+              inputProps={{ min: "2024-01-01", max: "2025-06-30" }}
+            />
+          </Grid>
+
+          <Grid item>
+            <Typography>종료일</Typography>
+          </Grid>
+          <Grid item>
+            <TextField
+              type="date"
+              value={filters.end_date}
+              onChange={(e) => handleFilterChange("end_date", e.target.value)}
+              inputProps={{ min: "2024-01-01", max: "2025-06-30" }}
+            />
+          </Grid>
+
+
+          
           <Grid item>
             <Typography sx={{ ml: 2 }}>시간대</Typography>
           </Grid>
@@ -668,7 +685,12 @@ export default function ProductForecast() {
                     <ComposedChart data={allDailyData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" />
-                      <YAxis domain={["dataMin - 10", "dataMax + 10"]} />
+                      <YAxis 
+                        domain={["dataMin - 10", "dataMax + 10"]}
+                        width={70}
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value) => Math.round(value)}   // ✅ 정수만 출력
+                      />
                       <Tooltip formatter={(value, name) => [Number(value).toFixed(2), name]} />
                       <Legend verticalAlign="top" align="right" wrapperStyle={{ marginBottom: 10 }} />
 
@@ -702,31 +724,29 @@ export default function ProductForecast() {
 
                 </div>
               </Box>
-              <div style={{ height: 530, width: "100%", marginTop: 16 }}>
 
+              <div style={{ height: 530, width: "100%", marginTop: 16 }}>
                 <DataGrid
                   rows={tableRows}
                   columns={tableColumns}
-                  autoHeight
+                  pageSizeOptions={[8, 10, 15]}
+                  pagination
                   initialState={{
-                    pagination: {
-                      paginationModel: { pageSize: 10 },
-                    },
+                    pagination: { paginationModel: { pageSize: 8 } }
                   }}
-                  pageSizeOptions={[5, 10, 20]}
                   getRowClassName={(params) =>
-                    params.row.type === "내일" ? "highlightTomorrow" : ""
+                    params.row.isFuture ? "future-row" : ""
                   }
                   sx={{
-                    "& .highlightTomorrow": {
-                      backgroundColor: `${themeHex}20`,
+                    "& .future-row": {
+                      backgroundColor: `${themeHex}40`,   // ✅ 미래 강조
                       fontWeight: "bold",
                       color: "black",
                     },
                   }}
                 />
-
               </div>
+
             </>
           )}
         </CardContent>
