@@ -1,5 +1,6 @@
 // src/pages/mold/MoldShotCheck.js
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import {
   Box,
   Paper,
@@ -15,7 +16,8 @@ import {
   Collapse,
   CircularProgress,
   Alert,
-  MenuItem
+  MenuItem,
+  Menu
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { 
@@ -30,8 +32,54 @@ import {
 
 import s from './MoldCleaningData.module.scss'; // 스타일 재사용(원하면 파일명 변경)
 import config from '../../config';
+import { selectThemeHex, selectThemeKey } from '../../reducers/layout';
 
 import ItemCodeModal from '../common/ItemCodeModal';
+
+// 날짜 관련 헬퍼 함수들 
+const iso = (d) => d.toLocaleDateString("sv-SE"); // YYYY-MM-DD
+const today0 = () => {
+  const t = new Date();
+  return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+};
+const lastOfMonth = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0);
+
+/** 버튼 기준 화면 좌표 → Menu anchorPosition */
+const getAnchorPos = (el) => {
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return { top: Math.round(r.bottom + window.scrollY), left: Math.round(r.left + window.scrollX) };
+};
+
+/** 월요일 시작 주간 */
+const startOfWeek = (d) => {
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1) - day;
+  const s = new Date(d);
+  s.setDate(d.getDate() + diff);
+  return new Date(s.getFullYear(), s.getMonth(), s.getDate());
+};
+const endOfWeek = (d) => {
+  const s = startOfWeek(d);
+  return new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6);
+};
+const getWeeksOfMonth = (year, month) => {
+  const first = new Date(year, month - 1, 1);
+  const last = lastOfMonth(first);
+  let cur = startOfWeek(first);
+  const out = [];
+  let idx = 1;
+  while (cur <= last) {
+    const s = new Date(cur),
+      e = endOfWeek(cur);
+    const clipS = new Date(Math.max(s, first));
+    const clipE = new Date(Math.min(e, last));
+    out.push({ label: `${idx}주차`, start: clipS, end: clipE });
+    idx += 1;
+    cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 7);
+  }
+  return out;
+};
 
 const API_URL = `${config.baseURLApi}/smartFactory/mold_shot_check/list`; 
 // ↑ 백엔드 경로가 다르면 여기만 수정하세요.
@@ -71,7 +119,9 @@ class MoldShotCheck extends Component {
         
         // === 날짜 범위 검색 ===
         start_date: "2025-01-01",
-        end_date: "2025-06-30",   
+        end_date: "2025-06-30",
+        basic_start_date: "2025-01-01",
+        basic_end_date: "2025-06-30",   
       },
       filterExpanded: false,
       quickRange: 'year', // 빠른 기간 선택 상태
@@ -79,10 +129,21 @@ class MoldShotCheck extends Component {
       loading: false,
       error: null,
       itemCodeModalOpen: false,
+      
+      // 프리셋 상태/앵커
+      selectedYear: new Date().getFullYear(),
+      selectedMonth: new Date().getMonth() + 1,
+      yearAnchorPos: null,
+      monthAnchorPos: null,
+      weekAnchorPos: null,
+      
+      // 연도 목록
+      years: [],
     };
   }
 
   componentDidMount() {
+    this.loadYears();
     this.fetchData();
   }
 
@@ -238,10 +299,114 @@ class MoldShotCheck extends Component {
   };
 
   handleFilterChange = (field, value) => {
-    this.setState(prev => ({
-      filters: { ...prev.filters, [field]: value },
+    this.setState(prev => {
+      const newFilters = { ...prev.filters, [field]: value };
+      
+      // 품번, 품목명, 날짜가 변경되면 데이터 초기화
+      const shouldClearData = ['itemCode', 'itemName', 'start_date', 'end_date', 'basic_start_date', 'basic_end_date'].includes(field);
+      
+      const clearData = shouldClearData ? {
+        rows: []
+      } : {};
+      
+      return {
+        filters: newFilters,
+        ...clearData
+      };
+    });
+  };
+
+  /** 연도 옵션 (서버 없으면 fallback) */
+  loadYears = async () => {
+    try {
+      // 서버에서 연도 목록을 가져오는 API가 있다면 여기에 추가
+      // const response = await fetch(`${config.baseURLApi}/smartFactory/mold_shot_check/years`);
+      // const result = await response.json();
+      // const years = result.data || [];
+      
+      // 현재는 클라이언트에서 생성
+      const y = new Date().getFullYear();
+      const years = [y, y - 1, y - 2, y - 3, y - 4];
+      this.setState({ years, selectedYear: y });
+    } catch {
+      const y = new Date().getFullYear();
+      const years = [y, y - 1, y - 2, y - 3, y - 4];
+      this.setState({ years, selectedYear: y });
+    }
+  };
+
+  /** 날짜 프리셋/범위 */
+  setDateRange = (start, end) => {
+    const basic_start_date = iso(start);
+    const basic_end_date = iso(end);
+    this.setState((prev) => ({
+      filters: { ...prev.filters, basic_start_date, basic_end_date },
+      // 날짜 변경 시 데이터 초기화 (API 호출 없음)
       rows: []
     }));
+  };
+
+  applyToday = () => {
+    const t = today0();
+    this.setDateRange(t, t);
+  };
+
+  selectYear = (y) => {
+    const s = new Date(y, 0, 1);
+    const e = new Date(y, 11, 31);
+    this.setState({ selectedYear: y, yearAnchorPos: null });
+    this.setDateRange(s, e);
+  };
+
+  selectMonth = (m) => {
+    const y = this.state.selectedYear;
+    const s = new Date(y, m - 1, 1);
+    const e = lastOfMonth(s);
+    this.setState({ monthAnchorPos: null, selectedMonth: m });
+    this.setDateRange(s, e);
+  };
+
+  selectWeek = (w) => {
+    this.setState({ weekAnchorPos: null });
+    this.setDateRange(w.start, w.end);
+  };
+
+  /** 필터 초기화 */
+  resetFilters = () => {
+    const currentYear = new Date().getFullYear();
+    const defaultFilters = {
+      responsible_person: '',
+      work_center: '',
+      itemCode: '',
+      itemName: '',
+      plant: "아진산업-경산(본사)",
+      worker: "프레스",
+      line: "1500T",
+      equipment_detail: '',
+      order_type: '',
+      action_content: '',
+      basic_start_date: `${currentYear}-01-01`,
+      basic_end_date: `${currentYear}-12-31`,
+      mold_no: '',
+      measuring_point: '',
+      measuring_position: '',
+      cum_shot_min: '',
+      cum_shot_max: '',
+      inspection_hit_count: '',
+      maintenance_cycle: '',
+      progress_min: '',
+      progress_max: '',
+      start_date: `${currentYear}-01-01`,
+      end_date: `${currentYear}-12-31`
+    };
+    
+    this.setState({
+      filters: defaultFilters,
+      quickRange: null,
+      selectedYear: currentYear,
+      selectedMonth: new Date().getMonth() + 1,
+      rows: []
+    });
   };
 
   handleSearch = () => {
@@ -255,47 +420,6 @@ class MoldShotCheck extends Component {
   // 빠른 기간 선택 메서드
   toYMD = (d) => d.toLocaleDateString('sv-SE'); // YYYY-MM-DD
 
-  setQuickRange = (type) => {
-    const now = new Date();
-    const today = this.toYMD(now);
-
-    let start = today;
-    let end = today;
-
-    if (type === 'today') {
-      // 금일: 오늘~오늘
-      start = today;
-      end = today;
-    } else if (type === 'week') {
-      // 주간: 월요일~오늘 (한국/ISO 기준 월요일 시작)
-      const d = new Date(now);
-      const day = d.getDay();           // 0(일)~6(토)
-      const diffToMonday = (day + 6) % 7; // 월=1 -> 0, 일=0 -> 6
-      d.setDate(d.getDate() - diffToMonday);
-      start = this.toYMD(d);
-      end = today;
-    } else if (type === 'month') {
-      // 월간: 1일~오늘
-      const d = new Date(now.getFullYear(), now.getMonth(), 1);
-      start = this.toYMD(d);
-      end = today;
-    } else if (type === 'year') {
-      // 년간: 1월1일~오늘
-      const d = new Date(now.getFullYear(), 0, 1);
-      start = this.toYMD(d);
-      end = today;
-    }
-
-    this.setState(prev => ({
-      quickRange: type,
-      filters: {
-        ...prev.filters,
-        basic_start_date: start,
-        basic_end_date: end,
-      },
-      rows: [], // 선택 시 기존 데이터 초기화
-    }));
-  };
 
   columns = [
     { field: 'id', headerName: 'ID', width: 70, type: 'string',
@@ -366,6 +490,7 @@ closeItemCodeModal = () => {
 
 
   render() {
+    const { themeHex } = this.props;
     const { filters, filterExpanded, rows, loading, error } = this.state;
 
     return (
@@ -379,7 +504,7 @@ closeItemCodeModal = () => {
         {/* 헤더 */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="h4" gutterBottom sx={{ 
-            color: '#ffb300',
+            color: themeHex,
             fontWeight: 'bold',
             display: 'flex',
             alignItems: 'center',
@@ -413,57 +538,106 @@ closeItemCodeModal = () => {
             }
             action={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                {/* 빠른 기간 버튼 */}
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button
-                    size="small"
-                    variant={this.state.quickRange === 'today' ? 'contained' : 'outlined'}
-                    onClick={() => this.setQuickRange('today')}
-                    sx={{
-                      borderColor: 'white',
-                      color: 'white',
-                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
+                {/* 연간 */}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="success"
+                  endIcon={<ExpandMoreIcon />}
+                  onClick={(e) => this.setState({ yearAnchorPos: getAnchorPos(e.currentTarget) })}
+                  sx={{ textTransform: "none", fontWeight: 700, borderColor: "white", color: "white" }}
+                >
+                  연간
+                </Button>
+                <Menu
+                  open={!!this.state.yearAnchorPos}
+                  onClose={() => this.setState({ yearAnchorPos: null })}
+                  anchorReference="anchorPosition"
+                  anchorPosition={this.state.yearAnchorPos || { top: 0, left: 0 }}
+                >
+                  <MenuItem dense onClick={() => this.selectYear(new Date().getFullYear())}>
+                    올해
+                  </MenuItem>
+                  {this.state.years.map((y) => (
+                    <MenuItem key={y} dense onClick={() => this.selectYear(y)}>
+                      {y}년
+                    </MenuItem>
+                  ))}
+                </Menu>
+
+                {/* 월간 */}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="success"
+                  endIcon={<ExpandMoreIcon />}
+                  onClick={(e) => this.setState({ monthAnchorPos: getAnchorPos(e.currentTarget) })}
+                  sx={{ textTransform: "none", fontWeight: 700, borderColor: "white", color: "white" }}
+                >
+                  월간
+                </Button>
+                <Menu
+                  open={!!this.state.monthAnchorPos}
+                  onClose={() => this.setState({ monthAnchorPos: null })}
+                  anchorReference="anchorPosition"
+                  anchorPosition={this.state.monthAnchorPos || { top: 0, left: 0 }}
+                >
+                  <MenuItem
+                    dense
+                    onClick={() => {
+                      this.setState({ selectedYear: new Date().getFullYear() }, () => this.selectMonth(new Date().getMonth() + 1));
                     }}
                   >
-                    금일
-                  </Button>
-                  <Button
-                    size="small"
-                    variant={this.state.quickRange === 'week' ? 'contained' : 'outlined'}
-                    onClick={() => this.setQuickRange('week')}
-                    sx={{
-                      borderColor: 'white',
-                      color: 'white',
-                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
-                    }}
-                  >
-                    주간
-                  </Button>
-                  <Button
-                    size="small"
-                    variant={this.state.quickRange === 'month' ? 'contained' : 'outlined'}
-                    onClick={() => this.setQuickRange('month')}
-                    sx={{
-                      borderColor: 'white',
-                      color: 'white',
-                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
-                    }}
-                  >
-                    월간
-                  </Button>
-                  <Button
-                    size="small"
-                    variant={this.state.quickRange === 'year' ? 'contained' : 'outlined'}
-                    onClick={() => this.setQuickRange('year')}
-                    sx={{
-                      borderColor: 'white',
-                      color: 'white',
-                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
-                    }}
-                  >
-                    년간
-                  </Button>
-                </Box>
+                    이번달
+                  </MenuItem>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                    <MenuItem key={m} dense onClick={() => this.selectMonth(m)}>
+                      {this.state.selectedYear}년 {m}월
+                    </MenuItem>
+                  ))}
+                </Menu>
+
+                {/* 주간 */}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="success"
+                  endIcon={<ExpandMoreIcon />}
+                  onClick={(e) => this.setState({ weekAnchorPos: getAnchorPos(e.currentTarget) })}
+                  sx={{ textTransform: "none", fontWeight: 700, borderColor: "white", color: "white" }}
+                >
+                  주간
+                </Button>
+                <Menu
+                  open={!!this.state.weekAnchorPos}
+                  onClose={() => this.setState({ weekAnchorPos: null })}
+                  anchorReference="anchorPosition"
+                  anchorPosition={this.state.weekAnchorPos || { top: 0, left: 0 }}
+                >
+                  <MenuItem dense onClick={() => {
+                    const now = today0();
+                    const thisWeek = { start: startOfWeek(now), end: endOfWeek(now) };
+                    this.selectWeek(thisWeek);
+                  }}>
+                    이번주 ({iso(startOfWeek(today0()))}~{iso(endOfWeek(today0()))})
+                  </MenuItem>
+                  {getWeeksOfMonth(this.state.selectedYear, this.state.selectedMonth).map((w, i) => (
+                    <MenuItem key={i} dense onClick={() => this.selectWeek(w)}>
+                      {this.state.selectedYear}년 {this.state.selectedMonth}월 {w.label} ({iso(w.start)}~{iso(w.end)})
+                    </MenuItem>
+                  ))}
+                </Menu>
+
+                {/* 오늘 */}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="success"
+                  onClick={this.applyToday}
+                  sx={{ textTransform: "none", fontWeight: 700, borderColor: "white", color: "white" }}
+                >
+                  금일
+                </Button>
 
                 {/* 구분자 파이프(옵션) */}
                 <Typography sx={{ color: 'white', opacity: 0.8, mx: 0.5 }}>|</Typography>
@@ -495,7 +669,7 @@ closeItemCodeModal = () => {
               </Box>
             }
             sx={{
-              backgroundColor: '#ff8f00',
+              backgroundColor: themeHex,
               color: 'white',
               borderRadius: 1,
               mb: 2,
@@ -622,7 +796,7 @@ closeItemCodeModal = () => {
             <Grid container spacing={2}>
               {/* 금형세척주기 검색 조건 */}
               <Grid item xs={12}>
-                <Typography variant="subtitle1" sx={{ mb: 2, color: '#ff8f00', fontWeight: 'bold' }}>
+                <Typography variant="subtitle1" sx={{ mb: 2, color: themeHex, fontWeight: 'bold' }}>
                   금형세척주기 검색 조건
                 </Typography>
               </Grid>
@@ -774,7 +948,7 @@ closeItemCodeModal = () => {
               <Button
                 variant="outlined"
                 startIcon={<ClearIcon />}
-                onClick={this.clearFilters}
+                onClick={this.resetFilters}
                 size="large"
                 color="secondary"
               >
@@ -787,7 +961,7 @@ closeItemCodeModal = () => {
                 startIcon={<SearchIcon />}
                 size="large"
                 sx={{ 
-                  backgroundColor: '#ff8f00',
+                  backgroundColor: themeHex,
                   '&:hover': {
                     backgroundColor: '#f57c00'
                   }
@@ -805,7 +979,7 @@ closeItemCodeModal = () => {
           <Box sx={{ height: '100%', width: '100%' }}>
             {loading && (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
-                <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
+                <CircularProgress size={60} sx={{ color: themeHex }} />
               </Box>
             )}
 
@@ -815,7 +989,7 @@ closeItemCodeModal = () => {
                 <Button
                   variant="contained"
                   onClick={this.fetchData}
-                  sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}
+                  sx={{ backgroundColor: themeHex, '&:hover': { backgroundColor: '#f57c00' } }}
                 >
                   다시 시도
                 </Button>
@@ -849,7 +1023,7 @@ closeItemCodeModal = () => {
                 sx={{
                   height: '600px',
                   '& .super-app-theme--header': {
-                    backgroundColor: '#ff8f00',
+                    backgroundColor: themeHex,
                     color: 'white',
                     fontWeight: 'bold',
                   },
@@ -889,4 +1063,11 @@ closeItemCodeModal = () => {
 
 }
 
-export default MoldShotCheck;
+function mapStateToProps(state) {
+  return {
+    themeHex: selectThemeHex(state),
+    themeKey: selectThemeKey(state)
+  };
+}
+
+export default connect(mapStateToProps)(MoldShotCheck);

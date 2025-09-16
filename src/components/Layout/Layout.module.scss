@@ -115,7 +115,7 @@ $sidebar-width-mini: 56px !default;   /* 아이콘 레일 폭 */
   position: relative;
   flex-grow: 1;
   /* 20px for footer height */
-  padding: $content-padding $content-padding ($content-padding + 20px);
+  padding: $content-padding $content-padding;
 
   @media (max-width: breakpoint-max(sm)) {
     padding: 25px $content-padding-sm ($content-padding + 30px);

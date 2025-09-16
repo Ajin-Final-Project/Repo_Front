@@ -263,17 +263,9 @@ const Bottleneck = () => {
     ],
   });
 
-
-
-
-
-
   const topStageEntry = skuTotalPieData.sort((a, b) => b.value - a.value)[0];
   const topStage = topStageEntry?.name;
   const topStageData = stagePieDataByStage[topStage] || [];
-
-
-
 
 
   // ✅ 미래 공정별 예측 요약 (Bottleneck_pred_Cell 사용)
@@ -357,25 +349,11 @@ const Bottleneck = () => {
 })();
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// ✅ 전후 상태 선택 (before/after)
+const [viewMode, setViewMode] = useState("before");
 
 // 최신 데이터
 const latest = byDate[filters.date] || byDate[pastDates[pastDates.length - 1]] || {};
-
-
 
 
 // ✅ SankeyConfig 동적 생성 함수
@@ -456,15 +434,6 @@ const buildSankeyConfig = (row) => {
 const sankeyConfig = buildSankeyConfig(latest);
 
 
-
-
-
-
-
-
-
-
-
 // ✅ Cell ↔ SKU 매핑 (실제 공정 규칙에 맞춰 수정 가능)
 const computeQueueFlow = (row) => {
   if (!row) return { before: [], after: [] };
@@ -503,93 +472,91 @@ const computeQueueFlow = (row) => {
 
 
 
-
-
-
-
-
-
-
-
-
 // ✅ 최신 데이터 기반으로 계산
 const { before, after } = computeQueueFlow(latest);
 
 
+// ✅ Bar 차트 옵션 (전/후 하나만 표시, y축 범위 고정)
+const makeBarOption = (before, after, mode) => {
+  const cells = ["Cell1", "Cell2", "Cell3", "Cell4"];
+  const data = mode === "before" ? before : after;
 
+  // ✅ before/after 중 최대값 찾기
+  const maxVal = Math.max(...before, ...after);
 
-const makeBarOption = (before, after) => ({
-  tooltip: { trigger: "axis" },
-  legend: { data: ["Before", "After"] },
-  xAxis: { type: "category", data: ["Cell1", "Cell2", "Cell3", "Cell4"] },
-  yAxis: { type: "value" },
-  series: [
-    { name: "Before", type: "bar", data: before, itemStyle: { color: "#f87171" } },
-    { name: "After", type: "bar", data: after, itemStyle: { color: "#60a5fa" } },
-  ],
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// 번호별 팔레트: Cell=진한색, SKU=연한색
-const PALETTE = {
-  1: { cell: "#2563eb", sku: "#93c5fd" },  // 파랑
-  2: { cell: "#10b981", sku: "#6ee7b7" },  // 초록
-  3: { cell: "#7c3aed", sku: "#c4b5fd" },  // 보라
-  4: { cell: "#f59e0b", sku: "#fcd34d" },  // 주황
+  return {
+    tooltip: { trigger: "axis" },
+    legend: { show: false },
+    xAxis: { type: "category", data: cells.map((c) => translateCellLabel(c)) },
+    yAxis: {
+      type: "value",
+      min: 0,
+      max: Math.ceil(maxVal * 1.1), // ✅ 여유 10% 줘서 보기 좋게
+    },
+    series: [
+      {
+        type: "bar",
+        data: data.map((v, i) => ({
+          value: v,
+          itemStyle: { color: SKU_COLORS[`SKU${i + 1}`] }, // ✅ SKU 색상 적용
+        })),
+      },
+    ],
+  };
 };
 
+
+// Cell1 → 조립셀1 변환
+const translateCellLabel = (name) => {
+  if (name.startsWith("Cell")) {
+    const num = name.replace("Cell", "");
+    return `조립셀${num}`;
+  }
+  return name;
+};
+
+
+// ✅ SKU 고정 색상
+const SKU_COLORS = {
+  SKU1: "#2563eb", // 파랑
+  SKU2: "#10b981", // 초록
+  SKU3: "#7c3aed", // 보라
+  SKU4: "#f59e0b", // 주황
+};
+
+// ✅ Cell 연한 색상
+const CELL_COLORS = {
+  1: "#93c5fd",  // 연파랑
+  2: "#6ee7b7",  // 연초록
+  3: "#c4b5fd",  // 연보라
+  4: "#fcd34d",  // 연주황
+};
+
+// ✅ 이름에서 번호 추출
 const getNumFromName = (name) => {
   const m = String(name).match(/(\d)/);
   return m ? Number(m[1]) : null;
 };
 
+// ✅ 색상 매핑 함수
 const colorForNode = (name) => {
+  if (name.startsWith("SKU")) {
+    return SKU_COLORS[name] || "#94a3b8";
+  }
   const n = getNumFromName(name);
-  if (!n) return "#94a3b8";
-  if (name.includes("SKU")) return PALETTE[n].sku;
-  return PALETTE[n].cell;
+  return CELL_COLORS[n] || "#94a3b8";
 };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-const makeSankeyOption = (skuToBefore, skuToAfter) => {
+// ✅ Sankey 옵션 (CELL → SKU 고정)
+const makeSankeyOption = (skuToBefore, skuToAfter, mode) => {
   const cells = ["Cell1", "Cell2", "Cell3", "Cell4"];
   const skus = ["SKU1", "SKU2", "SKU3", "SKU4"];
 
+  // 노드: 항상 CELL → SKU
   const nodes = [
     ...cells.map((c) => ({
-      name: `${c} (before)`,
+      name: `${translateCellLabel(c)} (${mode})`,   // ← 변환 적용
       depth: 0,
       itemStyle: { color: colorForNode(c) },
       label: { color: "#111827", fontSize: 12 },
@@ -600,33 +567,29 @@ const makeSankeyOption = (skuToBefore, skuToAfter) => {
       itemStyle: { color: colorForNode(s) },
       label: { color: "#111827", fontSize: 12 },
     })),
-    ...cells.map((c) => ({
-      name: `${c} (after)`,
-      depth: 2,
-      itemStyle: { color: colorForNode(c) },
-      label: { color: "#111827", fontSize: 12 },
-    })),
   ];
 
-  const linksToBefore = skus.flatMap((sku) =>
-    cells
-      .filter((cell) => (skuToBefore[sku]?.[cell] ?? 0) > 0)
-      .map((cell) => ({
-        source: sku,
-        target: `${cell} (before)`,
-        value: skuToBefore[sku][cell],
-      }))
-  );
-
-  const linksToAfter = skus.flatMap((sku) =>
-    cells
-      .filter((cell) => (skuToAfter[sku]?.[cell] ?? 0) > 0)
-      .map((cell) => ({
-        source: sku,
-        target: `${cell} (after)`,
-        value: skuToAfter[sku][cell],
-      }))
-  );
+  // 링크: Cell → SKU
+  const links =
+    mode === "before"
+      ? cells.flatMap((cell) =>
+          skus
+            .filter((sku) => (skuToBefore[sku]?.[cell] ?? 0) > 0)
+            .map((sku) => ({
+              source: `${translateCellLabel(cell)} (before)`,
+              target: sku,
+              value: skuToBefore[sku][cell],
+            }))
+        )
+      : cells.flatMap((cell) =>
+          skus
+            .filter((sku) => (skuToAfter[sku]?.[cell] ?? 0) > 0)
+            .map((sku) => ({
+              source: `${translateCellLabel(cell)} (after)`,
+              target: sku,
+              value: skuToAfter[sku][cell],
+            }))
+        );
 
   return {
     tooltip: {
@@ -641,64 +604,22 @@ const makeSankeyOption = (skuToBefore, skuToAfter) => {
     series: [
       {
         type: "sankey",
-        nodeAlign: "left",
+        nodeAlign: "justify", // 좌우 여백 균일
         draggable: false,
         emphasis: { focus: "adjacency" },
         data: nodes,
-        links: [...linksToBefore, ...linksToAfter],
-        lineStyle: {
-          color: "source",
-          curveness: 0.5,
-          opacity: 0.6,
-        },
-        levels: [
-          { depth: 0, itemStyle: { borderWidth: 1, borderColor: "#e5e7eb" } },
-          { depth: 1, itemStyle: { borderWidth: 1, borderColor: "#e5e7eb" } },
-          { depth: 2, itemStyle: { borderWidth: 1, borderColor: "#e5e7eb" } },
-        ],
+        links,
+        lineStyle: { color: "source", curveness: 0.5, opacity: 0.6 },
       },
     ],
   };
 };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 const availableDates = Object.keys(byDate);  // 실제 DB에서 내려온 날짜들
   const past7Dates = useMemo(() => {
     return getPastDates(filters.date, 7).filter((d) => availableDates.includes(d));
   }, [filters.date, byDate]);
-
-
-
-
-
-
-
-
-
 
 
 
@@ -751,28 +672,6 @@ const alertMessage =
     `⚠️ [${translateBottleneck(bottleneckKey)}]에서 병목이 발생했습니다. `
   + `이는 통합 생산량에 약 ${impactVal.toFixed(1)}의 영향을 줄 것으로 보입니다. `
   + `전날보다 생산량은 ${changeMsg} 예상됩니다.`;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
   [...pastDates, today].forEach((d, xIdx) => {
@@ -863,7 +762,6 @@ const alertMessage =
     );
   }
 
-  
 
   // Radar 차트 최대치
   const maxQueueValue = Math.max(
@@ -940,7 +838,6 @@ const alertMessage =
 
 
   // Pie 차트 데이터
-
   let pieData = [
     {
       name: "블랭킹",
@@ -1011,12 +908,22 @@ const alertMessage =
     ],
   };
 
-  // 히트맵 옵션
+
+  // ✅ 회색 배경 데이터: 과거+오늘 날짜 전체
+  const grayBackgroundData = [];
+  [...pastDates, today].forEach((d, xIdx) => {
+    stages.forEach((stage, yIdx) => {
+      grayBackgroundData.push([xIdx, yIdx, 0]); // 0 = 회색
+    });
+  });
+
+  // ✅ blockOption 수정
   const blockOption = {
     tooltip: {
       formatter: (p) => {
         const date = allDates[p.data[0]];
         const stage = stages[p.data[1]];
+        if (p.data[2] === 0) return `${date}<br/>${stage} : 기록 없음`;
         const type = p.data[2] === 1 ? "실제 병목" : "예측 병목";
         return `${date}<br/>${stage} : ${type}`;
       },
@@ -1028,7 +935,7 @@ const alertMessage =
       splitLine: { show: true },
       axisLine: { show: true },
       markLine: {
-        data: [{ xAxis: pastDates.length }], // 오늘 날짜 위치에 라인
+        data: [{ xAxis: pastDates.length }], // 오늘 위치
         lineStyle: { color: "black", type: "solid" },
       },
     },
@@ -1040,15 +947,29 @@ const alertMessage =
     },
     visualMap: {
       show: false,
-      min: 1,
+      min: 0,
       max: 2,
-      inRange: { color: ["#ef4444", "#3b82f6"] },
+      inRange: {
+        color: [
+          "rgba(200,200,200,0.2)", // 0 → 회색 (배경)
+          "#ef4444",               // 1 → 빨강 (과거 병목)
+          "#3b82f6",               // 2 → 파랑 (예측 병목)
+        ],
+      },
     },
-    series: [{ type: "heatmap", data: animatedHeatmapData }],
+    series: [
+      {
+        type: "heatmap",
+        data: grayBackgroundData, // ✅ 전체 회색 배경
+        silent: true,             // tooltip 안뜨게 하고 싶으면 true
+      },
+      {
+        type: "heatmap",
+        data: animatedHeatmapData, // ✅ 실제 병목 데이터
+      },
+    ],
   };
-
-
-
+  
 
   return (
     <div className={styles.dashboard}>
@@ -1059,10 +980,10 @@ const alertMessage =
           gutterBottom
           sx={{ fontWeight: "bold", color: themeHex }}
         >
-          병목 공정 예측
+          병목 공정 예측/분석
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          주요 공정의 병목 현황과 예측 결과를 시각화합니다.
+          주요 공정의 병목 현황과 향후 예측 결과를 시각화합니다.
         </Typography>
       </Box>
 
@@ -1086,20 +1007,10 @@ const alertMessage =
           }}
         />
         <Grid container spacing={2} alignItems="center">
-          {/* 일간 버튼만 고정 */}
-          <Grid item>
-            <Button
-              size="small"
-              variant="contained"
-              sx={{ backgroundColor: themeHex, "&:hover": { backgroundColor: themeHex } }}
-            >
-              일간
-            </Button>
-          </Grid>
 
           {/* 단일 날짜 선택 */}
           <Grid item>
-            <Typography sx={{ mr: 1 }}>기준일 선택</Typography>
+            <Typography sx={{ mr: 1 }}>일자</Typography>
           </Grid>
           <Grid item>
             <TextField
@@ -1119,14 +1030,6 @@ const alertMessage =
       </Paper>
 
 
-
-
-
-
-
-
-
-
       {/* 경고 박스 */}
       <div className={styles.alert}>
         {/* ⚠️ {translateBottleneck(latest?.Bottleneck_actual)}에서 병목이 발생하여 생산량에{" "}
@@ -1142,7 +1045,15 @@ const alertMessage =
       <div className={styles.grid}>
         {/* 공정도 */}
         <div className={styles.card} aria-label="공정 흐름도">
-          <h2>공정도</h2>
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 style={{ margin: 0 }}>병목 공정도</h2>
+            <span style={{ fontSize: "14px", color: "#6b7280" }}>
+              ({filters.date})
+            </span>
+          </div>
+          <div className={styles.flow}></div>
+
           <div className={styles.flow}>
             {/* 블랭킹 */}
             <div className={styles.row}>
@@ -1251,28 +1162,34 @@ const alertMessage =
 
         {/* 실시간 병목 현황 */}
         <div className={styles.card}>
-          <h2>실시간 병목 현황</h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 style={{ margin: 0 }}>대기열 현황</h2>
+            <span style={{ fontSize: "14px", color: "#6b7280" }}>
+              ({filters.date})
+            </span>
+          </div>
           <ReactECharts option={radarOption} style={{ height: "400px" }} />
         </div>
-      </div>
 
+      </div>
 
 
       {/* 2행: Pie + Heatmap */}
       <div className={styles.grid}>
         <div className={styles.card}>
-          <h2>
-            과거 병목 시각화 (주간)
-            <span style={{ fontSize: "14px", color: "#6b7280", marginLeft: "8px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 style={{ margin: 0 }}>📊 최근 1주 병목 분포</h2>
+            <span style={{ fontSize: "14px", color: "#6b7280" }}>
               {past7Dates.length > 0
                 ? `(${past7Dates[0]} ~ ${past7Dates[past7Dates.length - 1]})`
                 : "(데이터 없음)"}
             </span>
-          </h2>
+          </div>
           <ReactECharts option={pieOption} style={{ height: "280px" }} />
         </div>
+
         <div className={styles.card}>
-          <h2>날짜별 병목 기록 및 예측</h2>
+          <h2>일자별 병목 기록/예측</h2>
           <div style={{ position: "relative", height: "280px" }}>
             <ReactECharts option={blockOption} style={{ height: "280px" }} />
             {showPastLabel && (
@@ -1310,92 +1227,119 @@ const alertMessage =
       </div>
 
 
-
+      {/* 1행: SKU + 공정 병목 분석 (수평 2개 카드) */}
       <div className={styles.grid}>
-        {/* SKU 전체 병목 비율 */}
+        {/* (1) SKU별 병목 비율 종합 + SKU별 병목 예측 */}
         <div className={styles.card}>
-          <h2>SKU별 병목 비율 종합</h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 style={{ margin: 0 }}>📦 품번(SKU)별 병목 분석</h2>
+            <span style={{ fontSize: "14px", color: "#6b7280" }}>
+              {pastDates.length > 0
+                ? `(${pastDates[0]} ~ ${pastDates[pastDates.length - 1]})`
+                : "(데이터 없음)"}
+            </span>
+          </div>
+
+          {/* SKU별 병목 비율 종합 (파이차트) */}
           <ReactECharts
             option={makePieOption("", skuTotalPieData)}
             style={{ height: "280px" }}
           />
+
+          {/* SKU별 병목 예측 (텍스트 박스) */}
+          <div
+            style={{
+              marginTop: "16px",
+              background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
+              borderRadius: "8px",
+              padding: "12px",
+              border: "1px solid #bfdbfe",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: "15px",
+                fontWeight: "bold",
+                marginBottom: "8px",
+                color: "#1e40af",
+              }}
+            >
+              품번(SKU)별 병목 예측
+            </h3>
+            <div
+              style={{
+                background: "white",
+                padding: "10px",
+                borderRadius: "6px",
+                fontSize: "14px",
+                lineHeight: "1.5",
+                color: "#1e293b",
+                border: "1px solid #e2e8f0",
+              }}
+            >
+              {futureSkuSummary.summary}
+            </div>
+          </div>
         </div>
 
-        {/* 최다 공정 (예: 조립셀 세부) */}
+        {/* (2) 조립셀 세부 병목 비율 + 공정별 병목 예측 */}
         <div className={styles.card}>
-          <h2>{topStage ? `${topStage} 세부 병목 비율` : "세부 병목 비율"}</h2>
+          
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 style={{ margin: 0 }}>⚙️ 공정별 병목 분석</h2>
+            <span style={{ fontSize: "14px", color: "#6b7280" }}>
+              {pastDates.length > 0
+                ? `(${pastDates[0]} ~ ${pastDates[pastDates.length - 1]})`
+                : "(데이터 없음)"}
+            </span>
+          </div>
+
+          {/* 조립셀 세부 병목 비율 (파이차트) */}
           {topStage ? (
             <ReactECharts
-              option={makePieOption(``, topStageData)}
+              option={makePieOption("", topStageData)}
               style={{ height: "280px" }}
             />
           ) : (
             <Typography color="text.secondary">데이터 없음</Typography>
           )}
-        </div>
-      </div>
 
-
-
-
-      {/* ✅ 예측 분석 종합 - 3개 카드 수평 배치 */}
-      <div className={`${styles.cardWide} ${styles.section}`}>
-        <h2>예측 분석 종합</h2>
-        
-        <div style={{ display: "flex", gap: "16px" }}>
-
-          {/* SKU별 병목 예측 */}
-          <div style={{
-            flex: 1,
-            background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
-            borderRadius: "8px",
-            padding: "16px",
-            border: "1px solid #bfdbfe"
-          }}>
-            <h3 style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "12px", color: "#1e40af" }}>
-              📦 SKU별 병목 예측
-            </h3>
-            <div style={{
-              background: "white",
+          {/* 공정별 병목 예측 (텍스트 박스) */}
+          <div
+            style={{
+              marginTop: "16px",
+              background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)",
+              borderRadius: "8px",
               padding: "12px",
-              borderRadius: "6px",
-              fontSize: "14px",
-              lineHeight: "1.5",
-              color: "#1e293b",
-              border: "1px solid #e2e8f0"
-            }}>
-              {futureSkuSummary.summary}
-            </div>
-          </div>
-
-          {/* 공정별 병목 예측 */}
-          <div style={{
-            flex: 1,
-            background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)",
-            borderRadius: "8px",
-            padding: "16px",
-            border: "1px solid #bbf7d0"
-          }}>
-            <h3 style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "12px", color: "#166534" }}>
-              ⚙️ 공정별 병목 예측
+              border: "1px solid #bbf7d0",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: "15px",
+                fontWeight: "bold",
+                marginBottom: "8px",
+                color: "#166534",
+              }}
+            >
+              공정별 병목 예측
             </h3>
-            <div style={{
-              background: "white",
-              padding: "12px",
-              borderRadius: "6px",
-              fontSize: "14px",
-              lineHeight: "1.5",
-              color: "#1e293b",
-              border: "1px solid #e2e8f0"
-            }}>
+            <div
+              style={{
+                background: "white",
+                padding: "10px",
+                borderRadius: "6px",
+                fontSize: "14px",
+                lineHeight: "1.5",
+                color: "#1e293b",
+                border: "1px solid #e2e8f0",
+              }}
+            >
               {futureStageSummary}
             </div>
           </div>
         </div>
       </div>
-
-
-
 
 
       {/* 인사이트 */}
@@ -1405,27 +1349,76 @@ const alertMessage =
       </div>
 
 
+      {/* 전/후 선택 버튼 */}
+      <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2, gap: 2 }}>
+        <Button
+          size="large"
+          variant={viewMode === "before" ? "contained" : "outlined"}
+          onClick={() => setViewMode("before")}
+          sx={{
+            px: 3,
+            py: 1,
+            fontWeight: "bold",
+            borderRadius: "20px",
+            boxShadow: viewMode === "before" ? "0 4px 12px rgba(0,0,0,0.2)" : "none",
+            background: viewMode === "before" ? themeHex : "white",
+            color: viewMode === "before" ? "white" : themeHex,
+            borderColor: themeHex,
+            "&:hover": {
+              background: viewMode === "before" ? themeHex : "rgba(0,0,0,0.04)",
+              boxShadow: "0 6px 16px rgba(0,0,0,0.25)",
+            },
+          }}
+        >
+          재분배 전
+        </Button>
+
+        <Button
+          size="large"
+          variant={viewMode === "after" ? "contained" : "outlined"}
+          onClick={() => setViewMode("after")}
+          sx={{
+            px: 3,
+            py: 1,
+            fontWeight: "bold",
+            borderRadius: "20px",
+            boxShadow: viewMode === "after" ? "0 4px 12px rgba(0,0,0,0.2)" : "none",
+            background: viewMode === "after" ? themeHex : "white",
+            color: viewMode === "after" ? "white" : themeHex,
+            borderColor: themeHex,
+            "&:hover": {
+              background: viewMode === "after" ? themeHex : "rgba(0,0,0,0.04)",
+              boxShadow: "0 6px 16px rgba(0,0,0,0.25)",
+            },
+          }}
+        >
+          재분배 후
+        </Button>
+      </Box>
 
 
       {/* 원래 vs 제안 + Queue 변화 */}
       <div className={styles.grid}>
         {/* Sankey 다이어그램 */}
         <div className={styles.card}>
-          <h2>재분배 전후 흐름 (SKU → Cell)</h2>
-
-          <ReactECharts option={makeSankeyOption(sankeyConfig.skuToBefore, sankeyConfig.skuToAfter)} style={{ height: 400 }} />
-
+          <h2>재분배 {viewMode === "before" ? "전" : "후"} 생산 비율</h2>
+          <ReactECharts
+            option={makeSankeyOption(sankeyConfig.skuToBefore, sankeyConfig.skuToAfter, viewMode)}
+            style={{ height: 400 }}
+          />
         </div>
-        
 
+        {/* Bar 차트 */}
         <div className={styles.card}>
-          <h2>재분배 전후 Cell별 Queue 변화</h2>
-
-          <ReactECharts option={makeBarOption(before, after)} style={{ height: 320 }} />
-
+          <h2>재분배 {viewMode === "before" ? "전" : "후"} 대기열</h2>
+          <ReactECharts
+            option={makeBarOption(before, after, viewMode)} // ✅ viewMode 반영
+            style={{ height: 400 }}
+          />
         </div>
 
       </div>
+
     </div>
   );
 };

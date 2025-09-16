@@ -15,6 +15,7 @@ import {
   Alert,
   CardHeader,
   Grid,
+  Menu,
   MenuItem,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
@@ -27,12 +28,16 @@ import {
   KeyboardArrowDown as KeyboardArrowDownIcon,
 } from '@mui/icons-material';
 
+import { connect } from 'react-redux';
+import { selectThemeHex, selectThemeKey } from '../../reducers/layout';
+
 import s from './MoldCleaningData.module.scss';
 import config from '../../config';
 import ItemCodeModal from '../common/ItemCodeModal';
 
 const API_URL = `${config.baseURLApi}/smartFactory/mold_breakDown/list`;
 
+/* ===================== 날짜/유틸 ===================== */
 // YYYY-MM-DD
 const toYMD = (v) => {
   const d = v instanceof Date ? v : (v ? new Date(v) : null);
@@ -49,7 +54,50 @@ const parseDate = (v) => {
   return isNaN(d) ? null : d;
 };
 
-export default class MoldBreakdownGrid extends Component {
+const today0 = () => {
+  const t = new Date();
+  return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+};
+const lastOfMonth = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0);
+
+/** 버튼 기준 화면 좌표 → Menu anchorPosition */
+const getAnchorPos = (el) => {
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return { top: Math.round(r.bottom + window.scrollY), left: Math.round(r.left + window.scrollX) };
+};
+/** 월요일 시작 주간 */
+const startOfWeek = (d) => {
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1) - day;
+  const s = new Date(d);
+  s.setDate(d.getDate() + diff);
+  return new Date(s.getFullYear(), s.getMonth(), s.getDate());
+};
+const endOfWeek = (d) => {
+  const s = startOfWeek(d);
+  return new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6);
+};
+const getWeeksOfMonth = (year, month) => {
+  const first = new Date(year, month - 1, 1);
+  const last = lastOfMonth(first);
+  let cur = startOfWeek(first);
+  const out = [];
+  let idx = 1;
+  while (cur <= last) {
+    const s = new Date(cur),
+      e = endOfWeek(cur);
+    const clipS = new Date(Math.max(s, first));
+    const clipE = new Date(Math.min(e, last));
+    out.push({ label: `${idx}주차`, start: clipS, end: clipE });
+    idx += 1;
+    cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 7);
+  }
+  return out;
+};
+
+/* ===================== 컴포넌트 ===================== */
+class MoldBreakdownGrid extends Component {
   constructor(props) {
     super(props);
     const today = new Date();
@@ -80,8 +128,15 @@ export default class MoldBreakdownGrid extends Component {
         notification_no: '',
       },
 
+      // 기간 프리셋/메뉴
+      selectedYear: today.getFullYear(),
+      selectedMonth: today.getMonth() + 1,
+      years: [],
+      yearAnchorPos: null,
+      monthAnchorPos: null,
+      weekAnchorPos: null,
+
       filterExpanded: false,
-      quickRange: 'year',
 
       rows: [],
       allRows: [],
@@ -93,8 +148,23 @@ export default class MoldBreakdownGrid extends Component {
   }
 
   componentDidMount() {
+    // 첫 화면: 기본 기간(올해 1/1~오늘)으로 자동 조회
+    this.loadYears();
     this.fetchData();
   }
+
+  /** 연도 옵션 (서버 없으면 fallback) */
+  loadYears = async () => {
+    try {
+      const y = new Date().getFullYear();
+      const years = [y, y - 1, y - 2, y - 3, y - 4];
+      this.setState({ years, selectedYear: y });
+    } catch {
+      const y = new Date().getFullYear();
+      const years = [y, y - 1, y - 2, y - 3, y - 4];
+      this.setState({ years, selectedYear: y });
+    }
+  };
 
   // "1000T-PRO", "1000T PRO", "1000T-PRO(G라인)" => "1000TPRO"
   normalizeLine = (v) =>
@@ -170,7 +240,7 @@ export default class MoldBreakdownGrid extends Component {
 
       const allRows = this.formatApiData(json.data ?? json);
 
-      // 클라이언트 필터
+      // 클라이언트 필터(서버 필터와 동일하지만 안전차원 유지)
       const filtered = this.applyClientFilter(allRows, this.state.filters);
 
       // 기본시작일 desc 정렬
@@ -189,8 +259,45 @@ export default class MoldBreakdownGrid extends Component {
       this.setState({ allRows, rows: renumbered, loading: false });
     } catch (err) {
       console.error('금형고장내역 데이터 로드 오류:', err);
-      this.setState({ error: '데이터를 불러오는 중 오류가 발생했습니다.', loading: false });
+      this.setState({ error: '데이터를 불러오는 중 오류가 발생했습니다.', loading: false, rows: [] });
     }
+  };
+
+  // -------- 기간 프리셋/선택 (조회 X, 상태만 변경 + 그리드 비우기) --------
+  setDateRange = (start, end) => {
+    const start_date = toYMD(start);
+    const end_date = toYMD(end);
+    this.setState((prev) => ({
+      filters: { ...prev.filters, start_date, end_date, itemCode: '', itemName: '' },
+      rows: [],
+      allRows: [],
+      error: null,
+    }));
+  };
+
+  applyToday = () => {
+    const t = today0();
+    this.setDateRange(t, t);
+  };
+
+  selectYear = (y) => {
+    const s = new Date(y, 0, 1);
+    const e = new Date(y, 11, 31);
+    this.setState({ selectedYear: y, yearAnchorPos: null });
+    this.setDateRange(s, e);
+  };
+
+  selectMonth = (m) => {
+    const y = this.state.selectedYear;
+    const s = new Date(y, m - 1, 1);
+    const e = lastOfMonth(s);
+    this.setState({ monthAnchorPos: null, selectedMonth: m });
+    this.setDateRange(s, e);
+  };
+
+  selectWeek = (w) => {
+    this.setState({ weekAnchorPos: null });
+    this.setDateRange(w.start, w.end);
   };
 
   // -------- 클라이언트 필터 --------
@@ -299,66 +406,23 @@ export default class MoldBreakdownGrid extends Component {
     });
   };
 
-  // -------- 핸들러 --------
+  // -------- 핸들러 (조회 X, 상태만 변경 + 그리드 비우기) --------
   handleSelectChange = (field, value) => {
-    this.setState(
-      (prev) => ({ filters: { ...prev.filters, [field]: value } }),
-      () => this.fetchData()
-    );
+    this.setState((prev) => ({
+      filters: { ...prev.filters, [field]: value },
+      rows: [],
+      allRows: [],
+      error: null,
+    }));
   };
 
   handleFilterChange = (field, value) => {
-    this.setState((prev) => ({ filters: { ...prev.filters, [field]: value } }));
-  };
-
-  setQuickRange = (type) => {
-    const now = new Date();
-    const today = toYMD(now);
-    let start = today;
-    let end = today;
-
-    if (type === 'today') {
-      start = today;
-      end = today;
-    } else if (type === 'week') {
-      const d = new Date(now);
-      const day = d.getDay();
-      const diffToMonday = (day + 6) % 7;
-      d.setDate(d.getDate() - diffToMonday);
-      start = toYMD(d);
-      end = today;
-    } else if (type === 'month') {
-      const d = new Date(now.getFullYear(), now.getMonth(), 1);
-      start = toYMD(d);
-      end = today;
-    } else if (type === 'year') {
-      const d = new Date(now.getFullYear(), 0, 1);
-      start = toYMD(d);
-      end = today;
-    }
-
-    this.setState(
-      (prev) => ({
-        quickRange: type,
-        filters: { ...prev.filters, start_date: start, end_date: end },
-      }),
-      () => this.fetchData()
-    );
-  };
-
-  openItemCodeModal = () => this.setState({ itemCodeModalOpen: true });
-  closeItemCodeModal = () => this.setState({ itemCodeModalOpen: false });
-
-  handleItemCodeSelect = ({ 품목번호, 품목명, itemCode, itemName, code, name }) => {
-    const nextCode = 품목번호 || itemCode || code || '';
-    const nextName = 품목명 || itemName || name || '';
-    this.setState(
-      (prev) => ({
-        filters: { ...prev.filters, itemCode: nextCode, itemName: nextName },
-        itemCodeModalOpen: false,
-      }),
-      () => this.fetchData()
-    );
+    this.setState((prev) => ({
+      filters: { ...prev.filters, [field]: value },
+      rows: [],
+      allRows: [],
+      error: null,
+    }));
   };
 
   clearFilters = () => {
@@ -385,179 +449,64 @@ export default class MoldBreakdownGrid extends Component {
       order_no: '',
       notification_no: '',
     };
-    this.setState({ filters: next, quickRange: 'year' }, () => this.fetchData());
+    this.setState(
+      {
+        filters: next,
+        selectedYear: today.getFullYear(),
+        selectedMonth: today.getMonth() + 1,
+        rows: [],
+        allRows: [],
+        error: null,
+      }
+      // 초기값으로 바로 재조회하려면 아래 주석 해제
+      // , () => this.fetchData()
+    );
   };
 
-  handleSearch = () => {
-    this.fetchData();
-  };
+  handleSearch = () => this.fetchData();
 
   toggleFilterExpansion = () =>
     this.setState((prev) => ({ filterExpanded: !prev.filterExpanded }));
 
   // -------- 컬럼 --------
   columns = [
-    {
-      field: 'id',
-      headerName: 'ID',
-      width: 70,
-      type: 'number',
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-
-    {
-      field: 'plant',
-      headerName: '공장',
-      width: 160,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-
-    {
-      field: 'worker',
-      headerName: '작업자',
-      width: 120,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-      renderCell: (p) => (p.value && String(p.value).trim() !== '' ? p.value : '－'),
-    },
-
-    {
-      field: 'line',
-      headerName: '라인',
-      width: 120,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-
-    {
-      field: 'itemCode',
-      headerName: '품번',
-      width: 130,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-
-    // 품명 칩(동그라미) 렌더링
-    {
-      field: 'itemName',
-      headerName: '품목명',
-      width: 200,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-      renderCell: (p) => <Chip label={p.value || '-'} size="small" variant="outlined" />,
-    },
-
-    {
-      field: 'status',
-      headerName: '상태',
-      width: 90,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-      renderCell: (p) => <Chip size="small" label={p.value || '-'} />,
-    },
-
-    {
-      field: 'document',
-      headerName: '문서',
-      width: 120,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-
-    {
-      field: 'function_location',
-      headerName: '기능위치',
-      width: 150,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-
-    {
-      field: 'function_location_detail',
-      headerName: '기능위치내역',
-      width: 160,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-
-    {
-      field: 'equipment',
-      headerName: '설비',
-      width: 100,
-      type: 'number',
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-
-    {
-      field: 'equipment_detail',
-      headerName: '설비내역',
-      minWidth: 270,
-      flex: 1,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-
-    {
-      field: 'order_type',
-      headerName: '오더유형',
-      width: 120,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-
-    {
-      field: 'order_type_detail',
-      headerName: '오더유형내역',
-      width: 130,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-
-    {
-      field: 'order_no',
-      headerName: '오더번호',
-      width: 110,
-      type: 'number',
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-
-    {
-      field: 'order_detail',
-      headerName: '오더내역',
-      width: 200,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-
-    {
-      field: 'start_date',
-      headerName: '기본시작일',
-      width: 130,
-      type: 'date',
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-      valueFormatter: (p) => (p.value ? toYMD(p.value) : ''),
-      sortComparator: (v1, v2) => {
-        const d1 = parseDate(v1);
-        const d2 = parseDate(v2);
-        if (!d1 && !d2) return 0;
-        if (!d1) return -1;
-        if (!d2) return 1;
-        return d1 - d2; // asc
-      },
-    },
-
-    {
-      field: 'end_date',
-      headerName: '기본종료일',
-      width: 130,
-      type: 'date',
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
+    { field: 'id', headerName: 'ID', width: 70, type: 'number',
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'plant', headerName: '공장', width: 160,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'worker', headerName: '작업자', width: 120,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
+      renderCell: (p) => (p.value && String(p.value).trim() !== '' ? p.value : '－') },
+    { field: 'line', headerName: '라인', width: 120,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'itemCode', headerName: '품번', width: 130,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'itemName', headerName: '품목명', width: 200,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
+      renderCell: (p) => <Chip label={p.value || '-'} size="small" variant="outlined" /> },
+    { field: 'status', headerName: '상태', width: 90,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
+      renderCell: (p) => <Chip size="small" label={p.value || '-'} /> },
+    { field: 'document', headerName: '문서', width: 120,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'function_location', headerName: '기능위치', width: 150,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'function_location_detail', headerName: '기능위치내역', width: 160,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'equipment', headerName: '설비', width: 100, type: 'number',
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'equipment_detail', headerName: '설비내역', minWidth: 270, flex: 1,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'order_type', headerName: '오더유형', width: 120,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'order_type_detail', headerName: '오더유형내역', width: 130,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'order_no', headerName: '오더번호', width: 110, type: 'number',
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'order_detail', headerName: '오더내역', width: 200,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'start_date', headerName: '기본시작일', width: 130, type: 'date',
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
       valueFormatter: (p) => (p.value ? toYMD(p.value) : ''),
       sortComparator: (v1, v2) => {
         const d1 = parseDate(v1);
@@ -566,30 +515,47 @@ export default class MoldBreakdownGrid extends Component {
         if (!d1) return -1;
         if (!d2) return 1;
         return d1 - d2;
-      },
-    },
-
-    {
-      field: 'notification_no',
-      headerName: '통지번호',
-      width: 120,
-      type: 'number',
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
-
-    {
-      field: 'failure',
-      headerName: '고장',
-      width: 200,
-      headerClassName: 'super-app-theme--header',
-      cellClassName: 'super-app-theme--cell',
-    },
+      } },
+    { field: 'end_date', headerName: '기본종료일', width: 130, type: 'date',
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
+      valueFormatter: (p) => (p.value ? toYMD(p.value) : ''),
+      sortComparator: (v1, v2) => {
+        const d1 = parseDate(v1);
+        const d2 = parseDate(v2);
+        if (!d1 && !d2) return 0;
+        if (!d1) return -1;
+        if (!d2) return 1;
+        return d1 - d2;
+      } },
+    { field: 'notification_no', headerName: '통지번호', width: 120, type: 'number',
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'failure', headerName: '고장', width: 200,
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
   ];
 
   render() {
-    const { filters, filterExpanded, quickRange, rows, loading, error, itemCodeModalOpen } =
-      this.state;
+    const { themeHex } = this.props;
+    const {
+      filters,
+      filterExpanded,
+      rows,
+      loading,
+      error,
+      itemCodeModalOpen,
+      // 기간 프리셋 상태
+      selectedYear,
+      selectedMonth,
+      years,
+      yearAnchorPos,
+      monthAnchorPos,
+      weekAnchorPos,
+    } = this.state;
+
+    const now = today0();
+    const thisYear = now.getFullYear();
+    const thisMonth = now.getMonth() + 1;
+    const thisWeek = { start: startOfWeek(now), end: endOfWeek(now) };
+    const weeks = getWeeksOfMonth(selectedYear, selectedMonth);
 
     return (
       <Box
@@ -600,11 +566,11 @@ export default class MoldBreakdownGrid extends Component {
           <Typography
             variant="h4"
             gutterBottom
-            sx={{ color: '#ffb300', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}
+            sx={{ color: themeHex, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}
           >
             <FilterIcon /> 금형고장내역 데이터 그리드
           </Typography>
-          <Typography variant="subtitle1" sx={{ color: 'text.secondary', fontSize: { xs: 16, sm: 16, md: 17 } }}>
+          <Typography variant="subtitle1" sx={{ color: 'text.secondary', fontSize: { xs: 15, sm: 15, md: 16 } }}>
             금형고장 현황을 상세하게 조회하고 관리할 수 있습니다.
           </Typography>
         </Box>
@@ -619,61 +585,99 @@ export default class MoldBreakdownGrid extends Component {
             }
             action={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                {/* 빠른 기간 */}
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button
-                    size="small"
-                    variant={quickRange === 'today' ? 'contained' : 'outlined'}
-                    onClick={() => this.setQuickRange('today')}
-                    sx={{
-                      borderColor: 'white',
-                      color: 'white',
-                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
-                    }}
-                  >
-                    금일
-                  </Button>
-                  <Button
-                    size="small"
-                    variant={quickRange === 'week' ? 'contained' : 'outlined'}
-                    onClick={() => this.setQuickRange('week')}
-                    sx={{
-                      borderColor: 'white',
-                      color: 'white',
-                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
-                    }}
-                  >
-                    주간
-                  </Button>
-                  <Button
-                    size="small"
-                    variant={quickRange === 'month' ? 'contained' : 'outlined'}
-                    onClick={() => this.setQuickRange('month')}
-                    sx={{
-                      borderColor: 'white',
-                      color: 'white',
-                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
-                    }}
-                  >
-                    월간
-                  </Button>
-                  <Button
-                    size="small"
-                    variant={quickRange === 'year' ? 'contained' : 'outlined'}
-                    onClick={() => this.setQuickRange('year')}
-                    sx={{
-                      borderColor: 'white',
-                      color: 'white',
-                      '&.MuiButton-contained': { backgroundColor: 'white', color: '#ff8f00' },
-                    }}
-                  >
-                    년간
-                  </Button>
-                </Box>
+                {/* 연간 */}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  endIcon={<ExpandMoreIcon />}
+                  onClick={(e) => this.setState({ yearAnchorPos: getAnchorPos(e.currentTarget) })}
+                  sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+                >
+                  연간
+                </Button>
+                <Menu
+                  open={!!yearAnchorPos}
+                  onClose={() => this.setState({ yearAnchorPos: null })}
+                  anchorReference="anchorPosition"
+                  anchorPosition={yearAnchorPos || { top: 0, left: 0 }}
+                >
+                  <MenuItem dense onClick={() => this.selectYear(thisYear)}>올해</MenuItem>
+                  {years.map((y) => (
+                    <MenuItem key={y} dense onClick={() => this.selectYear(y)}>
+                      {y}년
+                    </MenuItem>
+                  ))}
+                </Menu>
 
+                {/* 월간 */}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  endIcon={<ExpandMoreIcon />}
+                  onClick={(e) => this.setState({ monthAnchorPos: getAnchorPos(e.currentTarget) })}
+                  sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+                >
+                  월간
+                </Button>
+                <Menu
+                  open={!!monthAnchorPos}
+                  onClose={() => this.setState({ monthAnchorPos: null })}
+                  anchorReference="anchorPosition"
+                  anchorPosition={monthAnchorPos || { top: 0, left: 0 }}
+                >
+                  <MenuItem
+                    dense
+                    onClick={() => {
+                      this.setState({ selectedYear: thisYear }, () => this.selectMonth(thisMonth));
+                    }}
+                  >
+                    이번달
+                  </MenuItem>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                    <MenuItem key={m} dense onClick={() => this.selectMonth(m)}>
+                      {selectedYear}년 {m}월
+                    </MenuItem>
+                  ))}
+                </Menu>
+
+                {/* 주간 */}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  endIcon={<ExpandMoreIcon />}
+                  onClick={(e) => this.setState({ weekAnchorPos: getAnchorPos(e.currentTarget) })}
+                  sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+                >
+                  주간
+                </Button>
+                <Menu
+                  open={!!weekAnchorPos}
+                  onClose={() => this.setState({ weekAnchorPos: null })}
+                  anchorReference="anchorPosition"
+                  anchorPosition={weekAnchorPos || { top: 0, left: 0 }}
+                >
+                  <MenuItem dense onClick={() => this.selectWeek(thisWeek)}>
+                    이번주 ({toYMD(thisWeek.start)}~{toYMD(thisWeek.end)})
+                  </MenuItem>
+                  {weeks.map((w, i) => (
+                    <MenuItem key={i} dense onClick={() => this.selectWeek(w)}>
+                      {selectedYear}년 {selectedMonth}월 {w.label} ({toYMD(w.start)}~{toYMD(w.end)})
+                    </MenuItem>
+                  ))}
+                </Menu>
+
+                {/* 금일 */}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={this.applyToday}
+                  sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
+                >
+                  금일
+                </Button>
+
+                {/* 구분자 & 기간선택 직접 입력 */}
                 <Typography sx={{ color: 'white', opacity: 0.8, mx: 0.5 }}>|</Typography>
-
-                {/* 기간선택 */}
                 <Typography sx={{ color: 'white' }}>기간선택</Typography>
                 <TextField
                   type="date"
@@ -700,7 +704,7 @@ export default class MoldBreakdownGrid extends Component {
                 </IconButton>
               </Box>
             }
-            sx={{ backgroundColor: '#ff8f00', color: 'white', borderRadius: 1, mb: 2 }}
+            sx={{ backgroundColor: themeHex, color: 'white', borderRadius: 1, mb: 2 }}
           />
 
           {/* 기본 필터 */}
@@ -764,7 +768,7 @@ export default class MoldBreakdownGrid extends Component {
                 fullWidth
                 label="품번"
                 value={filters.itemCode}
-                onClick={this.openItemCodeModal}
+                onClick={() => this.setState({ itemCodeModalOpen: true })}
                 size="small"
                 variant="outlined"
                 InputProps={{
@@ -791,7 +795,7 @@ export default class MoldBreakdownGrid extends Component {
                 fullWidth
                 label="품목명"
                 value={filters.itemName}
-                onClick={this.openItemCodeModal}
+                onClick={() => this.setState({ itemCodeModalOpen: true })}
                 size="small"
                 variant="outlined"
                 InputProps={{
@@ -823,95 +827,18 @@ export default class MoldBreakdownGrid extends Component {
                 gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
               }}
             >
-              <TextField
-                fullWidth
-                label="상태"
-                value={this.state.filters.status}
-                onChange={(e) => this.handleFilterChange('status', e.target.value)}
-                size="small"
-              />
-              <TextField
-                fullWidth
-                label="문서"
-                value={this.state.filters.document}
-                onChange={(e) => this.handleFilterChange('document', e.target.value)}
-                size="small"
-              />
-              <TextField
-                fullWidth
-                label="기능위치"
-                value={this.state.filters.function_location}
-                onChange={(e) => this.handleFilterChange('function_location', e.target.value)}
-                size="small"
-              />
-              <TextField
-                fullWidth
-                label="기능위치내역"
-                value={this.state.filters.function_location_detail}
-                onChange={(e) => this.handleFilterChange('function_location_detail', e.target.value)}
-                size="small"
-              />
-              <TextField
-                fullWidth
-                label="설비"
-                type="number"
-                value={this.state.filters.equipment}
-                onChange={(e) => this.handleFilterChange('equipment', e.target.value)}
-                size="small"
-              />
-              <TextField
-                fullWidth
-                label="설비내역"
-                value={this.state.filters.equipment_detail}
-                onChange={(e) => this.handleFilterChange('equipment_detail', e.target.value)}
-                size="small"
-              />
-              <TextField
-                fullWidth
-                label="오더유형"
-                value={this.state.filters.order_type}
-                onChange={(e) => this.handleFilterChange('order_type', e.target.value)}
-                size="small"
-              />
-              <TextField
-                fullWidth
-                label="오더유형내역"
-                value={this.state.filters.order_type_detail}
-                onChange={(e) => this.handleFilterChange('order_type_detail', e.target.value)}
-                size="small"
-              />
-              <TextField
-                fullWidth
-                label="오더번호"
-                type="number"
-                value={this.state.filters.order_no}
-                onChange={(e) => this.handleFilterChange('order_no', e.target.value)}
-                size="small"
-              />
-              <TextField
-                fullWidth
-                label="오더내역 (부분검색)"
-                value={this.state.filters.order_detail}
-                onChange={(e) => this.handleFilterChange('order_detail', e.target.value)}
-                size="small"
-                placeholder="예: 취출, 이물, 누수…"
-              />
-              <TextField
-                fullWidth
-                label="통지번호"
-                type="number"
-                value={this.state.filters.notification_no}
-                onChange={(e) => this.handleFilterChange('notification_no', e.target.value)}
-                size="small"
-              />
-              <TextField
-                fullWidth
-                label="고장 (부분검색)"
-                value={this.state.filters.failure}
-                onChange={(e) => this.handleFilterChange('failure', e.target.value)}
-                size="small"
-                placeholder="예: 스크랩, 진동…"
-              />
+              <TextField fullWidth label="상태" value={filters.status} onChange={(e) => this.handleFilterChange('status', e.target.value)} size="small" />
+              <TextField fullWidth label="문서" value={filters.document} onChange={(e) => this.handleFilterChange('document', e.target.value)} size="small" />
+              <TextField fullWidth label="기능위치" value={filters.function_location} onChange={(e) => this.handleFilterChange('function_location', e.target.value)} size="small" />
+              <TextField fullWidth label="기능위치내역" value={filters.function_location_detail} onChange={(e) => this.handleFilterChange('function_location_detail', e.target.value)} size="small" />
+              <TextField fullWidth label="설비" type="number" value={filters.equipment} onChange={(e) => this.handleFilterChange('equipment', e.target.value)} size="small" />
+              <TextField fullWidth label="설비내역" value={filters.equipment_detail} onChange={(e) => this.handleFilterChange('equipment_detail', e.target.value)} size="small" />
+              <TextField fullWidth label="오더유형" value={filters.order_type} onChange={(e) => this.handleFilterChange('order_type', e.target.value)} size="small" />
+              <TextField fullWidth label="오더유형내역" value={filters.order_type_detail} onChange={(e) => this.handleFilterChange('order_type_detail', e.target.value)} size="small" />
+              <TextField fullWidth label="오더번호" type="number" value={filters.order_no} onChange={(e) => this.handleFilterChange('order_no', e.target.value)} size="small" />
+              <TextField fullWidth label="오더내역 (부분검색)" value={filters.order_detail} onChange={(e) => this.handleFilterChange('order_detail', e.target.value)} size="small" placeholder="예: 취출, 이물, 누수…" />
+              <TextField fullWidth label="통지번호" type="number" value={filters.notification_no} onChange={(e) => this.handleFilterChange('notification_no', e.target.value)} size="small" />
+              <TextField fullWidth label="고장 (부분검색)" value={filters.failure} onChange={(e) => this.handleFilterChange('failure', e.target.value)} size="small" placeholder="예: 스크랩, 진동…" />
             </Box>
           </Collapse>
 
@@ -924,7 +851,7 @@ export default class MoldBreakdownGrid extends Component {
               variant="contained"
               startIcon={<SearchIcon />}
               size="large"
-              sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}
+              sx={{ backgroundColor: themeHex, '&:hover': { backgroundColor: themeHex } }}
               onClick={this.handleSearch}
             >
               검색
@@ -937,7 +864,7 @@ export default class MoldBreakdownGrid extends Component {
           <Box sx={{ height: '100%', width: '100%' }}>
             {loading && (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
-                <CircularProgress size={60} sx={{ color: '#ff8f00' }} />
+                <CircularProgress size={60} sx={{ color: themeHex }} />
               </Box>
             )}
 
@@ -949,7 +876,7 @@ export default class MoldBreakdownGrid extends Component {
                 <Button
                   variant="contained"
                   onClick={this.fetchData}
-                  sx={{ backgroundColor: '#ff8f00', '&:hover': { backgroundColor: '#f57c00' } }}
+                  sx={{ backgroundColor: themeHex, '&:hover': { backgroundColor: themeHex } }}
                 >
                   다시 시도
                 </Button>
@@ -982,7 +909,7 @@ export default class MoldBreakdownGrid extends Component {
                 sx={{
                   height: '600px',
                   '& .super-app-theme--header': {
-                    backgroundColor: '#ff8f00',
+                    backgroundColor: themeHex,
                     color: 'white',
                     fontWeight: 'bold',
                   },
@@ -1010,14 +937,31 @@ export default class MoldBreakdownGrid extends Component {
         {/* 품목 코드 선택 모달 */}
         <ItemCodeModal
           open={itemCodeModalOpen}
-          onClose={this.closeItemCodeModal}
-          onSelect={this.handleItemCodeSelect}
+          onClose={() => this.setState({ itemCodeModalOpen: false })}
+          onSelect={({ 품목번호, 품목명, itemCode, itemName, code, name }) => {
+            const nextCode = 품목번호 || itemCode || code || '';
+            const nextName = 품목명 || itemName || name || '';
+            this.setState((prev) => ({
+              filters: { ...prev.filters, itemCode: nextCode, itemName: nextName },
+              itemCodeModalOpen: false,
+              rows: [],        // 선택 후 즉시 조회하지 않음 → 그리드 비워두기
+              allRows: [],
+              error: null,
+            }));
+          }}
           selectedItemCode={filters.itemCode}
           plant={filters.plant}
           worker={filters.worker}
           line={filters.line}
+          start_work_date={filters.start_date}
+          end_work_date={filters.end_date}
         />
       </Box>
     );
   }
 }
+
+export default connect((state) => ({
+  themeHex: selectThemeHex(state),
+  themeKey: selectThemeKey(state),
+}))(MoldBreakdownGrid);

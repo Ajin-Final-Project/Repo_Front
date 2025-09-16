@@ -16,7 +16,7 @@ import {
   NavLink,
 } from "reactstrap";
 import cx from "classnames";
-import { NavbarTypes } from "../../reducers/layout";
+import { NavbarTypes, selectThemeHex, selectThemeKey} from "../../reducers/layout";
 import Notifications from "../Notifications";
 import { logoutUser } from "../../actions/auth";
 import chroma from "chroma-js";
@@ -148,7 +148,7 @@ class Header extends React.Component {
   }
 
   render() {
-    const { navbarType, navbarColor, openUsersList } = this.props;
+    const { navbarType, navbarColor, openUsersList,themeHex } = this.props;
 
     // 사용자 정보 안전 파싱
     const raw = localStorage.getItem("user");
@@ -224,7 +224,7 @@ class Header extends React.Component {
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span className="navbar-text">AJIN INDUSTRIAL CO.LTD</span>
                 <span className="navbar-text">{displayName} 님</span>
-                <span className={`${s.avatar} rounded-circle thumb-sm`}>
+                <span className={`${s.avatar} rounded-circle thumb-sm`}  style={{ backgroundColor: themeHex || "#3f51b5", color: "white" }}>
                   {user?.avatar ? (
                     <img src={user.avatar} alt="User avatar" />
                   ) : (
@@ -239,15 +239,15 @@ class Header extends React.Component {
               className={`${s.notificationsWrapper} py-0 animated animated-fast fadeInUp`}
             >
               <div className="p-3">
-                <div className="mb-1 font-weight-bold">
+                <div className="mb-1 font-weight-bold"  >
                   {user?.name || user?.email?.split("@")[0] || "User"}
                   {user?.role ? (
-                    <span className="text-muted" style={{ marginLeft: 8 }}>
+                    <span className="text-muted" style={{ marginLeft: 8}} >
                       | {user.role}
                     </span>
                   ) : null}
                 </div>
-                <div className="text-warning">{user?.email || ""}</div>
+                <div className="text-warning" >{user?.email || ""}</div>
               </div>
 
               {/* 원래 템플릿의 메뉴(아이콘 포함) */}
@@ -266,6 +266,8 @@ function mapStateToProps(store) {
     sidebarStatic: store.navigation.sidebarStatic,
     navbarType: store.layout.navbarType,
     navbarColor: store.layout.navbarColor,
+    themeHex: selectThemeHex(store),
+    themeKey: selectThemeKey(store)
   };
 }
 

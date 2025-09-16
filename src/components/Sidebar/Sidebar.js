@@ -2057,16 +2057,17 @@ class Sidebar extends React.Component {
   renderIconOnlyNav() {
     // 아이콘 전용 항목(접힘일 때만 사용)
     const items = [
-      { key: "dashboard", label: "Dashboard", link: "/app/dashboard", iconKey: "dashboard" },
-      { key: "production", label: "생산관리 시스템", link: "/app/production/chart", iconKey: "production" },
-      { key: "mold", label: "금형관리 시스템", link: "/app/mold/chart", iconKey: "mold" },
-      { key: "defect", label: "불량공정 시스템", link: "/app/defect/chart", iconKey: "defect" },
-      { key: "downtime", label: "비가동 통계 시스템", link: "/app/downtime/chart", iconKey: "downtime" },
-      { key: "inspection", label: "초/중/종품 검사 시스템", link: "/app/inspection/chart", iconKey: "inspection" },
-      { key: "admin", label: "관리자 시스템", link: "/admin/users", iconKey: "admin" },
+      { key: "dashboard", label: "실시간 관제 시스템", link: "/app/dashboard", iconKey: "dashboard" },
       { key: "ai", label: "AI 분석 시스템", link: "/app/ai/product-forecast", iconKey: "ai" },
-      { key: "email", label: "Email", link: "/app/email", iconKey: "email", badge: 9 },
-      { key: "documentation", label: "Documentation", link: "/documentation", iconKey: "documentation", target: "_blank" },
+      { key: "production", label: "생산관리 시스템", link: "/app/production/chart", iconKey: "production" },
+      { key: "downtime", label: "비가동 통계 시스템", link: "/app/downtime/chart", iconKey: "downtime" },
+      { key: "mold", label: "금형관리 시스템", link: "/app/mold/chart", iconKey: "mold" },
+      { key: "inspection", label: "초/중/종품 검사 시스템", link: "/app/inspection/chart", iconKey: "inspection" },
+      { key: "defect", label: "불량공정 시스템", link: "/app/defect/chart", iconKey: "defect" },
+      { key: "admin", label: "관리자 시스템", link: "/admin/users", iconKey: "admin" },
+      
+      // { key: "email", label: "Email", link: "/app/email", iconKey: "email", badge: 9 },
+      // { key: "documentation", label: "Documentation", link: "/documentation", iconKey: "documentation", target: "_blank" },
     ];
 
     const bottomItems = [
@@ -2079,6 +2080,11 @@ class Sidebar extends React.Component {
       <>
         <ul className={s.iconNav} aria-label="Main navigation (icons only)">
           {items.map((it) => {
+            // 관리자가 아니면 admin 메뉴 숨김
+            if (it.key === "admin" && this.props.role !== "시스템관리자") {
+              return null;
+            }
+
             const icon = this.themeIcons(it.iconKey);
             const content = (
               <>
@@ -2136,30 +2142,47 @@ class Sidebar extends React.Component {
           <LinksGroup
             onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
             activeItem={this.props.activeItem}
-            header="Dashboard"
+            header="실시간 설비 모니터링"
             isHeader
             link="/app/dashboard"
             index="dashboard"
             exact={false}
             childrenLinks={[
-              { header: "Analytics", link: "/app/dashboard/analytics" },
-              { header: "Visits", link: "/app/dashboard/visits" },
+              { header: "프레스 모니터링", link: "/app/dashboard/analytics" },
+              // { header: "Visits", link: "/app/dashboard/visits" },
             ]}
           >
             <img src={this.themeIcons("dashboard")} alt="dashboard" width="24" height="24" />
           </LinksGroup>
 
+
+            <LinksGroup
+            onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
+            activeItem={this.props.activeItem}
+            header="AI 예측 시스템"
+            isHeader
+            link="/app/ai/product-forecast"
+            index="ai"
+            childrenLinks={[
+              { header: "생산량 예측/분석", link: "/app/ai/product-forecast" },
+              { header: "병목 공정 예측/분석", link: "/app/ai/bottleneck" },
+            ]}
+          >
+            <img src={this.themeIcons("ai")} alt="ai" width="24" height="24" />
+          </LinksGroup>
+
+
           <LinksGroup
             onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
             activeItem={this.props.activeItem}
-            header="생산관리 시스템"
+            header="생산 관리 시스템"
             isHeader
             link="/app/production/chart"
             index="production"
             exact={false}
             childrenLinks={[
-              { header: "생산데이터 차트", link: "/app/production/chart" },
-              { header: "생산 데이터 그리드", link: "/app/production/grid" },
+              { header: "생산 데이터 분석", link: "/app/production/chart" },
+              { header: "생산 데이터 내역", link: "/app/production/grid" },
             ]}
           >
             <img src={this.themeIcons("production")} alt="production" width="24" height="24" />
@@ -2168,52 +2191,37 @@ class Sidebar extends React.Component {
           <LinksGroup
             onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
             activeItem={this.props.activeItem}
-            header="금형관리 시스템"
-            isHeader
-            link="/app/mold/chart"
-            index="mold"
-            childrenLinks={[
-              { header: "금형데이터 차트", link: "/app/mold/chart" },
-              { header : "금형-세척/점검 내역" , link: "/app/mold/shot-check"},
-              // { header: "금형세척 데이터", link: "/app/mold/data" },
-              // { header: "금형타수 데이터", link: "/app/mold/shotCountData" },
-              { header: "금형고장 데이터", link: "/app/mold/moldBreakDown" },
-            ]}
-          >
-            <img src={this.themeIcons("mold")} alt="mold" width="24" height="24" />
-          </LinksGroup>
-
-          <LinksGroup
-            onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
-            activeItem={this.props.activeItem}
-            header="불량공정 시스템"
-            isHeader
-            link="/app/defect/chart"
-            index="defect"
-            exact={false}
-            childrenLinks={[
-              { header: "불량공정 차트", link: "/app/defect/chart" },
-              { header: "불량공정 그리드", link: "/app/defect/grid" },
-            ]}
-          >
-            <img src={this.themeIcons("defect")} alt="defect" width="24" height="24" />
-          </LinksGroup>
-
-          <LinksGroup
-            onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
-            activeItem={this.props.activeItem}
-            header="비가동 통계 시스템"
+            header="비가동 관리 시스템"
             isHeader
             link="/app/downtime/chart"
             index="downtime"
             childrenLinks={[
-              { header: "비가동 통계 차트", link: "/app/downtime/chart" },
-              { header: "비가동 통계 데이터", link: "/app/downtime/data" },
+              { header: "비가동 데이터 분석", link: "/app/downtime/chart" },
+              { header: "비가동 데이터 내역 ", link: "/app/downtime/data" },
             ]}
           >
             <img src={this.themeIcons("downtime")} alt="downtime" width="24" height="24" />
           </LinksGroup>
 
+
+          <LinksGroup
+            onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
+            activeItem={this.props.activeItem}
+            header="금형 관리 시스템"
+            isHeader
+            link="/app/mold/chart"
+            index="mold"
+            childrenLinks={[
+              { header: "금형 데이터 분석", link: "/app/mold/chart" },
+              { header : "금형 세척/점검 데이터 내역" , link: "/app/mold/shot-check"},
+              // { header: "금형세척 데이터", link: "/app/mold/data" },
+              // { header: "금형타수 데이터", link: "/app/mold/shotCountData" },
+              { header: "금형 고장 데이터 내역", link: "/app/mold/moldBreakDown" },
+            ]}
+          >
+            <img src={this.themeIcons("mold")} alt="mold" width="24" height="24" />
+          </LinksGroup>
+  
           <LinksGroup
             onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
             activeItem={this.props.activeItem}
@@ -2222,11 +2230,27 @@ class Sidebar extends React.Component {
             link="/app/inspection/chart"
             index="inspection"
             childrenLinks={[
-              { header: "검사 시스템 차트", link: "/app/inspection/chart" },
-              { header: "검사 시스템 데이터", link: "/app/inspection/data" },
+              { header: "검사 데이터 분석", link: "/app/inspection/chart" },
+              { header: "검사 데이터 내역", link: "/app/inspection/data" },
             ]}
           >
             <img src={this.themeIcons("inspection")} alt="inspection" width="24" height="24" />
+          </LinksGroup>
+
+             <LinksGroup
+            onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
+            activeItem={this.props.activeItem}
+            header="불량 관리 시스템"
+            isHeader
+            link="/app/defect/chart"
+            index="defect"
+            exact={false}
+            childrenLinks={[
+              { header: "불량 데이터 분석", link: "/app/defect/chart" },
+              { header: "불량 데이터 내역", link: "/app/defect/grid" },
+            ]}
+          >
+            <img src={this.themeIcons("defect")} alt="defect" width="24" height="24" />
           </LinksGroup>
           
           {this.props.role ==='시스템관리자' && (
@@ -2240,9 +2264,9 @@ class Sidebar extends React.Component {
               link="/admin/users"
               index="admin"
               childrenLinks={[
-                { header: "회사/공장/공정 데이터", link: "/admin/users" },
-                { header: "공정코드 데이터",     link: "/admin/users" },
-                { header: "품목 데이터",         link: "/admin/users" },
+                // { header: "회사/공장/공정 데이터", link: "/admin/users" },
+                // { header: "공정코드 데이터",     link: "/admin/users" },
+                // { header: "품목 데이터",         link: "/admin/users" },
                 { header: "사원 관리 데이터",     link: "/app/admin/users" },
               ]}
             >
@@ -2250,22 +2274,8 @@ class Sidebar extends React.Component {
             </LinksGroup>
           )}
 
-          <LinksGroup
-            onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
-            activeItem={this.props.activeItem}
-            header="AI 예측 시뮬레이션"
-            isHeader
-            link="/app/ai/product-forecast"
-            index="ai"
-            childrenLinks={[
-              { header: "생산량 예측", link: "/app/ai/product-forecast" },
-              { header: "병목 공정 예측", link: "/app/ai/bottleneck" },
-            ]}
-          >
-            <img src={this.themeIcons("ai")} alt="ai" width="24" height="24" />
-          </LinksGroup>
-
-          <LinksGroup
+        
+          {/* <LinksGroup
             onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
             activeItem={this.props.activeItem}
             header="Email"
@@ -2287,7 +2297,7 @@ class Sidebar extends React.Component {
             target="_blank"
           >
             <img src={this.themeIcons("documentation")} alt="documentation" width="24" height="24" />
-          </LinksGroup>
+          </LinksGroup> */}
         </ul>
 
         <ul className={s.downNav}>
@@ -2325,7 +2335,6 @@ class Sidebar extends React.Component {
     // static 모드에선 접히지 않음
     const isCollapsed = !this.props.sidebarOpened && !this.props.sidebarStatic;
 
-    console.log("현재 사용자 역할:", this.props.role);
     return (
       <div
         className={`${isCollapsed ? s.sidebarClose : ""} ${s.sidebarWrapper} ${cx({

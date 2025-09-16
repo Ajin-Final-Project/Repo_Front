@@ -217,7 +217,7 @@ export default function KpiSection({
           <StatCard
             icon={<FormatListNumberedIcon fontSize="small" />}
             title="건수"
-            value={fmtNumber(Number(kpiSummary?.count ?? 0))}
+            value={`${fmtNumber(Number(kpiSummary?.count ?? 0))}건`}
           />
         </Grid>
 
