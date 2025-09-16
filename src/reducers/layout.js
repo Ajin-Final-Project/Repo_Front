@@ -14,7 +14,7 @@ import config from "../config";
 export const DashboardThemes = {
   LIGHT: "light",
   DARK: "dark",
-  WARNING: "#F9A70D", // #FEBE69
+  WARNING: "#FEB049", // #FEBE69
   DANGER: "#F5695A",
   SUCCESS: "#3BBF97",
   INFO: "#12B4DE",
