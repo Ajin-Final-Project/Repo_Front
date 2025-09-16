@@ -1284,7 +1284,7 @@ class ProductionChart extends Component {
                     <TextField
                       select
                       fullWidth
-                      label="작업자"
+                      label="라인"
                       value={this.state.filters.line}
                       onChange={(e) => this.handleFilterChange('line', e.target.value)}
                       size="small"

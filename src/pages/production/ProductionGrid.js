@@ -512,29 +512,29 @@ class ProductionGrid extends Component {
     },
     { 
       field: 'line', 
-      headerName: '작업자', 
+      headerName: '라인', 
       width: 100,
       headerClassName: 'super-app-theme--header',
       cellClassName: 'super-app-theme--cell'
     },
     { 
       field: 'itemCode', 
-      headerName: '자재번호', 
+      headerName: '품번', 
       width: 120,
       headerClassName: 'super-app-theme--header',
       cellClassName: 'super-app-theme--cell'
     },
     { 
       field: 'itemName', 
-      headerName: '자재명', 
-      width: 120,
+      headerName: '품목명', 
+      width: 200,
       headerClassName: 'super-app-theme--header',
       cellClassName: 'super-app-theme--cell'
     },
     { 
       field: 'carModel', 
       headerName: '차종', 
-      width: 100,
+      width: 80,
       headerClassName: 'super-app-theme--header',
       cellClassName: 'super-app-theme--cell'
     },
@@ -928,7 +928,7 @@ class ProductionGrid extends Component {
             <TextField
               select
               fullWidth
-              label="작업자"
+              label="라인"
               value={filters.line}
               onChange={(e) => this.handleFilterChange('line', e.target.value)}
               size="small"
@@ -1266,6 +1266,7 @@ class ProductionGrid extends Component {
                   pagination: { paginationModel: { page: 0, pageSize: 10 } },
                   columns: {
                       columnVisibilityModel: {
+                        id: false,
                         creator: false,       
                         createDate: false,
                         sheetInputCoil: false, // hide:true 대신 여기서 숨김
