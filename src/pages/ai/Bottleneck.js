@@ -59,7 +59,7 @@ const Bottleneck = () => {
   // ✅ 숫자 포맷
   const formatNumber = (value) => {
     if (value === null || value === undefined) return 0;
-    return Number(value).toFixed(2);
+    return Math.round(Number(value));
   };
 
   // ✅ 병목 이름 변환
@@ -485,7 +485,17 @@ const makeBarOption = (before, after, mode) => {
   const maxVal = Math.max(...before, ...after);
 
   return {
-    tooltip: { trigger: "axis" },
+    tooltip: {
+      trigger: "axis",
+      formatter: (params) => {
+        return params
+          .map(
+            (p) =>
+              `${p.name}<br/>대기열: ${Math.round(Number(p.value))}`
+          )
+          .join("<br/>");
+      },
+    },
     legend: { show: false },
     xAxis: { type: "category", data: cells.map((c) => translateCellLabel(c)) },
     yAxis: {
@@ -617,9 +627,14 @@ const makeSankeyOption = (skuToBefore, skuToAfter, mode) => {
 
 
 const availableDates = Object.keys(byDate);  // 실제 DB에서 내려온 날짜들
-  const past7Dates = useMemo(() => {
-    return getPastDates(filters.date, 7).filter((d) => availableDates.includes(d));
-  }, [filters.date, byDate]);
+const past7Dates = useMemo(() => {
+  return getPastDates(filters.date, 7).filter((d) => availableDates.includes(d));
+}, [filters.date, byDate]);
+// const past7Dates = useMemo(() => {
+//   return getPastDates(filters.date, 7).filter((d) => availableDates.includes(d));
+// }, [filters.date, byDate]);
+
+
 
 
 
@@ -792,7 +807,7 @@ const alertMessage =
         params.value
           .map(
             (v, i) =>
-              `${radarOption.radar.indicator[i].name}: ${Number(v).toFixed(2)}`
+              `${radarOption.radar.indicator[i].name}: ${Math.round(Number(v))}`
           )
           .join("<br/>"),
     },
@@ -841,61 +856,181 @@ const alertMessage =
   let pieData = [
     {
       name: "블랭킹",
-      value: past7Dates.reduce(
-        (s, d) =>
-          s +
-          (byDate[d]?.Blanking_SKU1_Queue || 0) +
-          (byDate[d]?.Blanking_SKU2_Queue || 0) +
-          (byDate[d]?.Blanking_SKU3_Queue || 0) +
-          (byDate[d]?.Blanking_SKU4_Queue || 0),
-        0
-      ),
+      value:
+        past7Dates.reduce(
+          (s, d) =>
+            s +
+            (byDate[d]?.Blanking_SKU1_Queue || 0) +
+            (byDate[d]?.Blanking_SKU2_Queue || 0) +
+            (byDate[d]?.Blanking_SKU3_Queue || 0) +
+            (byDate[d]?.Blanking_SKU4_Queue || 0),
+          0
+        ) / past7Dates.length,
     },
     {
       name: "블랭킹 지게차",
-      value: past7Dates.reduce(
-        (s, d) => s + (byDate[d]?.Forklift_Blanking_Queue || 0),
-        0
-      ),
+      value:
+        past7Dates.reduce(
+          (s, d) => s + (byDate[d]?.Forklift_Blanking_Queue || 0),
+          0
+        ) / past7Dates.length,
     },
     {
       name: "프레스",
-      value: past7Dates.reduce(
-        (s, d) =>
-          s +
-          (byDate[d]?.Press1_Queue || 0) +
-          (byDate[d]?.Press2_Queue || 0) +
-          (byDate[d]?.Press3_Queue || 0) +
-          (byDate[d]?.Press4_Queue || 0),
-        0
-      ),
+      value:
+        past7Dates.reduce(
+          (s, d) =>
+            s +
+            (byDate[d]?.Press1_Queue || 0) +
+            (byDate[d]?.Press2_Queue || 0) +
+            (byDate[d]?.Press3_Queue || 0) +
+            (byDate[d]?.Press4_Queue || 0),
+          0
+        ) / past7Dates.length,
     },
     {
       name: "프레스 지게차",
-      value: past7Dates.reduce(
-        (s, d) => s + (byDate[d]?.Forklift_Press_Queue || 0),
-        0
-      ),
+      value:
+        past7Dates.reduce(
+          (s, d) => s + (byDate[d]?.Forklift_Press_Queue || 0),
+          0
+        ) / past7Dates.length,
     },
     {
       name: "조립셀",
-      value: past7Dates.reduce(
-        (s, d) =>
-          s +
-          (byDate[d]?.Cell1_Queue || 0) +
-          (byDate[d]?.Cell2_Queue || 0) +
-          (byDate[d]?.Cell3_Queue || 0) +
-          (byDate[d]?.Cell4_Queue || 0),
-        0
-      ),
+      value:
+        past7Dates.reduce(
+          (s, d) =>
+            s +
+            (byDate[d]?.Cell1_Queue || 0) +
+            (byDate[d]?.Cell2_Queue || 0) +
+            (byDate[d]?.Cell3_Queue || 0) +
+            (byDate[d]?.Cell4_Queue || 0),
+          0
+        ) / past7Dates.length,
     },
   ];
   pieData = pieData.sort((a, b) => b.value - a.value);
 
+  // let pieData = [
+  //   {
+  //     name: "블랭킹",
+  //     value: past7Dates.reduce(
+  //       (s, d) =>
+  //         s +
+  //         (byDate[d]?.Blanking_SKU1_Queue || 0) +
+  //         (byDate[d]?.Blanking_SKU2_Queue || 0) +
+  //         (byDate[d]?.Blanking_SKU3_Queue || 0) +
+  //         (byDate[d]?.Blanking_SKU4_Queue || 0),
+  //       0
+  //     ),
+  //   },
+  //   {
+  //     name: "블랭킹 지게차",
+  //     value: past7Dates.reduce(
+  //       (s, d) => s + (byDate[d]?.Forklift_Blanking_Queue || 0),
+  //       0
+  //     ),
+  //   },
+  //   {
+  //     name: "프레스",
+  //     value: past7Dates.reduce(
+  //       (s, d) =>
+  //         s +
+  //         (byDate[d]?.Press1_Queue || 0) +
+  //         (byDate[d]?.Press2_Queue || 0) +
+  //         (byDate[d]?.Press3_Queue || 0) +
+  //         (byDate[d]?.Press4_Queue || 0),
+  //       0
+  //     ),
+  //   },
+  //   {
+  //     name: "프레스 지게차",
+  //     value: past7Dates.reduce(
+  //       (s, d) => s + (byDate[d]?.Forklift_Press_Queue || 0),
+  //       0
+  //     ),
+  //   },
+  //   {
+  //     name: "조립셀",
+  //     value: past7Dates.reduce(
+  //       (s, d) =>
+  //         s +
+  //         (byDate[d]?.Cell1_Queue || 0) +
+  //         (byDate[d]?.Cell2_Queue || 0) +
+  //         (byDate[d]?.Cell3_Queue || 0) +
+  //         (byDate[d]?.Cell4_Queue || 0),
+  //       0
+  //     ),
+  //   },
+  // ];
+  // pieData = pieData.sort((a, b) => b.value - a.value);
+
+
+  // ✅ 최근 7일 병목 발생 카운트
+  const normalizeStage = (name) => {
+    if (name.includes("지게차")) return name;   // 지게차는 따로 유지
+    if (name.startsWith("조립셀")) return "조립셀";
+    if (name.startsWith("블랭킹")) return "블랭킹";
+    if (name.startsWith("프레스")) return "프레스";
+    return name;
+  };
+
+
+  let bottleneckCounts = { 블랭킹: 0, 프레스: 0, 조립셀: 0, "블랭킹 지게차": 0, "프레스 지게차": 0 };
+
+  past7Dates.forEach((d) => {
+    const row = byDate[d];
+    if (!row?.Bottleneck_actual) return;
+
+    const translated = translateBottleneck(row.Bottleneck_actual);
+    const normalized = normalizeStage(translated);
+    if (bottleneckCounts[normalized] !== undefined) {
+      bottleneckCounts[normalized] += 1;
+    }
+  });
+  
+  // past7Dates.forEach((d) => {
+  //   const row = byDate[d];
+  //   if (!row?.Bottleneck_actual) return;
+
+  //   const translated = translateBottleneck(row.Bottleneck_actual);
+  //   const normalized = normalizeStage(translated);
+  //   if (bottleneckCounts[normalized] !== undefined) {
+  //     bottleneckCounts[normalized] += 1;
+  //   }
+  // });
+
+
+
+  // ✅ Pie 데이터 생성
+  // let pieData = Object.entries(bottleneckCounts)
+  //   .map(([name, value]) => ({ name, value }))
+  //   .filter((d) => d.value > 0) // 0인 건 제외
+  //   .sort((a, b) => b.value - a.value);
+
+  // const pieOption = {
+  //   tooltip: {
+  //     trigger: "item",
+  //     formatter: (p) => `${p.name}: ${p.value}회 (${p.percent}%)`,
+  //   },
+  //   series: [
+  //     {
+  //       name: "주간 병목 빈도",
+  //       type: "pie",
+  //       radius: "70%",
+  //       label: { formatter: "{b}: {d}%" },
+  //       data: pieData,
+  //     },
+  //   ],
+  // };
+
+
+
   const pieOption = {
     tooltip: {
       trigger: "item",
-      formatter: (p) => `${p.name}: ${Number(p.value).toFixed(2)} (${p.percent}%)`,
+      formatter: (p) => `${p.name}: ${Math.round(Number(p.value))} (${p.percent}%)`,
     },
     series: [
       {
@@ -907,6 +1042,63 @@ const alertMessage =
       },
     ],
   };
+
+
+
+
+
+
+  const barOption = {
+    tooltip: {
+      trigger: "axis",
+      formatter: (params) =>
+        params.map(p => `${p.name}: ${Math.round(p.value)}`).join("<br/>"),
+    },
+    xAxis: {
+      type: "category",
+      data: pieData.map((d) => d.name),
+    },
+    yAxis: {
+      type: "value",
+      min: 0,
+      name: "평균 대기열",
+    },
+    series: [
+      {
+        type: "bar",
+        data: pieData.map((d) => d.value),
+        itemStyle: {
+          color: (p) => {
+            const colors = {
+              블랭킹: "#9ca3af",             // 회색 (gray-400)
+              "블랭킹 지게차": "#a855f7",    // ✅ 보라 (purple-500)
+              프레스: "#10b981",             // 초록 (green-500)
+              "프레스 지게차": "#6ee7b7",     // 연초록 (green-300)
+              조립셀: "#3b82f6",             // 파랑 (blue-500)
+            };
+            return colors[p.name] || "#d1d5db"; // fallback: 연회색
+          },
+        },
+        label: {
+          show: true,
+          position: "top",
+          fontSize: 12,
+          color: "#374151", // 다크그레이
+          formatter: (p) => Math.round(p.value),
+        },
+      },
+    ],
+  };
+
+
+
+
+
+
+
+
+
+
 
 
   // ✅ 회색 배경 데이터: 과거+오늘 날짜 전체
@@ -1060,7 +1252,7 @@ const alertMessage =
               {[1, 2, 3, 4].map((i) => (
                 <Tooltip
                   key={`blanking${i}`}
-                  title={`Queue: ${formatNumber(latest?.[`Blanking_${i}_Queue`] || 0)}`}
+                  title={`대기열: ${formatNumber(latest?.[`Blanking_${i}_Queue`] || 0)}`}
                   placement="top"
                 >
                   <div
@@ -1080,7 +1272,7 @@ const alertMessage =
             {/* 블랭킹 지게차 */}
             <div className={styles.row}>
               <Tooltip
-                title={`Queue: ${formatNumber(latest?.Forklift_Blanking_Queue || 0)}`}
+                title={`대기열: ${formatNumber(latest?.Forklift_Blanking_Queue || 0)}`}
                 placement="top"
               >
                 <div
@@ -1101,7 +1293,7 @@ const alertMessage =
               {[1, 2, 3, 4].map((i) => (
                 <Tooltip
                   key={`press${i}`}
-                  title={`Queue: ${formatNumber(latest?.[`Press${i}_Queue`] || 0)}`}
+                  title={`대기열: ${formatNumber(latest?.[`Press${i}_Queue`] || 0)}`}
                   placement="top"
                 >
                   <div
@@ -1121,7 +1313,7 @@ const alertMessage =
             {/* 프레스 지게차 */}
             <div className={styles.row}>
               <Tooltip
-                title={`Queue: ${formatNumber(latest?.Forklift_Press_Queue || 0)}`}
+                title={`대기열: ${formatNumber(latest?.Forklift_Press_Queue || 0)}`}
                 placement="top"
               >
                 <div
@@ -1142,7 +1334,7 @@ const alertMessage =
               {[1, 2, 3, 4].map((i) => (
                 <Tooltip
                   key={`cell${i}`}
-                  title={`Queue: ${formatNumber(latest?.[`Cell${i}_Queue`] || 0)}`}
+                  title={`대기열: ${formatNumber(latest?.[`Cell${i}_Queue`] || 0)}`}
                   placement="top"
                 >
                   <div
@@ -1176,17 +1368,6 @@ const alertMessage =
 
       {/* 2행: Pie + Heatmap */}
       <div className={styles.grid}>
-        <div className={styles.card}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 style={{ margin: 0 }}>📊 최근 1주 병목 분포</h2>
-            <span style={{ fontSize: "14px", color: "#6b7280" }}>
-              {past7Dates.length > 0
-                ? `(${past7Dates[0]} ~ ${past7Dates[past7Dates.length - 1]})`
-                : "(데이터 없음)"}
-            </span>
-          </div>
-          <ReactECharts option={pieOption} style={{ height: "280px" }} />
-        </div>
 
         <div className={styles.card}>
           <h2>일자별 병목 기록/예측</h2>
@@ -1224,6 +1405,21 @@ const alertMessage =
             )}
           </div>
         </div>
+
+        <div className={styles.card}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 style={{ margin: 0 }}>📊 최근 1주 평균 대기열</h2>
+            <span style={{ fontSize: "14px", color: "#6b7280" }}>
+              {past7Dates.length > 0
+                ? `(${past7Dates[0]} ~ ${past7Dates[past7Dates.length - 1]})`
+                : "(데이터 없음)"}
+            </span>
+
+          </div>
+          {/* <ReactECharts option={pieOption} style={{ height: "280px" }} /> */}
+          <ReactECharts option={barOption} style={{ height: "340px" }} />
+        </div>
+
       </div>
 
 
