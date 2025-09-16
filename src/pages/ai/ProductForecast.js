@@ -58,22 +58,32 @@ const fetchJson = async (url, options = {}, key = "API") => {
 const API = (path) => `${config.baseURLApi}/smartFactory${path}`;
 
 // ✅ CustomTooltip
-const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    const showLabel = label && label !== "NaN" && label !== "NaN~NaN" && label !== "-";
-    return (
-      <div style={{ background: "white", border: "1px solid #ccc", padding: "8px" }}>
-        {showLabel && <div><b>시간:</b> {label}</div>}
-        {payload.map((entry, index) => (
-          <div key={index}>
-            {entry.name}: {Number(entry.value).toFixed(2)}
+const CustomTooltip = ({ active, payload = [], label }) => {
+  if (!active || !payload.length) return null;
+
+  const isNum = (v) => typeof v === "number" && isFinite(v);
+  const timeText = payload[0]?.payload?.time ?? label ?? "-";
+
+  return (
+    <div style={{ background: "#fff", border: "1px solid #ccc", padding: 8 }}>
+      {/* 시간은 위에서 한 줄만 보여주고 */}
+      <div style={{ marginBottom: 4 }}>
+        <b>시간:</b> {timeText}
+      </div>
+
+      {/* 숫자(y축) 값만 출력 (예: '예측') */}
+      {payload
+        .filter((e) => isNum(e.value) && e.name !== "time" && e.dataKey !== "time")
+        .map((entry, i) => (
+          <div key={i}>
+            {entry.name ?? entry.dataKey}: {entry.value.toFixed(2)}
           </div>
         ))}
-      </div>
-    );
-  }
-  return null;
+    </div>
+  );
 };
+
+
 
 export default function ProductForecast() {
   // ✅ Redux에서 themeHex 가져오기
