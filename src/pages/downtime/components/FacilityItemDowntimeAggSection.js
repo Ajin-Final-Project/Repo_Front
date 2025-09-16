@@ -490,7 +490,7 @@ export function RightDetailSection({
           {dist.length === 0 ? (
             <Typography color="text.secondary">표시할 조치 분포가 없습니다.</Typography>
           ) : (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.1 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.1, padding: "0px 6px"}}>
               {(() => {
                 const maxMinutes = Math.max(
                   ...dist.map((d) => Number(d.minutes || 0)),

@@ -178,11 +178,11 @@ export default function MonthlySection({
 
           {/* 축 실선/틱 꼬리선 제거 */}
           <XAxis dataKey="name" />
-          <YAxis
+          {/* <YAxis
             allowDecimals={false}
             domain={[0, yMax + yPadding]}
             tickFormatter={(v) => fmtNumber(v)}
-          />
+          /> */}
 
           <Tooltip content={
             <CustomTooltip fmtDuration={fmtDuration} fmtNumber={fmtNumber}  themeHex={themeHex}/>
