@@ -303,7 +303,7 @@ export default function ProductForecast() {
     if (autoCycle) {
       interval = setInterval(() => {
         handleNextTimeSlot();
-      }, 5000);
+      }, 1500);
     }
     return () => clearInterval(interval);
   }, [autoCycle, selectedTimeSlot]);
@@ -653,9 +653,12 @@ export default function ProductForecast() {
               size="small"
               variant="contained"
               onClick={() => setAutoCycle(!autoCycle)}
-              sx={{ backgroundColor: autoCycle ? "#d32f2f" : themeHex, "&:hover": { backgroundColor: autoCycle ? "#b71c1c" : themeHex } }}
+              sx={{
+                backgroundColor: !autoCycle ? "#d32f2f" : themeHex, // ✅ OFF → 붉은색
+                "&:hover": { backgroundColor: !autoCycle ? "#b71c1c" : themeHex }
+              }}
             >
-              {autoCycle ? "자동 순환 OFF" : "자동 순환 ON"}
+              {autoCycle ? "자동 순환 ON" : "자동 순환 OFF"}
             </Button>
           </Grid>
         </Grid>
