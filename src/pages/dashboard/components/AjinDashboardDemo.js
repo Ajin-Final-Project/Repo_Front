@@ -375,7 +375,7 @@ export default function AjinDashboardDemo() {
   );
 
   return (
-    <Box sx={{ p: 2, bgcolor: PAL.pageBg, color: PAL.text }}>
+    <Box sx={{ p: { xs: 1, sm: 2 }, bgcolor: PAL.pageBg, color: PAL.text }}>
       <StickyKPIBar now={now} kpi={kpi} events={events} onOpenEvents={() => setEventModalOpen(true)} />
 
       <EventsModal
@@ -385,13 +385,13 @@ export default function AjinDashboardDemo() {
         onAcknowledge={onAcknowledge}
       />
 
-      <Grid container spacing={2} alignItems="stretch" sx={{ mt: 0 }}>
+      <Grid container spacing={{ xs: 1, sm: 2 }} alignItems="stretch" sx={{ mt: 0 }}>
         {/* 좌측: 라인 타일 */}
         <Grid item xs={12} md={3} sx={{ alignSelf: "stretch" }}>
           <Paper
             elevation={0}
             sx={{
-              p: 1.25,
+              p: { xs: 1, sm: 1.25 },
               height: "100%",
               border: `1px solid ${PAL.border}`,
               borderRadius: 2,
@@ -421,14 +421,14 @@ export default function AjinDashboardDemo() {
           <Paper
             elevation={0}
             sx={{
-              p: 1.25,
+              p: { xs: 1, sm: 1.25 },
               height: "100%",
               border: `1px solid ${PAL.border}`,
               borderRadius: 2,
               bgcolor: PAL.panelBg,
             }}
           >
-            <Grid container spacing={2} alignItems="stretch" wrap="nowrap">
+            <Grid container spacing={{ xs: 1, sm: 2 }} alignItems="stretch" wrap="nowrap">
               <Grid item xs sx={{ minWidth: 0, display: "flex" }}>
                 <RunTimelinePanel
                   line={selectedLine}
@@ -439,7 +439,7 @@ export default function AjinDashboardDemo() {
               </Grid>
             </Grid>
 
-            <Box sx={{ mt: 3 }}>
+            <Box sx={{ mt: { xs: 2, sm: 3 } }}>
               <MiddleBand line={selectedLine} events={events} seed={partSeeds[selectedLine.id]} />
             </Box>
           </Paper>
@@ -472,18 +472,18 @@ function StickyKPIBar({ now, kpi, events, onOpenEvents }) {
         position: "sticky",
         top: 0,
         zIndex: 10,
-        p: 1.25,
+        p: { xs: 1, sm: 1.25 },
         bgcolor: PAL.panelBg,
         border: `1px solid ${PAL.border}`,
         borderRadius: 2,
       }}
     >
-      <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-        <Typography variant="subtitle2" sx={{ fontSize: "1.25rem", fontWeight: 700 }}>
+      <Stack direction="row" spacing={{ xs: 1, sm: 2 }} alignItems="center" justifyContent="space-between">
+        <Typography variant="subtitle2" sx={{ fontSize: { xs: "1rem", sm: "1.25rem" }, fontWeight: 700 }}>
           {fmtDate(now)} · {fmtTime(now)}
         </Typography>
 
-        <Stack direction="row" spacing={1.25} alignItems="center">
+        <Stack direction="row" spacing={{ xs: 1, sm: 1.25 }} alignItems="center">
           <Button
             variant="outlined"
             startIcon={<Icon />}
@@ -494,7 +494,7 @@ function StickyKPIBar({ now, kpi, events, onOpenEvents }) {
               color: sevColorMap[sev],
               "&:hover": { borderColor: sevColorMap[sev], bgcolor: colorAlpha(sevColorMap[sev], 0.06) },
               borderRadius: 2,
-              px: 1.25,
+              px: { xs: 1, sm: 1.25 },
             }}
           >
             알림 {count}
@@ -550,12 +550,12 @@ function EventsModal({ open, onClose, events, onAcknowledge }) {
           alignItems: "center",
           gap: 1,
           pr: 1,
-          py: 1.25,
+          py: { xs: 1, sm: 1.25 },
           borderBottom: `1px solid ${PAL.border}`,
         }}
       >
         <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 800 }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, fontSize: { xs: "1.1rem", sm: "1.25rem" } }}>
             이벤트 / 알림
           </Typography>
           <Chip size="small" label={`전체 ${sevCounts.all}`} sx={chipStyle()} />
@@ -565,7 +565,7 @@ function EventsModal({ open, onClose, events, onAcknowledge }) {
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 1.25 }}>
+      <DialogContent sx={{ p: { xs: 1, sm: 1.25 } }}>
         <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
           <FilterChip label={`전체 ${sevCounts.all}`} active={filter === "all"} onClick={() => setFilter("all")} />
           <FilterChip
@@ -591,7 +591,7 @@ function EventsModal({ open, onClose, events, onAcknowledge }) {
           />
         </Stack>
 
-        <List dense sx={{ maxHeight: 520, overflowY: "auto", px: 0.5 }}>
+        <List dense sx={{ maxHeight: 520, overflowY: "auto", px: { xs: 0, sm: 0.5 } }}>
           {list.length === 0 && (
             <Box sx={{ p: 2 }}>
               <Typography variant="body2" sx={{ color: PAL.subText }}>
@@ -606,7 +606,7 @@ function EventsModal({ open, onClose, events, onAcknowledge }) {
               <React.Fragment key={`${e.ts}-${idx}`}>
                 <Box
                   sx={{
-                    p: 1.25,
+                    p: { xs: 1, sm: 1.25 },
                     border: `1px solid ${PAL.border}`,
                     borderRadius: 2,
                     bgcolor: "#fff",
@@ -634,7 +634,7 @@ function EventsModal({ open, onClose, events, onAcknowledge }) {
                   </Box>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Stack direction="row" alignItems="baseline" justifyContent="space-between">
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: { xs: "0.85rem", sm: "0.9rem" } }}>
                         {e.message}
                       </Typography>
                       <Typography variant="caption" sx={{ color: PAL.subText, ml: 1, whiteSpace: "nowrap" }}>
@@ -663,7 +663,7 @@ function EventsModal({ open, onClose, events, onAcknowledge }) {
         </List>
       </DialogContent>
 
-      <DialogActions sx={{ p: 1.25, borderTop: `1px solid ${PAL.border}` }}>
+      <DialogActions sx={{ p: { xs: 1, sm: 1.25 }, borderTop: `1px solid ${PAL.border}` }}>
         <Button onClick={onClose} variant="contained" sx={{ borderRadius: 2 }}>
           닫기
         </Button>
@@ -702,8 +702,8 @@ function FilterChip({ label, onClick, active, icon, color = "default" }) {
 /* -------- LineTileGrid -------- */
 function LineTileGrid({ lines, onSelect, selectedId }) {
   return (
-    <Paper elevation={0} sx={{ p: 1.25, bgcolor: "#f8fafc", border: `1px solid ${PAL.border}`, borderRadius: 2 }}>
-      <Stack spacing={1.5}>
+    <Paper elevation={0} sx={{ p: { xs: 1, sm: 1.25 }, bgcolor: "#f8fafc", border: `1px solid ${PAL.border}`, borderRadius: 2 }}>
+      <Stack spacing={{ xs: 1, sm: 1.5 }}>
         {lines.map((l) => {
           const rawAvail = availabilityPctFor(l.runtimeSec, l.stopSec);
           const avail = Math.max(75, rawAvail); // 표기 하한
@@ -732,13 +732,13 @@ function LineTileGrid({ lines, onSelect, selectedId }) {
                 },
                 display: "flex",
                 flexDirection: "column",
-                p: 1.3,
-                minHeight: 145,
+                p: { xs: 1, sm: 1.3 },
+                minHeight: { xs: 130, sm: 145 },
               }}
             >
               {/* 상단: 라인명 + 상태 */}
               <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.5 }}>
-                <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, fontSize: { xs: "1.1rem", sm: "1.25rem" } }}>
                   {l.name}
                 </Typography>
                 <StatusBadge status={l.status} />
@@ -766,12 +766,12 @@ function LineTileGrid({ lines, onSelect, selectedId }) {
               <Box sx={{ height: 4 }} />
 
               {/* KPI 바 */}
-              <Grid container spacing={1} sx={{ mt: "auto" }}>
+              <Grid container spacing={{ xs: 0.5, sm: 1 }} sx={{ mt: "auto" }}>
                 <Grid item xs={6}>
-                  <Typography variant="body2" sx={{ color: PAL.subText, mb: 0.5 }}>
+                  <Typography variant="body2" sx={{ color: PAL.subText, mb: 0.5, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
                     달성률
                   </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.3 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.3, fontSize: { xs: "1.1rem", sm: "1.25rem" } }}>
                     {achv}%
                   </Typography>
                   <LinearProgress
@@ -789,10 +789,10 @@ function LineTileGrid({ lines, onSelect, selectedId }) {
                 </Grid>
 
                 <Grid item xs={6}>
-                  <Typography variant="body2" sx={{ color: PAL.subText, mb: 0.5 }}>
+                  <Typography variant="body2" sx={{ color: PAL.subText, mb: 0.5, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
                     가동률
                   </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 900, color: col, mb: 0.3 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 900, color: col, mb: 0.3, fontSize: { xs: "1.1rem", sm: "1.25rem" } }}>
                     {avail}%
                   </Typography>
                   <LinearProgress
@@ -850,11 +850,11 @@ function ProductBadge({ code }) {
         border: "1px solid #e2e8f0",
         color: "#0f172a",
         borderRadius: 1.5,
-        height: 36,
+        height: { xs: 32, sm: 36 },
         boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
         "& .MuiChip-label": {
-          px: 1.2,
-          fontSize: "0.98rem",
+          px: { xs: 1, sm: 1.2 },
+          fontSize: { xs: "0.85rem", sm: "0.98rem" },
           fontWeight: 700,
           letterSpacing: "0.015em",
           whiteSpace: "nowrap",
@@ -897,7 +897,7 @@ function RunTimelinePanel({ line, data, fixedHeight = TL_EVT_HEIGHT, events = []
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: fixedHeight,
+        height: { xs: fixedHeight * 0.8, sm: fixedHeight },
         width: "100%",
         bgcolor: PAL.panelBg,
         border: `1px solid ${PAL.border}`,
@@ -914,22 +914,22 @@ function RunTimelinePanel({ line, data, fixedHeight = TL_EVT_HEIGHT, events = []
     >
       <CardContent sx={{ display: "flex", flexDirection: "column", flex: 1 }}>
         {/* 헤더: 라인명 왼쪽, 품번 배지 오른쪽(한 곳만) */}
-        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
-          <Typography variant="h6" sx={{ fontWeight: 800 }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: { xs: 0.25, sm: 0.5 } }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, fontSize: { xs: "1.1rem", sm: "1.25rem" } }}>
             {line.name} · 타임라인
           </Typography>
           {line.currentProduct && <ProductBadge code={line.currentProduct} />}
         </Stack>
 
         {/* 수동 범례 */}
-        <Stack direction="row" spacing={2} sx={{ mb: 0.5, color: PAL.subText }}>
+        <Stack direction="row" spacing={{ xs: 1, sm: 2 }} sx={{ mb: { xs: 0.25, sm: 0.5 }, color: PAL.subText }}>
           <Stack direction="row" spacing={0.75} alignItems="center">
             <Box sx={{ width: 14, height: 3, bgcolor: PAL.accentBlue, borderRadius: 1 }} />
-            <Typography variant="caption">파란 선 = <b>메인 모터 전류(A)</b></Typography>
+            <Typography variant="caption" sx={{ fontSize: { xs: "0.7rem", sm: "0.75rem" } }}>파란 선 = <b>메인 모터 전류(A)</b></Typography>
           </Stack>
           <Stack direction="row" spacing={0.75} alignItems="center">
             <Box sx={{ width: 14, height: 8, bgcolor: colorAlpha(PAL.accentGreen, 0.3), border: `1px solid ${PAL.accentGreen}66`, borderRadius: 0.5 }} />
-            <Typography variant="caption">초록 영역 = <b>가동 상태(RUN)</b></Typography>
+            <Typography variant="caption" sx={{ fontSize: { xs: "0.7rem", sm: "0.75rem" } }}>초록 영역 = <b>가동 상태(RUN)</b></Typography>
           </Stack>
         </Stack>
 
@@ -946,7 +946,7 @@ function RunTimelinePanel({ line, data, fixedHeight = TL_EVT_HEIGHT, events = []
                 bgcolor: "#fee2e2",
                 border: `1px solid ${PAL.accentRed}66`,
                 color: PAL.accentRed,
-                fontSize: 12,
+                fontSize: { xs: 11, sm: 12 },
                 fontWeight: 800,
               }}
             >
@@ -1057,16 +1057,16 @@ function RunTimelinePanel({ line, data, fixedHeight = TL_EVT_HEIGHT, events = []
                 },
               }}
             >
-              <Stack alignItems="center" spacing={0.6}>
-                <Typography variant="h4" sx={{ fontWeight: 900, color: PAL.accentRed }}>
+              <Stack alignItems="center" spacing={{ xs: 0.4, sm: 0.6 }}>
+                <Typography variant="h4" sx={{ fontWeight: 900, color: PAL.accentRed, fontSize: { xs: "1.5rem", sm: "2rem" } }}>
                   ● 정지
                 </Typography>
                 {reason && (
-                  <Typography variant="h6" sx={{ fontWeight: 800, color: PAL.accentRed }}>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: PAL.accentRed, fontSize: { xs: "1rem", sm: "1.25rem" } }}>
                     {reason}{estMin ? ` · 예상 ${estMin}분` : ""}
                   </Typography>
                 )}
-                <Typography variant="body1" sx={{ color: PAL.subText }}>
+                <Typography variant="body1" sx={{ color: PAL.subText, fontSize: { xs: "0.85rem", sm: "1rem" } }}>
                   경과 {stopMin}분
                 </Typography>
               </Stack>
@@ -1082,9 +1082,9 @@ function ChartTooltipRunAmp({ active, payload, label, ampUpper }) {
   const p = Object.fromEntries(payload.map((x) => [x.dataKey, x.value]));
   return (
     <Box sx={{ p: 1, bgcolor: PAL.panelBg, border: `1px solid ${PAL.border}`, borderRadius: 1.5 }}>
-      <Typography variant="caption" sx={{ color: PAL.subText }}>{label}</Typography>
-      <Typography variant="body2"><b>가동 상태:</b> {p.run === 1 ? "RUN" : "STOP"}</Typography>
-      <Typography variant="body2">
+      <Typography variant="caption" sx={{ color: PAL.subText, fontSize: { xs: "0.7rem", sm: "0.75rem" } }}>{label}</Typography>
+      <Typography variant="body2" sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" } }}><b>가동 상태:</b> {p.run === 1 ? "RUN" : "STOP"}</Typography>
+      <Typography variant="body2" sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" } }}>
         <b>메인 모터 전류:</b> {Math.round(p.amp)} A {ampUpper ? `(상한 ${ampUpper}A)` : ""}
       </Typography>
     </Box>
@@ -1104,9 +1104,9 @@ function MiddleBand({ line, events, seed }) {
 
   return (
     <Card sx={{ bgcolor: PAL.panelBg, border: `1px solid ${PAL.border}`, color: PAL.text, borderRadius: 2, width: "100%" }}>
-      <CardContent sx={{ p: { xs: 1.25, sm: 1.5, md: 2 } }}>
+      <CardContent sx={{ p: { xs: 1, sm: 1.25, md: 2 } }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
-          <Typography variant="subtitle1" noWrap title={`부품/소모품 상태 모니터링 · ${line?.name || ""}`} sx={{ maxWidth: "100%" }}>
+          <Typography variant="subtitle1" noWrap title={`부품/소모품 상태 모니터링 · ${line?.name || ""}`} sx={{ maxWidth: "100%", fontSize: { xs: "0.9rem", sm: "1rem" } }}>
             <b>부품/소모품 상태 모니터링</b> · {line?.name}
           </Typography>
         </Stack>
@@ -1114,11 +1114,22 @@ function MiddleBand({ line, events, seed }) {
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-            gap: 1.25,
+            // xs: 1열, sm: 2열, md↑: 4열 고정 (한 줄)
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "repeat(2, minmax(160px, 1fr))",
+              md: "repeat(4, minmax(160px, 1fr))",
+              lg: "repeat(4, minmax(190px, 1fr))",
+            },
+            // 네비 펼쳤을 때도 한 줄 유지되도록 간격도 살짝 줄임
+            columnGap: { xs: 1, md: 1 },
+            rowGap: { xs: 1, md: 1 },
             alignItems: "stretch",
+            // 각 셀 내부 컨텐츠가 제대로 줄어들 수 있게
+            "& > *": { minWidth: 0 },
           }}
         >
+
           {parts.map((p) => (
             <PartHealthCard key={p.key} part={p} />
           ))}
@@ -1209,60 +1220,85 @@ function PartHealthCard({ part }) {
     <Paper
       elevation={0}
       sx={{
-        p: 1.25,
+        p: { xs: 0.8, sm: 1, md: 1.1 },              // 컴팩트 패딩
         border: `1px solid ${PAL.border}`,
         borderRadius: 2,
         bgcolor: PAL.panelBg,
         display: "flex",
         flexDirection: "column",
-        gap: 0.6,
+        gap: { xs: 0.4, sm: 0.6 },
         height: "100%",
+        minWidth: 0,                         // 그리드 축소 허용
       }}
     >
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.25 }}>
-        <Typography variant="body2" noWrap>
-          <b>{part.name}</b>
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        sx={{ mb: 0.25, minWidth: 0 }}
+      >
+        <Typography
+          variant="body2"
+          noWrap
+          sx={{ fontWeight: 700, mr: 0.5, minWidth: 0, fontSize: { xs: "0.85rem", sm: "0.875rem" } }}
+          title={part.name}
+        >
+          {part.name}
         </Typography>
+
         <Chip
           size="small"
           label={part.status}
-          sx={{ bgcolor: part.bg, color: part.color, border: `1px solid ${part.border}`, borderRadius: 1.5 }}
+          sx={{
+            bgcolor: part.bg,
+            color: part.color,
+            border: `1px solid ${part.border}`,
+            borderRadius: 1.5,
+            // 칩도 폭을 덜 차지하게
+            "& .MuiChip-label": { px: 0.75 },
+            height: 22,
+          }}
         />
       </Stack>
 
-      <Box sx={{ position: "relative", width: "100%", aspectRatio: "2 / 1" }}>
+      <Box sx={{ position: "relative", width: "100%", aspectRatio: "2 / 1", minWidth: 0 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <RadialBarChart
-            innerRadius="70%"
-            outerRadius="100%"
-            startAngle={180}
-            endAngle={0}
-            data={[{ name: part.name, value: percent }]}
-          >
+          <RadialBarChart innerRadius="70%" outerRadius="100%" startAngle={180} endAngle={0}
+            data={[{ name: part.name, value: percent }]}>
             <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-            <RadialBar
-              dataKey="value"
-              cornerRadius={10}
-              background={{ fill: track }}
-              fill={color}
-            />
+            <RadialBar dataKey="value" cornerRadius={10} background={{ fill: track }} fill={color} />
           </RadialBarChart>
         </ResponsiveContainer>
 
         <Box
           sx={{
             position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: "6%",
+            left: 0, right: 0, bottom: "6%",
             textAlign: "center",
             px: 1,
           }}
         >
-          <Typography variant="h5" sx={{ fontWeight: 900, lineHeight: 1, color }}>
+          {/* 숫자 크기도 반응형으로 살짝 압축 */}
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 900, lineHeight: 1, color, fontSize: { xs: "1.05rem", md: "1.15rem" } }}
+          >
             {percent}%
           </Typography>
-          <Typography variant="caption" sx={{ color: PAL.subText }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: PAL.subText,
+              display: "inline-block",
+              maxWidth: "100%",
+              // 아주 좁을 때 줄바꿈 허용
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              fontSize: { xs: "0.7rem", sm: "0.75rem" },
+            }}
+            title={`사용 ${part.used.toLocaleString()}${part.unit} / 수명 ${part.base.toLocaleString()}${part.unit}`}
+          >
             사용 {part.used.toLocaleString()}{part.unit}
             <span style={{ color: "#9CA3AF" }}> / </span>
             수명 {part.base.toLocaleString()}{part.unit}
@@ -1272,6 +1308,7 @@ function PartHealthCard({ part }) {
     </Paper>
   );
 }
+
 
 /* ---------------------------- 헬퍼 ---------------------------- */
 function toRechartsData(arr) {

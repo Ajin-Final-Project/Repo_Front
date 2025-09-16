@@ -341,8 +341,8 @@ class DowntimeGrid extends Component {
 
   // ---------- 그리드 컬럼 ----------
   columns = [
-    // { field: 'id', headerName: 'No.', width: 80, type: 'number',
-    //   headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    { field: 'id', headerName: 'No.', width: 80, type: 'number',
+      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
     { field: 'workDate', headerName: '근무일자', width: 120, type: 'date',
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
       valueFormatter: (p) => {
@@ -351,40 +351,73 @@ class DowntimeGrid extends Component {
         return d && !isNaN(d.getTime()) ? d.toLocaleDateString('ko-KR') : '';
       },
     },
-    { field: 'plant', headerName: '플랜트', width: 180,
+    { field: 'plant', headerName: '공장', width: 180,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'workerplace', headerName: '책임자', width: 120,
+    { field: 'workerplace', headerName: '작업장', width: 100,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'line', headerName: '작업장', width: 120,
+    { field: 'line', headerName: '라인', width: 100,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'itemCode', headerName: '자재번호', width: 140,
+    { field: 'itemCode', headerName: '품번', width: 160,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'itemName', headerName: '자재명', width: 160,
+    { field: 'itemName', headerName: '품목명', width: 230,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'carModel', headerName: '차종', width: 120,
+    { field: 'carModel', headerName: '차종', width: 100,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'downtimeCode', headerName: '비가동코드', width: 140,
+    { field: 'downtimeCode', headerName: '비가동코드', width: 80,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'downtimeName', headerName: '비가동명', width: 200,
+    { field: 'downtimeName', headerName: '비가동명', width: 140,
       headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
-    { field: 'downtimeMinutes', headerName: '비가동(분)', width: 120, type: 'number',
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell',
-      renderCell: (params) => (
-        <Chip
-          label={
-            typeof params.value === 'number'
-              ? params.value.toLocaleString()
-              : (params.value || 0).toString()
-          }
-          color="warning"
-          size="small"
-          variant="outlined"
-          sx={{ fontWeight: 'bold' }}
-        />
-      ),
-    },
-    { field: 'note', headerName: '비고', width: 260,
-      headerClassName: 'super-app-theme--header', cellClassName: 'super-app-theme--cell' },
+    {
+        field: 'downtimeMinutes',
+        headerName: '비가동(분)',
+        type: 'number',
+        width: 90,                   
+        minWidth: 80,                
+        align: 'center',
+        headerAlign: 'center',
+        headerClassName: 'super-app-theme--header',
+        cellClassName: 'super-app-theme--cell',
+        renderCell: (params) => (
+          <Chip
+            label={
+              typeof params.value === 'number'
+                ? params.value.toLocaleString()
+                : (params.value || 0).toString()
+            }
+            color="warning"
+            size="small"
+            variant="outlined"
+            sx={{
+              height: 22,               // ⬅️ 칩 높이 타이트
+              fontWeight: 700,
+              px: 0.5,                  // ⬅️ 좌우 패딩 축소
+              '& .MuiChip-label': { px: 0.5 }, // ⬅️ 라벨 패딩도 축소
+            }}
+          />
+        ),
+      },
+  { 
+    field: 'note',
+    headerName: '비고',
+    minWidth: 260,          // 최소 보장 폭
+    flex: 1,                // 🔴 남는 공간 전부 차지
+    headerClassName: 'super-app-theme--header',
+    cellClassName: 'super-app-theme--cell',
+    renderCell: (params) => (
+      <Box
+        sx={{
+          width: '100%',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',   // 한 줄로 보이게(줄바꿈 원하면 제거)
+        }}
+        title={params.value || ''} // 말줄임표 시 툴팁
+      >
+        {params.value || ''}
+      </Box>
+    ),
+  }
+
   ];
 
   render() {
@@ -804,12 +837,23 @@ class DowntimeGrid extends Component {
                 pageSizeOptions={[10, 25, 50, 100]}
                 initialState={{
                   pagination: { paginationModel: { page: 0, pageSize: 10 } },
+                  columns: { columnVisibilityModel: { id: false } },
                 }}
                 disableRowSelectionOnClick
                 density="compact"
+
+                /* ✅ 툴바/내보내기 설정 */
                 slots={{ toolbar: GridToolbar }}
                 slotProps={{
-                  toolbar: { showQuickFilter: true, quickFilterProps: { debounceMs: 500 } },
+                  toolbar: {
+                    showQuickFilter: true,
+                    quickFilterProps: { debounceMs: 500 },
+                    csvOptions: {
+                      utf8WithBom: true, // 한글 깨짐 방지
+                      delimiter: ",",
+                      fileName: `비가동_${(this.state.filters.start_work_date || "").replaceAll("-", "")}_${(this.state.filters.end_work_date || "").replaceAll("-", "")}`,
+                    },
+                  },
                 }}
                 sx={{
                   '& .super-app-theme--header': {
@@ -840,6 +884,7 @@ class DowntimeGrid extends Component {
                   },
                 }}
               />
+
             </Box>
           )}
         </Paper>

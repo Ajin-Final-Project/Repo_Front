@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 
 import {
-    FilterList as FilterIcon,
+    TrendingUp as TrendingUpIcon
 } from '@mui/icons-material';
 
 import s from "../DowntimeChart.module.scss";
@@ -26,8 +26,8 @@ export default function TitleSection({ themeHex }) {
                 gap: 1,
                 }}
             >
-                <FilterIcon sx={{color: themeHex}}/>
-                비가동 데이터 내역
+                <TrendingUpIcon sx={{color: themeHex}} />
+                비가동 데이터 분석
             </Typography>
             <Typography variant="body1" color="text.secondary">
                 비가동 현황을 상세하게 조회하고 관리할 수 있습니다.

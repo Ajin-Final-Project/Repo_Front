@@ -23,8 +23,8 @@ import {
   IconButton,
   Divider,
   Collapse,
-  MenuItem,
   Menu,
+  MenuItem,
   CircularProgress,
   Alert,
   Chip,
@@ -34,7 +34,6 @@ import {
 import {
   Search as SearchIcon,
   Clear as ClearIcon,
-  FilterList as FilterIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   KeyboardArrowDown as KeyboardArrowDownIcon,
@@ -42,6 +41,27 @@ import {
 import { alpha } from "@mui/material/styles";
 
 import ItemCodeModal from "../common/ItemCodeModal";
+
+/** ─────────────────────────────────────────────────────────
+ *  공통 기간 포맷터 (전역 규칙)
+ *  - 60분 미만  => "N분"
+ *  - 60분 이상  => "H시간 M분" (M=0이어도 '0분' 노출)
+ *  - null/NaN   => "0분"
+ *  프론트 모든 표시 규칙은 이 함수만 호출하세요.
+ *  ───────────────────────────────────────────────────────── */
+export const formatDurationKo = (value) => {
+  let m = 0;
+  try {
+    m = Math.round(Number(value ?? 0));
+    if (!isFinite(m)) m = 0;
+  } catch {
+    m = 0;
+  }
+  if (m < 60) return `${m}분`;
+  const h = Math.floor(m / 60);
+  const mm = m % 60;
+  return `${h}시간 ${mm}분`;
+};
 
 class DowntimeChart extends Component {
   constructor(props) {
@@ -54,35 +74,64 @@ class DowntimeChart extends Component {
     this.PIE_WITH_OTHERS = true;
     this.API = (path) => `${config.baseURLApi}/smartFactory${path}`;
     this.ctrl = {
-      summary: null, monthly: null, pie: null, notes: null, codes: null,
-      facilityItemDowntimeAgg: null, FacilityLineDowntimeAgg: null, causeDetail: null,
+      summary: null,
+      monthly: null,
+      pie: null,
+      notes: null,
+      codes: null,
+      facilityItemDowntimeAgg: null,
+      FacilityLineDowntimeAgg: null,
+      causeDetail: null,
     };
 
     this.state = {
-      // 모드: ITEM(품번별) / LINE(라인 종합)
       scopeMode: "ITEM",
 
       pageLoading: true,
       pageError: null,
       loading: {
-        summary: false, monthly: false, pie: false, notes: false, codes: false,
-        facilityItemDowntimeAgg: false, FacilityLineDowntimeAgg: false, causeDetail: false,
+        summary: false,
+        monthly: false,
+        pie: false,
+        notes: false,
+        codes: false,
+        facilityItemDowntimeAgg: false,
+        FacilityLineDowntimeAgg: false,
+        causeDetail: false,
       },
       error: {
-        summary: null, monthly: null, pie: null, notes: null, codes: null,
-        facilityItemDowntimeAgg: null, FacilityLineDowntimeAgg: null, causeDetail: null,
+        summary: null,
+        monthly: null,
+        pie: null,
+        notes: null,
+        codes: null,
+        facilityItemDowntimeAgg: null,
+        FacilityLineDowntimeAgg: null,
+        causeDetail: null,
       },
 
       kpiFilters: { start_work_date, end_work_date: DEFAULT_END, press: "1500T" },
+      // 숫자 minutes는 유지(차트/계산용), 표시는 fmtDuration으로 처리
       kpiSummary: { total: 0, count: 0, avg: 0, topName: "-", topValue: 0, topList: [] },
 
-      // 전역 검색 필터(단일 소스)
       uiFilters: {
-        start_work_date, end_work_date: DEFAULT_END,
-        plant: "아진산업-경산(본사)", worker: "프레스", line: "1500T",
-        itemCode: "", itemName: "",
-        carModel: "", downtimeCode: "", downtimeName: "", downtimeMinutes: "",
-        note: "", shift: "", productName: "", itemType: "", categoryMain: "", categorySub: "",
+        start_work_date,
+        end_work_date: DEFAULT_END,
+        plant: "아진산업-경산(본사)",
+        worker: "프레스",
+        line: "1500T",
+        itemCode: "",
+        itemName: "",
+        carModel: "",
+        downtimeCode: "",
+        downtimeName: "",
+        downtimeMinutes: "",
+        note: "",
+        shift: "",
+        productName: "",
+        itemType: "",
+        categoryMain: "",
+        categorySub: "",
       },
 
       filterExpanded: false,
@@ -97,15 +146,12 @@ class DowntimeChart extends Component {
       pieData: [],
       topNotes: [],
 
-      // 좌/우 섹션 데이터
       facilityItemDowntimeAgg: [],
       facilityLineDowntimeAgg: [],
 
-      // 우측 상세
       selectedCause: null,
       rightDetail: null,
 
-      // === 연간/월간/주간/오늘용 상태 ===
       selectedYear: new Date().getFullYear(),
       selectedMonth: new Date().getMonth() + 1,
       yearAnchorPos: null,
@@ -116,20 +162,34 @@ class DowntimeChart extends Component {
   }
 
   // ------------ helpers ------------
+  // 라인 모드 여부
   isLineMode = () => this.state.scopeMode === "LINE";
-  hasValidItemCode = () => !!(this.state.chartItemCode && String(this.state.chartItemCode).trim());
+  hasValidItemCode = () =>
+    !!(this.state.chartItemCode && String(this.state.chartItemCode).trim());
 
   abortPrev = (key) => {
-    try { this.ctrl[key]?.abort(); } catch {}
+    try {
+      this.ctrl[key]?.abort();
+    } catch {}
     this.ctrl[key] = new AbortController();
     return this.ctrl[key].signal;
   };
 
-  setLoading = (k, v) => this.setState((s) => ({ loading: { ...s.loading, [k]: v } }));
-  setError   = (k, v) => this.setState((s) => ({ error:   { ...s.error,   [k]: v } }));
+  setLoading = (k, v) =>
+    this.setState((s) => ({ loading: { ...s.loading, [k]: v } }));
+  setError = (k, v) =>
+    this.setState((s) => ({ error: { ...s.error, [k]: v } }));
 
-  fmtNumber  = (n) => new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 0 }).format(n ?? 0);
-  fmtMinutes = (n) => this.fmtNumber(Math.round(n ?? 0));
+  // 숫자 출력(천단위 콤마)
+  fmtNumber = (n) =>
+    new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 0 }).format(
+      n ?? 0
+    );
+
+  /** ⬇️ 기존 fmtMinutes를 '표시 전용 규칙'으로 변경 */
+  fmtMinutes = (n) => formatDurationKo(n);
+
+  // 월 라벨
   monthKeyToLabel = (ym) => `${Number(String(ym).split("-")[1] || 0)}월`;
 
   parseDate = (raw) => {
@@ -146,13 +206,13 @@ class DowntimeChart extends Component {
     if (sd && ed && sd > ed) return { ...f, end_work_date: f.start_work_date };
     return f;
   };
-  toYMD = (d) => (d ? (d instanceof Date ? d : new Date(d)).toLocaleDateString("sv-SE") : "");
+  toYMD = (d) =>
+    d ? (d instanceof Date ? d : new Date(d)).toLocaleDateString("sv-SE") : "";
   iso = (d) => (d instanceof Date ? d.toLocaleDateString("sv-SE") : this.toYMD(d));
 
-  // Promise 기반 setState 유틸(await 사용)
-  setStateAsync = (updater) => new Promise((resolve) => this.setState(updater, resolve));
+  setStateAsync = (updater) =>
+    new Promise((resolve) => this.setState(updater, resolve));
 
-  // === 연/월/주 계산 & 앵커 ===
   today0 = () => {
     const t = new Date();
     return new Date(t.getFullYear(), t.getMonth(), t.getDate());
@@ -197,7 +257,11 @@ class DowntimeChart extends Component {
     const start_work_date = this.iso(start);
     const end_work_date = this.iso(end);
     this.setState((s) => ({
-      uiFilters: this.ensureValidRange({ ...s.uiFilters, start_work_date, end_work_date }),
+      uiFilters: this.ensureValidRange({
+        ...s.uiFilters,
+        start_work_date,
+        end_work_date,
+      }),
     }));
   };
   applyToday = () => {
@@ -223,7 +287,6 @@ class DowntimeChart extends Component {
   };
 
   loadYears = async () => {
-    // 서버 연도 API가 없으므로 안전한 fallback(현재연도~최근 5년)
     const y = new Date().getFullYear();
     const years = [y, y - 1, y - 2, y - 3, y - 4];
     this.setState({ years, selectedYear: y });
@@ -233,16 +296,14 @@ class DowntimeChart extends Component {
   async componentDidMount() {
     const { uiFilters } = this.state;
     try {
-      await this.loadYears(); // 연도 메뉴용
+      await this.loadYears();
 
-      // 품번 목록만 미리 로드(자동 선택 X)
       await this.fetchItemCodes({
         press: uiFilters.line,
         start_work_date: uiFilters.start_work_date,
         end_work_date: uiFilters.end_work_date,
       });
 
-      // 초기엔 KPI + 라인 종합만
       await this.setStateAsync({
         chartItemCode: "",
         uiFilters: { ...uiFilters, itemCode: "", itemName: "" },
@@ -260,13 +321,17 @@ class DowntimeChart extends Component {
   // ------------ API ------------
   async fetchJson(url, options, key) {
     const res = await fetch(url, options);
-    if (!res.ok) throw new Error(`${key || "API"} 실패: HTTP ${res.status} ${await res.text().catch(() => "")}`);
+    if (!res.ok)
+      throw new Error(
+        `${key || "API"} 실패: HTTP ${res.status} ${await res.text().catch(() => "")}`
+      );
     return res.json();
   }
 
   fetchItemCodes = async (override = {}) => {
     const filters = { ...this.state.kpiFilters, ...override };
-    this.setLoading("codes", true); this.setError("codes", null);
+    this.setLoading("codes", true);
+    this.setError("codes", null);
     try {
       const qs = new URLSearchParams({
         workplace: filters.press || "",
@@ -274,7 +339,11 @@ class DowntimeChart extends Component {
         end_work_date: filters.end_work_date || "",
       }).toString();
       const signal = this.abortPrev("codes");
-      const json = await this.fetchJson(this.API(`/downtime_chart/item-codes?${qs}`), { signal }, "자재코드");
+      const json = await this.fetchJson(
+        this.API(`/downtime_chart/item-codes?${qs}`),
+        { signal },
+        "자재코드"
+      );
       const arr = Array.isArray(json) ? json : Array.isArray(json?.data) ? json.data : [];
       const codes = (arr || []).filter(Boolean);
       this.setState({ itemCodeOptions: codes });
@@ -290,64 +359,137 @@ class DowntimeChart extends Component {
 
   fetchSummary = async () => {
     const { kpiFilters } = this.state;
-    this.setLoading("summary", true); this.setError("summary", null);
+    this.setLoading("summary", true);
+    this.setError("summary", null);
     try {
       const signal = this.abortPrev("summary");
-      const payload = { start_work_date: kpiFilters.start_work_date, end_work_date: kpiFilters.end_work_date, workplace: kpiFilters.press };
-      const json = await this.fetchJson(this.API("/downtime_chart/summary?top=3"), {
-        method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, signal, body: JSON.stringify(payload),
-      }, "summary");
+      const payload = {
+        start_work_date: kpiFilters.start_work_date,
+        end_work_date: kpiFilters.end_work_date,
+        workplace: kpiFilters.press,
+      };
+      const json = await this.fetchJson(
+        this.API("/downtime_chart/summary?top=3"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          signal,
+          body: JSON.stringify(payload),
+        },
+        "summary"
+      );
       const j = json?.data || json;
-      const topList = Array.isArray(j?.topList)
-        ? j.topList.map(it=>({name:String(it?.name ?? it?.label ?? "-"), minutes:Number(it?.minutes ?? it?.topValue ?? 0)}))
-        : [];
-      const fallback = { name: String(j?.topName ?? "-"), minutes: Number(j?.topValue ?? 0) };
-      const finalTopList = topList.length ? topList : (fallback.name !== "-" || fallback.minutes > 0) ? [fallback] : [];
+
+      // 백엔드 변경 대응: *_minutes / *_duration 동시 지원
+      const totalMin = Number(j?.total_minutes ?? j?.total ?? 0);
+      const avgMin = Number(j?.avg_minutes ?? j?.avg ?? 0);
+      const topListRaw = Array.isArray(j?.topList) ? j.topList : [];
+
+      const topList = topListRaw.map((it) => ({
+        name: String(it?.name ?? it?.label ?? "-"),
+        minutes: Number(it?.minutes ?? 0),
+        duration: it?.duration ?? formatDurationKo(it?.minutes ?? 0),
+      }));
+
+      const topNameFallback = String(j?.topName ?? topList[0]?.name ?? "-");
+      const topValueFallback = Number(j?.topValue ?? topList[0]?.minutes ?? 0);
+
       this.setState({
         kpiSummary: {
-          total: Number(j?.total ?? 0), count: Number(j?.count ?? 0), avg: Number(j?.avg ?? 0),
-          topName: String(j?.topName ?? (finalTopList[0]?.name ?? "-")), topValue: Number(j?.topValue ?? (finalTopList[0]?.minutes ?? 0)), topList: finalTopList,
+          total: totalMin, // 숫자 유지, 표시 규칙은 fmtMinutes가 처리
+          count: Number(j?.count ?? 0),
+          avg: avgMin,
+          topName: topNameFallback,
+          topValue: topValueFallback,
+          topList, // [{name, minutes, duration}]
+          // 참고: j.total_duration / j.avg_duration / j.topValueDuration이 오면 사용해도 됨
         },
       });
     } catch (e) {
-      this.setError("summary", e.message || "KPI 요약 조회 실패"); throw e;
-    } finally { this.setLoading("summary", false); }
+      this.setError("summary", e.message || "KPI 요약 조회 실패");
+      throw e;
+    } finally {
+      this.setLoading("summary", false);
+    }
   };
 
   fetchMonthly = async () => {
     const { kpiFilters, chartItemCode } = this.state;
     if (!this.hasValidItemCode()) {
-      this.setState({ chartMonths: [], chartSeries: [{ label: "비가동(분)", data: [] }], chartMonthTop3Map: {} });
+      this.setState({
+        chartMonths: [],
+        chartSeries: [{ label: "비가동(분)", data: [] }],
+        chartMonthTop3Map: {},
+      });
       return;
     }
-    this.setLoading("monthly", true); this.setError("monthly", null);
+    this.setLoading("monthly", true);
+    this.setError("monthly", null);
     try {
       const signal = this.abortPrev("monthly");
-      const payload = { start_work_date: kpiFilters.start_work_date, end_work_date: kpiFilters.end_work_date, workplace: kpiFilters.press, itemCode: String(chartItemCode).trim() };
-      const json = await this.fetchJson(this.API("/downtime_chart/monthly"), {
-        method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, signal, body: JSON.stringify(payload),
-      }, "monthly");
+      const payload = {
+        start_work_date: kpiFilters.start_work_date,
+        end_work_date: kpiFilters.end_work_date,
+        workplace: kpiFilters.press,
+        itemCode: String(chartItemCode).trim(),
+      };
+      const json = await this.fetchJson(
+        this.API("/downtime_chart/monthly"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          signal,
+          body: JSON.stringify(payload),
+        },
+        "monthly"
+      );
       const rows = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
-      const totals = {}; const topMap = {};
+
+      const totals = {};
+      const topMap = {};
       for (const r of rows) {
-        const ym = String(r.ym); const minutes = Number(r.minutes ?? 0);
-        if (Array.isArray(r.top)) { totals[ym] = minutes; topMap[ym] = r.top.map(t=>({ name:String(t?.name ?? t?.label ?? "-"), minutes:Number(t?.minutes ?? 0) })); }
-        else if (r.name !== undefined) { totals[ym] = (totals[ym] ?? 0) + minutes; }
-        else { totals[ym] = minutes; }
+        const ym = String(r.ym);
+        const minutes = Number(r.minutes ?? 0);
+        if (Array.isArray(r.top)) {
+          totals[ym] = minutes;
+          topMap[ym] = r.top.map((t) => ({
+            name: String(t?.name ?? t?.label ?? "-"),
+            minutes: Number(t?.minutes ?? 0),
+            duration: t?.duration ?? formatDurationKo(t?.minutes ?? 0),
+          }));
+        } else if (r.name !== undefined) {
+          totals[ym] = (totals[ym] ?? 0) + minutes;
+        } else {
+          totals[ym] = minutes;
+        }
       }
       const months = Object.keys(totals).sort();
-      this.setState({ chartMonths: months, chartSeries: [{ label: "비가동(분)", data: months.map(m=>totals[m]) }], chartMonthTop3Map: topMap });
+      this.setState({
+        chartMonths: months,
+        chartSeries: [{ label: "비가동(분)", data: months.map((m) => totals[m]) }],
+        chartMonthTop3Map: topMap, // { ym: [{name, minutes, duration}] }
+      });
     } catch (e) {
       this.setError("monthly", e.message || "월별 합계 조회 실패");
-      this.setState({ chartMonths: [], chartSeries: [{ label: "비가동(분)", data: [] }], chartMonthTop3Map: {} });
+      this.setState({
+        chartMonths: [],
+        chartSeries: [{ label: "비가동(분)", data: [] }],
+        chartMonthTop3Map: {},
+      });
       throw e;
-    } finally { this.setLoading("monthly", false); }
+    } finally {
+      this.setLoading("monthly", false);
+    }
   };
 
   fetchPie = async () => {
     const { kpiFilters, chartItemCode } = this.state;
-    if (!this.hasValidItemCode()) { this.setState({ pieData: [] }); return; }
-    this.setLoading("pie", true); this.setError("pie", null);
+    if (!this.hasValidItemCode()) {
+      this.setState({ pieData: [] });
+      return;
+    }
+    this.setLoading("pie", true);
+    this.setError("pie", null);
     try {
       const signal = this.abortPrev("pie");
       const payload = {
@@ -356,30 +498,41 @@ class DowntimeChart extends Component {
         workplace: kpiFilters.press,
         itemCode: String(chartItemCode).trim(),
         top: this.PIE_TOP_N,
-        withOthers: this.PIE_WITH_OTHERS
+        withOthers: this.PIE_WITH_OTHERS,
       };
-      const json = await this.fetchJson(this.API("/downtime_chart/pie"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        signal,
-        body: JSON.stringify(payload),
-      }, "pie");
+      const json = await this.fetchJson(
+        this.API("/downtime_chart/pie"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          signal,
+          body: JSON.stringify(payload),
+        },
+        "pie"
+      );
 
       const arr = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
       const sorted = arr.slice().sort((a, b) => (b.minutes || 0) - (a.minutes || 0));
-      let data;
 
+      let data;
       if (this.PIE_WITH_OTHERS && sorted.length >= this.PIE_TOP_N) {
         const topCount = this.PIE_TOP_N - 1;
         const top = sorted.slice(0, topCount);
         const others = sorted.slice(topCount).reduce((s, x) => s + (x.minutes || 0), 0);
         data = top.map((r, i) => ({
-          id: i, label: r.label || "(없음)", value: Number(r.minutes || 0),
+          id: i,
+          label: r.label || "(없음)",
+          value: Number(r.minutes || 0),
+          duration: r.duration ?? formatDurationKo(r.minutes || 0),
         }));
-        if (others > 0) data.push({ id: data.length, label: "기타", value: others });
+        if (others > 0)
+          data.push({ id: data.length, label: "기타", value: others, duration: formatDurationKo(others) });
       } else {
         data = sorted.slice(0, this.PIE_TOP_N).map((r, i) => ({
-          id: i, label: r.label || "(없음)", value: Number(r.minutes || 0),
+          id: i,
+          label: r.label || "(없음)",
+          value: Number(r.minutes || 0),
+          duration: r.duration ?? formatDurationKo(r.minutes || 0),
         }));
       }
 
@@ -395,64 +548,136 @@ class DowntimeChart extends Component {
 
   fetchTopNotes = async () => {
     const { kpiFilters, chartItemCode } = this.state;
-    if (!this.hasValidItemCode()) { this.setState({ topNotes: [] }); return; }
-    this.setLoading("notes", true); this.setError("notes", null);
+    if (!this.hasValidItemCode()) {
+      this.setState({ topNotes: [] });
+      return;
+    }
+    this.setLoading("notes", true);
+    this.setError("notes", null);
     try {
       const signal = this.abortPrev("notes");
-      const payload = { start_work_date: kpiFilters.start_work_date, end_work_date: kpiFilters.end_work_date, workplace: kpiFilters.press, itemCode: String(chartItemCode).trim(), limit: 10 };
-      const json = await this.fetchJson(this.API("/downtime_chart/top-notes"), {
-        method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, signal, body: JSON.stringify(payload),
-      }, "top-notes");
+      const payload = {
+        start_work_date: kpiFilters.start_work_date,
+        end_work_date: kpiFilters.end_work_date,
+        workplace: kpiFilters.press,
+        itemCode: String(chartItemCode).trim(),
+        limit: 10,
+      };
+      const json = await this.fetchJson(
+        this.API("/downtime_chart/top-notes"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          signal,
+          body: JSON.stringify(payload),
+        },
+        "top-notes"
+      );
       const arr = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
-      this.setState({ topNotes: arr.map(x=>({ text:String(x.text||""), count:Number(x.count||0), minutes:Number(x.minutes||0) })) });
+      this.setState({
+        topNotes: arr.map((x) => ({
+          text: String(x.text || ""),
+          count: Number(x.count || 0),
+          minutes: Number(x.minutes || 0),
+          duration: x.duration ?? formatDurationKo(x.minutes || 0),
+        })),
+      });
     } catch (e) {
-      this.setError("notes", e.message || "비고 Top 조회 실패"); this.setState({ topNotes: [] }); throw e;
-    } finally { this.setLoading("notes", false); }
+      this.setError("notes", e.message || "비고 Top 조회 실패");
+      this.setState({ topNotes: [] });
+      throw e;
+    } finally {
+      this.setLoading("notes", false);
+    }
   };
 
   fetchFacilityItemDowntimeAgg = async () => {
     const { kpiFilters, chartItemCode } = this.state;
-    if (!this.hasValidItemCode()) { this.setState({ facilityItemDowntimeAgg: [] }); return; }
-    this.setLoading("facilityItemDowntimeAgg", true); this.setError("facilityItemDowntimeAgg", null);
+    if (!this.hasValidItemCode()) {
+      this.setState({ facilityItemDowntimeAgg: [] });
+      return;
+    }
+    this.setLoading("facilityItemDowntimeAgg", true);
+    this.setError("facilityItemDowntimeAgg", null);
     try {
       const signal = this.abortPrev("facilityItemDowntimeAgg");
-      const payload = { start_work_date: kpiFilters.start_work_date, end_work_date: kpiFilters.end_work_date, workplace: kpiFilters.press, itemCode: String(chartItemCode).trim() };
-      const json = await this.fetchJson(this.API("/downtime_chart/facility-item-downtime-agg"), {
-        method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, signal, body: JSON.stringify(payload),
-      }, "facilityItemDowntimeAgg");
+      const payload = {
+        start_work_date: kpiFilters.start_work_date,
+        end_work_date: kpiFilters.end_work_date,
+        workplace: kpiFilters.press,
+        itemCode: String(chartItemCode).trim(),
+      };
+      const json = await this.fetchJson(
+        this.API("/downtime_chart/facility-item-downtime-agg"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          signal,
+          body: JSON.stringify(payload),
+        },
+        "facilityItemDowntimeAgg"
+      );
       const raw = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
       this.setState({
-        facilityItemDowntimeAgg: raw.map((r,i)=>({
-          id: i+1,
+        facilityItemDowntimeAgg: raw.map((r, i) => ({
+          id: i + 1,
           downtimeName: r.downtime_name ?? r.downtimeName ?? "-",
           expectedMinutes: Number(r.expected_minutes ?? r.expectedMinutes ?? 0),
-        }))
+          expectedDuration:
+            r.expected_duration ??
+            formatDurationKo(r.expected_minutes ?? r.expectedMinutes ?? 0),
+        })),
       });
     } catch (e) {
-      this.setError("facilityItemDowntimeAgg", e.message || "facilityItemDowntimeAgg 조회 실패"); this.setState({ facilityItemDowntimeAgg: [] });
-    } finally { this.setLoading("facilityItemDowntimeAgg", false); }
+      this.setError("facilityItemDowntimeAgg", e.message || "facilityItemDowntimeAgg 조회 실패");
+      this.setState({ facilityItemDowntimeAgg: [] });
+    } finally {
+      this.setLoading("facilityItemDowntimeAgg", false);
+    }
   };
 
   fetchFacilityLineDowntimeAgg = async () => {
     const { kpiFilters } = this.state;
-    this.setLoading("FacilityLineDowntimeAgg", true); this.setError("FacilityLineDowntimeAgg", null);
+    this.setLoading("FacilityLineDowntimeAgg", true);
+    this.setError("FacilityLineDowntimeAgg", null);
     try {
       const signal = this.abortPrev("FacilityLineDowntimeAgg");
-      const payload = { start_work_date: kpiFilters.start_work_date, end_work_date: kpiFilters.end_work_date, workplace: kpiFilters.press };
-      const json = await this.fetchJson(this.API("/downtime_chart/facility-line-downtime-agg"), {
-        method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, signal, body: JSON.stringify(payload),
-      }, "FacilityLineDowntimeAgg");
+      const payload = {
+        start_work_date: kpiFilters.start_work_date,
+        end_work_date: kpiFilters.end_work_date,
+        workplace: kpiFilters.press,
+      };
+      const json = await this.fetchJson(
+        this.API("/downtime_chart/facility-line-downtime-agg"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          signal,
+          body: JSON.stringify(payload),
+        },
+        "FacilityLineDowntimeAgg"
+      );
       const raw = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
       this.setState({
-        facilityLineDowntimeAgg: raw.map((r,i)=>({
-          id: i+1,
+        facilityLineDowntimeAgg: raw.map((r, i) => ({
+          id: i + 1,
           downtimeName: r.downtime_name ?? r.downtimeName ?? "-",
           expectedMinutes: Number(r.expected_minutes ?? r.expectedMinutes ?? 0),
-        }))
+          expectedDuration:
+            r.expected_duration ??
+            formatDurationKo(r.expected_minutes ?? r.expectedMinutes ?? 0),
+          totalMinutes: Number(r.total_minutes ?? r.totalMinutes ?? 0),
+          totalDuration:
+            r.total_duration ??
+            formatDurationKo(r.total_minutes ?? r.totalMinutes ?? 0),
+        })),
       });
     } catch (e) {
-      this.setError("FacilityLineDowntimeAgg", e.message || "FacilityLineDowntimeAgg 조회 실패"); this.setState({ facilityLineDowntimeAgg: [] });
-    } finally { this.setLoading("FacilityLineDowntimeAgg", false); }
+      this.setError("FacilityLineDowntimeAgg", e.message || "FacilityLineDowntimeAgg 조회 실패");
+      this.setState({ facilityLineDowntimeAgg: [] });
+    } finally {
+      this.setLoading("FacilityLineDowntimeAgg", false);
+    }
   };
 
   fetchCauseDetail = async (causeName) => {
@@ -460,7 +685,8 @@ class DowntimeChart extends Component {
     if (!causeName) return;
     if (!this.isLineMode() && !this.hasValidItemCode()) return;
 
-    this.setLoading("causeDetail", true); this.setError("causeDetail", null);
+    this.setLoading("causeDetail", true);
+    this.setError("causeDetail", null);
     try {
       const signal = this.abortPrev("causeDetail");
       const qs = new URLSearchParams({ cause_name: causeName, top: 8 }).toString();
@@ -470,13 +696,24 @@ class DowntimeChart extends Component {
         workplace: kpiFilters.press,
         ...(this.isLineMode() ? {} : { itemCode: String(chartItemCode).trim() }),
       };
-      const json = await this.fetchJson(this.API(`/downtime_chart/cause-detail?${qs}`), {
-        method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, signal, body: JSON.stringify(payload),
-      }, "cause-detail");
+      const json = await this.fetchJson(
+        this.API(`/downtime_chart/cause-detail?${qs}`),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          signal,
+          body: JSON.stringify(payload),
+        },
+        "cause-detail"
+      );
+      // 백엔드가 duration들을 포함해 내려주므로 그대로 사용
       this.setState({ rightDetail: json?.data || json });
     } catch (e) {
-      this.setError("causeDetail", e.message || "비가동 상세 조회 실패"); this.setState({ rightDetail: null });
-    } finally { this.setLoading("causeDetail", false); }
+      this.setError("causeDetail", e.message || "비가동 상세 조회 실패");
+      this.setState({ rightDetail: null });
+    } finally {
+      this.setLoading("causeDetail", false);
+    }
   };
 
   fetchAllSections = async () => {
@@ -501,32 +738,44 @@ class DowntimeChart extends Component {
 
   handleItemCodeSelect = async ({ 품목번호, 품목명 }) => {
     await this.setStateAsync((prev) => ({
-      uiFilters: { ...prev.uiFilters, itemCode: 품목번호 || "", itemName: 품목명 || "" },
-      chartItemCode: 품목번호 || "",
+      uiFilters: {
+        ...prev.uiFilters,
+        itemCode: 품목번호 || "",
+        itemName: 품목명 || "",
+      },
       itemCodeModalOpen: false,
-      selectedCause: null, rightDetail: null,
     }));
-    if (!this.isLineMode()) {
-      await this.fetchFacilityItemDowntimeAgg();
-    }
   };
 
-  clearDetailItem = async () => {
-    await this.setStateAsync((s) => ({
-      uiFilters: { ...s.uiFilters, itemCode: "", itemName: "" },
-      chartItemCode: "", selectedCause: null, rightDetail: null, facilityItemDowntimeAgg: [],
-    }));
-  };
+clearDetailItem = async () => {
+  await this.setStateAsync((s) => ({
+    // UI만 초기화 (적용은 '검색' 버튼)
+    uiFilters: { ...s.uiFilters, itemCode: "", itemName: "" },
+    // chartItemCode 등 '적용 값'은 건드리지 않음
+    selectedCause: null,
+    rightDetail: null,
+  }));
+  // ✅ 여기서 fetch/차트 상태 초기화하지 않음
+};
+
 
   handleFilterChange = async (key, value) => {
     const next = { ...this.state.uiFilters, [key]: value };
     if (key === "start_work_date" || key === "end_work_date") {
-      const fixed = this.ensureValidRange({ start_work_date: next.start_work_date, end_work_date: next.end_work_date });
-      next.start_work_date = fixed.start_work_date; next.end_work_date = fixed.end_work_date;
+      const fixed = this.ensureValidRange({
+        start_work_date: next.start_work_date,
+        end_work_date: next.end_work_date,
+      });
+      next.start_work_date = fixed.start_work_date;
+      next.end_work_date = fixed.end_work_date;
     }
     await this.setStateAsync({ uiFilters: next });
     if (["line", "start_work_date", "end_work_date"].includes(key)) {
-      this.fetchItemCodes({ press: next.line, start_work_date: next.start_work_date, end_work_date: next.end_work_date });
+      this.fetchItemCodes({
+        press: next.line,
+        start_work_date: next.start_work_date,
+        end_work_date: next.end_work_date,
+      });
     }
   };
 
@@ -534,75 +783,152 @@ class DowntimeChart extends Component {
     const defaults = {
       start_work_date: this.state.kpiFilters.start_work_date,
       end_work_date: this.state.kpiFilters.end_work_date,
-      plant: "아진산업-경산(본사)", worker: "프레스", line: "1500T",
-      itemCode: "", itemName: "", carModel: "", downtimeCode: "", downtimeName: "",
-      downtimeMinutes: "", note: "", shift: "", productName: "", itemType: "", categoryMain: "", categorySub: "",
+      plant: "아진산업-경산(본사)",
+      worker: "프레스",
+      line: "1500T",
+      itemCode: "",
+      itemName: "",
+      carModel: "",
+      downtimeCode: "",
+      downtimeName: "",
+      downtimeMinutes: "",
+      note: "",
+      shift: "",
+      productName: "",
+      itemType: "",
+      categoryMain: "",
+      categorySub: "",
     };
     await this.setStateAsync({
       uiFilters: defaults,
-      chartItemCode: "", chartMonths: [], chartSeries: [{ label: "비가동(분)", data: [] }], chartMonthTop3Map: {},
-      pieData: [], topNotes: [], selectedCause: null, rightDetail: null, facilityItemDowntimeAgg: [],
+      chartItemCode: "",
+      chartMonths: [],
+      chartSeries: [{ label: "비가동(분)", data: [] }],
+      chartMonthTop3Map: {},
+      pieData: [],
+      topNotes: [],
+      selectedCause: null,
+      rightDetail: null,
+      facilityItemDowntimeAgg: [],
     });
-    this.fetchItemCodes({ press: defaults.line, start_work_date: defaults.start_work_date, end_work_date: defaults.end_work_date });
+    this.fetchItemCodes({
+      press: defaults.line,
+      start_work_date: defaults.start_work_date,
+      end_work_date: defaults.end_work_date,
+    });
   };
 
   handleSearch = async () => {
     const { uiFilters } = this.state;
     const finalItem = uiFilters.itemCode || "";
     await this.setStateAsync({
-      kpiFilters: { start_work_date: uiFilters.start_work_date, end_work_date: uiFilters.end_work_date, press: uiFilters.line },
-      chartItemCode: finalItem, selectedCause: null, rightDetail: null,
+      kpiFilters: {
+        start_work_date: uiFilters.start_work_date,
+        end_work_date: uiFilters.end_work_date,
+        press: uiFilters.line,
+      },
+      chartItemCode: finalItem,
+      selectedCause: null,
+      rightDetail: null,
     });
     if (finalItem) {
       await this.fetchAllSections();
     } else {
       await this.fetchSummary();
       this.setState({
-        chartMonths: [], chartSeries: [{ label: "비가동(분)", data: [] }], chartMonthTop3Map: {},
-        pieData: [], topNotes: [], facilityItemDowntimeAgg: [],
+        chartMonths: [],
+        chartSeries: [{ label: "비가동(분)", data: [] }],
+        chartMonthTop3Map: {},
+        pieData: [],
+        topNotes: [],
+        facilityItemDowntimeAgg: [],
       });
       await this.fetchFacilityLineDowntimeAgg();
     }
   };
 
-  toggleFilterExpansion = () => this.setState((p) => ({ filterExpanded: !p.filterExpanded }));
+  toggleFilterExpansion = () =>
+    this.setState((p) => ({ filterExpanded: !p.filterExpanded }));
 
   handleCauseSelect = ({ downtimeName }) => {
-    this.setState({ selectedCause: downtimeName, rightDetail: null }, () => this.fetchCauseDetail(downtimeName));
+    this.setState({ selectedCause: downtimeName, rightDetail: null }, () =>
+      this.fetchCauseDetail(downtimeName)
+    );
   };
 
-  handleQuickLineChange = async (_, line) => {
-    if (!line) return;
-    await this.setStateAsync((s) => ({
-      uiFilters: { ...s.uiFilters, line },
-      kpiFilters: { ...s.kpiFilters, press: line },
-      selectedCause: null, rightDetail: null,
-    }));
-    if (this.isLineMode()) await this.fetchFacilityLineDowntimeAgg();
-    else await this.fetchFacilityItemDowntimeAgg();
-  };
+handleQuickLineChange = async (_, line) => {
+  if (!line) return;
+  await this.setStateAsync((s) => ({
+    // UI만 변경 (적용은 '검색' 버튼에서)
+    uiFilters: { ...s.uiFilters, line /*, itemCode: "", itemName: ""*/ },
+    // kpiFilters는 그대로 두어 isDirty()가 true가 되도록 유지
+    selectedCause: null,
+    rightDetail: null,
+  }));
+
+  // 선택적으로 품번 목록만 갱신
+  this.fetchItemCodes({
+    press: line,
+    start_work_date: this.state.uiFilters.start_work_date,
+    end_work_date: this.state.uiFilters.end_work_date,
+  });
+
+  // ✅ 여기서 fetch 호출하지 않음
+};
 
   handleScopeModeChange = async (_, mode) => {
     if (!mode) return;
-    await this.setStateAsync({ scopeMode: mode, selectedCause: null, rightDetail: null });
+    await this.setStateAsync({
+      scopeMode: mode,
+      selectedCause: null,
+      rightDetail: null,
+    });
     if (mode === "LINE") await this.fetchFacilityLineDowntimeAgg();
     else await this.fetchFacilityItemDowntimeAgg();
   };
+  // NEW: 하단 '검색 적용' 버튼 노출 조건
+isDirty = () => {
+  const { uiFilters, kpiFilters, chartItemCode } = this.state;
+  const trim = (v) => String(v ?? "").trim();
+  return (
+    trim(uiFilters.start_work_date) !== trim(kpiFilters.start_work_date) ||
+    trim(uiFilters.end_work_date)   !== trim(kpiFilters.end_work_date)   ||
+    trim(uiFilters.line)            !== trim(kpiFilters.press)           ||
+    trim(uiFilters.itemCode)        !== trim(chartItemCode)
+  );
+};
+
 
   // ------------ render ------------
   render() {
     const { themeHex } = this.props;
     const {
-      scopeMode, uiFilters, kpiSummary, loading, error, pageLoading, pageError,
-      chartMonths, chartSeries, chartMonthTop3Map, pieData, topNotes,
-      itemCodeModalOpen, chartItemCode, selectedCause, rightDetail,
+      scopeMode,
+      uiFilters,
+      kpiSummary,
+      loading,
+      error,
+      pageLoading,
+      pageError,
+      chartMonths,
+      chartSeries,
+      chartMonthTop3Map,
+      pieData,
+      topNotes,
+      itemCodeModalOpen,
+      chartItemCode,
+      selectedCause,
+      rightDetail,
       filterExpanded,
 
-      // 연/월/주 UI용
-      yearAnchorPos, monthAnchorPos, weekAnchorPos, years, selectedYear, selectedMonth,
+      yearAnchorPos,
+      monthAnchorPos,
+      weekAnchorPos,
+      years,
+      selectedYear,
+      selectedMonth,
     } = this.state;
 
-    // 주차 메뉴용 계산
     const now = this.today0();
     const thisYear = now.getFullYear();
     const thisMonth = now.getMonth() + 1;
@@ -619,7 +945,7 @@ class DowntimeChart extends Component {
             <CardHeader
               title={
                 <Typography variant="h6" sx={{ display: "flex", alignItems: "center", gap: 1, color: "white" }}>
-                  <FilterIcon /> 검색 조건
+                  <SearchIcon /> 검색 조건
                 </Typography>
               }
               action={
@@ -711,7 +1037,6 @@ class DowntimeChart extends Component {
                     오늘
                   </Button>
 
-                  {/* 구분자 & 기간선택 */}
                   <Typography sx={{ color: "white", opacity: 0.8, mx: 0.5 }}>|</Typography>
                   <Typography sx={{ color: "white" }}>기간선택</Typography>
                   <TextField
@@ -732,7 +1057,6 @@ class DowntimeChart extends Component {
                     sx={{ backgroundColor: "white", borderRadius: 1, minWidth: 150 }}
                   />
 
-                  {/* 확장/축소 */}
                   <IconButton onClick={this.toggleFilterExpansion} sx={{ color: "white" }}>
                     {this.state.filterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                   </IconButton>
@@ -744,8 +1068,10 @@ class DowntimeChart extends Component {
             {/* 폼/필터 UI */}
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6} md={2}>
-                <TextField select fullWidth label="공장" size="small"
-                  value={uiFilters.plant??""} onChange={(e)=>this.handleFilterChange("plant", e.target.value)}>
+                <TextField
+                  select fullWidth label="공장" size="small" value={uiFilters.plant ?? ""}
+                  onChange={(e) => this.handleFilterChange("plant", e.target.value)}
+                >
                   <MenuItem value="아진산업-경산(본사)">아진산업-경산(본사)</MenuItem>
                   <MenuItem value="아진산업-1공장(경산)">아진산업-1공장(경산)</MenuItem>
                   <MenuItem value="아진산업-구어공장(경주)">아진산업-구어공장(경주)</MenuItem>
@@ -753,16 +1079,20 @@ class DowntimeChart extends Component {
                 </TextField>
               </Grid>
               <Grid item xs={12} sm={6} md={2}>
-                <TextField select fullWidth label="작업장" size="small"
-                  value={uiFilters.worker??"프레스"} onChange={(e)=>this.handleFilterChange("worker", e.target.value)}>
+                <TextField
+                  select fullWidth label="작업장" size="small" value={uiFilters.worker ?? "프레스"}
+                  onChange={(e) => this.handleFilterChange("worker", e.target.value)}
+                >
                   <MenuItem value="프레스">프레스</MenuItem>
                   <MenuItem value="금형">금형</MenuItem>
                   <MenuItem value="블랭크">블랭크</MenuItem>
                 </TextField>
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
-                <TextField select fullWidth label="라인" size="small"
-                  value={uiFilters.line??"1500T"} onChange={(e)=>this.handleFilterChange("line", e.target.value)}>
+                <TextField
+                  select fullWidth label="라인" size="small" value={uiFilters.line ?? "1500T"}
+                  onChange={(e) => this.handleFilterChange("line", e.target.value)}
+                >
                   <MenuItem value="1500T">1500T(E라인)</MenuItem>
                   <MenuItem value="1200T">1200T(D라인)</MenuItem>
                   <MenuItem value="1000T">1000T(F라인)</MenuItem>
@@ -770,17 +1100,23 @@ class DowntimeChart extends Component {
                 </TextField>
               </Grid>
               <Grid item xs={12} sm={6} md={2}>
-                <TextField fullWidth label="품번" size="small" value={uiFilters.itemCode||""}
-                  onClick={this.openItemCodeModal}
-                  InputProps={{ readOnly:true, style:{cursor:"pointer"}, endAdornment:(<InputAdornment position="end"><KeyboardArrowDownIcon sx={{ color:"text.secondary" }}/></InputAdornment>) }}
-                  sx={{ "& .MuiInputBase-root":{ cursor:"pointer", "&:hover":{ backgroundColor:"#f5f5f5" } } }}
+                <TextField
+                  fullWidth label="품번" size="small" value={uiFilters.itemCode || ""} onClick={this.openItemCodeModal}
+                  InputProps={{
+                    readOnly: true, style: { cursor: "pointer" },
+                    endAdornment: (<InputAdornment position="end"><KeyboardArrowDownIcon sx={{ color: "text.secondary" }} /></InputAdornment>),
+                  }}
+                  sx={{ "& .MuiInputBase-root": { cursor: "pointer", "&:hover": { backgroundColor: "#f5f5f5" } } }}
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
-                <TextField fullWidth label="품목명" size="small" value={uiFilters.itemName||""}
-                  onClick={this.openItemCodeModal}
-                  InputProps={{ readOnly:true, style:{cursor:"pointer"}, endAdornment:(<InputAdornment position="end"><KeyboardArrowDownIcon sx={{ color:"text.secondary" }}/></InputAdornment>) }}
-                  sx={{ "& .MuiInputBase-root":{ cursor:"pointer", "&:hover":{ backgroundColor:"#f5f5f5" } } }}
+                <TextField
+                  fullWidth label="품목명" size="small" value={uiFilters.itemName || ""} onClick={this.openItemCodeModal}
+                  InputProps={{
+                    readOnly: true, style: { cursor: "pointer" },
+                    endAdornment: (<InputAdornment position="end"><KeyboardArrowDownIcon sx={{ color: "text.secondary" }} /></InputAdornment>),
+                  }}
+                  sx={{ "& .MuiInputBase-root": { cursor: "pointer", "&:hover": { backgroundColor: "#f5f5f5" } } }}
                 />
               </Grid>
             </Grid>
@@ -788,23 +1124,63 @@ class DowntimeChart extends Component {
             <Collapse in={filterExpanded} timeout="auto" unmountOnExit>
               <Divider sx={{ my: 2 }} />
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={3}><TextField fullWidth size="small" label="차종" value={uiFilters.carModel} onChange={(e)=>this.handleFilterChange("carModel", e.target.value)} /></Grid>
-                <Grid item xs={12} sm={6} md={3}><TextField fullWidth size="small" label="비가동코드" value={uiFilters.downtimeCode} onChange={(e)=>this.handleFilterChange("downtimeCode", e.target.value)} InputProps={{ startAdornment:(<InputAdornment position="start"><SearchIcon/></InputAdornment>) }} /></Grid>
-                <Grid item xs={12} sm={6} md={3}><TextField fullWidth size="small" label="비가동명" value={uiFilters.downtimeName} onChange={(e)=>this.handleFilterChange("downtimeName", e.target.value)} /></Grid>
-                <Grid item xs={12} sm={6} md={3}><TextField fullWidth size="small" type="number" label="비가동(분)" value={uiFilters.downtimeMinutes??""} onChange={(e)=>this.handleFilterChange("downtimeMinutes", e.target.value)} /></Grid>
-                <Grid item xs={12} sm={12} md={6}><TextField fullWidth size="small" label="비고" value={uiFilters.note} onChange={(e)=>this.handleFilterChange("note", e.target.value)} /></Grid>
-                <Grid item xs={12} sm={6} md={3}><TextField fullWidth size="small" label="주야구분" value={uiFilters.shift} onChange={(e)=>this.handleFilterChange("shift", e.target.value)} /></Grid>
-                <Grid item xs={12} sm={6} md={3}><TextField fullWidth size="small" label="품명" value={uiFilters.productName} onChange={(e)=>this.handleFilterChange("productName", e.target.value)} /></Grid>
-                <Grid item xs={12} sm={6} md={3}><TextField fullWidth size="small" label="품목구분" value={uiFilters.itemType} onChange={(e)=>this.handleFilterChange("itemType", e.target.value)} /></Grid>
-                <Grid item xs={12} sm={6} md={3}><TextField fullWidth size="small" label="대분류" value={uiFilters.categoryMain} onChange={(e)=>this.handleFilterChange("categoryMain", e.target.value)} /></Grid>
-                <Grid item xs={12} sm={6} md={3}><TextField fullWidth size="small" label="소분류" value={uiFilters.categorySub} onChange={(e)=>this.handleFilterChange("categorySub", e.target.value)} /></Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <TextField fullWidth size="small" label="차종"
+                    value={uiFilters.carModel}
+                    onChange={(e) => this.handleFilterChange("carModel", e.target.value)} />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <TextField
+                    fullWidth size="small" label="비가동코드" value={uiFilters.downtimeCode}
+                    onChange={(e) => this.handleFilterChange("downtimeCode", e.target.value)}
+                    InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon /></InputAdornment>) }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <TextField fullWidth size="small" label="비가동명" value={uiFilters.downtimeName}
+                    onChange={(e) => this.handleFilterChange("downtimeName", e.target.value)} />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <TextField fullWidth size="small" type="number" label="비가동(분)"
+                    value={uiFilters.downtimeMinutes ?? ""}
+                    onChange={(e) => this.handleFilterChange("downtimeMinutes", e.target.value)} />
+                </Grid>
+                <Grid item xs={12} sm={12} md={6}>
+                  <TextField fullWidth size="small" label="비고" value={uiFilters.note}
+                    onChange={(e) => this.handleFilterChange("note", e.target.value)} />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <TextField fullWidth size="small" label="주야구분" value={uiFilters.shift}
+                    onChange={(e) => this.handleFilterChange("shift", e.target.value)} />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <TextField fullWidth size="small" label="품명" value={uiFilters.productName}
+                    onChange={(e) => this.handleFilterChange("productName", e.target.value)} />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <TextField fullWidth size="small" label="품목구분" value={uiFilters.itemType}
+                    onChange={(e) => this.handleFilterChange("itemType", e.target.value)} />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <TextField fullWidth size="small" label="대분류" value={uiFilters.categoryMain}
+                    onChange={(e) => this.handleFilterChange("categoryMain", e.target.value)} />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <TextField fullWidth size="small" label="소분류" value={uiFilters.categorySub}
+                    onChange={(e) => this.handleFilterChange("categorySub", e.target.value)} />
+                </Grid>
               </Grid>
             </Collapse>
 
             <Grid item xs={12} sx={{ mt: 2 }}>
               <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
-                <Button variant="outlined" startIcon={<ClearIcon />} onClick={this.clearFilters} size="large" color="secondary">필터 초기화</Button>
-                <Button variant="contained" startIcon={<SearchIcon />} onClick={this.handleSearch} size="large" sx={{ backgroundColor: themeHex, "&:hover": { backgroundColor: "#ffc285ff" } }}>검색</Button>
+                <Button variant="outlined" startIcon={<ClearIcon />} onClick={this.clearFilters} size="large" color="secondary">
+                  필터 초기화
+                </Button>
+                <Button variant="contained" startIcon={<SearchIcon />} onClick={this.handleSearch} size="large"
+                  sx={{ backgroundColor: themeHex, "&:hover": { backgroundColor: themeHex } }}>
+                  검색
+                </Button>
               </Box>
             </Grid>
           </Paper>
@@ -812,18 +1188,26 @@ class DowntimeChart extends Component {
 
         {/* KPI */}
         <Paper elevation={3} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-          {(pageLoading || loading.summary) ? (
+          {pageLoading || loading.summary ? (
             <Box sx={{ height: 180, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <CircularProgress size={60} sx={{ color: themeHex }} />
             </Box>
-          ) : (error.summary || pageError) ? (
+          ) : error.summary || pageError ? (
             <Box sx={{ p: 2 }}>
               <Alert severity="error" sx={{ mb: 2 }}>{error.summary || pageError}</Alert>
-              <Button variant="contained" onClick={this.fetchSummary} sx={{ backgroundColor: themeHex }}>다시 시도</Button>
+              <Button variant="contained" onClick={this.fetchSummary} sx={{ backgroundColor: themeHex }}>
+                다시 시도
+              </Button>
             </Box>
           ) : (
-            <KpiSection themeHex={themeHex} kpiSummary={kpiSummary} fmtNumber={this.fmtNumber} fmtMinutes={this.fmtMinutes}
-              periodStart={this.state.kpiFilters.start_work_date} periodEnd={this.state.kpiFilters.end_work_date} />
+            <KpiSection
+              themeHex={themeHex}
+              kpiSummary={kpiSummary}
+              fmtNumber={this.fmtNumber}
+              fmtMinutes={this.fmtMinutes}          
+              periodStart={this.state.kpiFilters.start_work_date}
+              periodEnd={this.state.kpiFilters.end_work_date}
+            />
           )}
         </Paper>
 
@@ -836,79 +1220,86 @@ class DowntimeChart extends Component {
           ) : error.monthly ? (
             <Box sx={{ p: 2 }}>
               <Alert severity="error" sx={{ mb: 2 }}>{error.monthly}</Alert>
-              <Button variant="contained" onClick={this.fetchMonthly} sx={{ backgroundColor: themeHex }}>다시 시도</Button>
+              <Button variant="contained" onClick={this.fetchMonthly} sx={{ backgroundColor: themeHex }}>
+                다시 시도
+              </Button>
             </Box>
           ) : (
-            <MonthlySection chartMonths={chartMonths} chartSeries={chartSeries} chartItemCode={chartItemCode}
-              monthTop3Map={chartMonthTop3Map} themeHex={themeHex} monthValueFormatter={this.monthKeyToLabel} fmtNumber={this.fmtNumber} />
+            <MonthlySection
+              chartMonths={chartMonths}
+              chartSeries={chartSeries}
+              chartItemCode={chartItemCode}
+              monthTop3Map={chartMonthTop3Map}
+              themeHex={themeHex}
+              monthValueFormatter={this.monthKeyToLabel}
+              fmtNumber={this.fmtNumber}
+              fmtDuration={this.fmtMinutes}      
+            />
           )}
         </Paper>
 
         {/* 파이 + 비고 */}
         <Paper elevation={3} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-          {(loading.pie || loading.notes) ? (
+          {loading.pie || loading.notes ? (
             <Box sx={{ minHeight: 320, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <CircularProgress size={60} sx={{ color: themeHex }} />
             </Box>
-          ) : (error.pie || error.notes) ? (
+          ) : error.pie || error.notes ? (
             <Box sx={{ p: 2 }}>
               <Alert severity="error" sx={{ mb: 2 }}>{error.pie || error.notes}</Alert>
               <Box sx={{ display: "flex", gap: 1 }}>
-                <Button variant="contained" onClick={this.fetchPie} sx={{ backgroundColor: themeHex }}>파이 다시 시도</Button>
-                <Button variant="contained" onClick={this.fetchTopNotes} sx={{ backgroundColor: themeHex }}>비고 다시 시도</Button>
+                <Button variant="contained" onClick={this.fetchPie} sx={{ backgroundColor: themeHex }}>
+                  파이 다시 시도
+                </Button>
+                <Button variant="contained" onClick={this.fetchTopNotes} sx={{ backgroundColor: themeHex }}>
+                  비고 다시 시도
+                </Button>
               </Box>
             </Box>
           ) : (
-            <PieAndNotesSection pieData={pieData} topNotes={topNotes} chartItemCode={chartItemCode} />
+            <PieAndNotesSection
+              pieData={pieData}                
+              topNotes={topNotes}              
+              chartItemCode={chartItemCode}
+              fmtDuration={this.fmtMinutes}    
+            />
           )}
         </Paper>
 
         {/* 품번 선택 모달 */}
         <ItemCodeModal
-          open={itemCodeModalOpen} onClose={this.closeItemCodeModal} onSelect={this.handleItemCodeSelect}
-          selectedItemCode={uiFilters.itemCode} plant={uiFilters.plant} worker={uiFilters.worker} line={uiFilters.line}
-          start_work_date={uiFilters.start_work_date} end_work_date={uiFilters.end_work_date}
+          open={itemCodeModalOpen}
+          onClose={this.closeItemCodeModal}
+          onSelect={this.handleItemCodeSelect}
+          selectedItemCode={uiFilters.itemCode}
+          plant={uiFilters.plant}
+          worker={uiFilters.worker}
+          line={uiFilters.line}
+          start_work_date={uiFilters.start_work_date}
+          end_work_date={uiFilters.end_work_date}
         />
 
         {/* 마스터–디테일 */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12}>
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{display: "flex", alignItems: "center", fontSize: "24px", fontWeight: "600"}}>설비 비가동 현황</span>
+              <span style={{ display: "flex", alignItems: "center", fontSize: "24px", fontWeight: "600" }}>
+                설비 비가동 현황
+              </span>
               <Paper
                 elevation={0}
                 variant="outlined"
                 sx={{
-                  px: 1,
-                  py: 0.5,
-                  borderRadius: 999,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 0.75,
-                  backdropFilter: "saturate(160%) blur(8px)",
-                  backgroundColor: "rgba(255,255,255,0.75)",
+                  px: 1, py: 0.5, borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 0.75,
+                  backdropFilter: "saturate(160%) blur(8px)", backgroundColor: "rgba(255,255,255,0.75)",
                   borderColor: alpha(this.props.themeHex, 0.2),
                 }}
               >
                 <ToggleButtonGroup
-                  size="small"
-                  exclusive
-                  value={this.state.scopeMode}
-                  onChange={this.handleScopeModeChange}
+                  size="small" exclusive value={this.state.scopeMode} onChange={this.handleScopeModeChange}
                   sx={{
-                    "& .MuiToggleButton-root": {
-                      border: 0,
-                      px: 1.2,
-                      height: 32,
-                      lineHeight: "32px",
-                      borderRadius: 999,
-                      textTransform: "none",
-                    },
-                    "& .Mui-selected": {
-                      color: "#fff",
-                      backgroundColor: this.props.themeHex,
-                      "&:hover": { backgroundColor: this.props.themeHex },
-                    },
+                    "& .MuiToggleButton-root": { border: 0, px: 1.2, height: 32, lineHeight: "32px", borderRadius: 999, textTransform: "none" },
+                    "& .Mui-selected": { color: "#fff", backgroundColor: this.props.themeHex, "&:hover": { backgroundColor: this.props.themeHex } },
                   }}
                 >
                   <ToggleButton value="LINE">라인 종합</ToggleButton>
@@ -918,24 +1309,10 @@ class DowntimeChart extends Component {
                 <Divider orientation="vertical" flexItem sx={{ mx: 0.25, borderColor: alpha(this.props.themeHex, 0.18) }} />
 
                 <ToggleButtonGroup
-                  size="small"
-                  exclusive
-                  value={this.state.uiFilters.line}
-                  onChange={this.handleQuickLineChange}
+                  size="small" exclusive value={this.state.uiFilters.line} onChange={this.handleQuickLineChange}
                   sx={{
-                    "& .MuiToggleButton-root": {
-                      border: 0,
-                      px: 1.1,
-                      height: 32,
-                      lineHeight: "32px",
-                      borderRadius: 999,
-                      textTransform: "none",
-                    },
-                    "& .Mui-selected": {
-                      color: "#fff",
-                      backgroundColor: this.props.themeHex,
-                      "&:hover": { backgroundColor: this.props.themeHex },
-                    },
+                    "& .MuiToggleButton-root": { border: 0, px: 1.1, height: 32, lineHeight: "32px", borderRadius: 999, textTransform: "none" },
+                    "& .Mui-selected": { color: "#fff", backgroundColor: this.props.themeHex, "&:hover": { backgroundColor: this.props.themeHex } },
                   }}
                 >
                   <ToggleButton value="1500T">1500T</ToggleButton>
@@ -946,34 +1323,52 @@ class DowntimeChart extends Component {
 
                 <Divider orientation="vertical" flexItem sx={{ mx: 0.25, borderColor: alpha(this.props.themeHex, 0.18) }} />
 
-                <Chip
-                  size="small"
-                  label={
-                    this.isLineMode()
-                      ? "품번 선택 (라인 모드)"
-                      : (this.state.uiFilters.itemCode
-                          ? `${this.state.uiFilters.itemCode} · ${this.state.uiFilters.itemName || ""}`
-                          : "품번 선택")
-                  }
-                  onClick={this.isLineMode() ? undefined : this.openItemCodeModal}
-                  onDelete={
-                    this.isLineMode()
-                      ? undefined
-                      : (this.state.uiFilters.itemCode ? this.clearDetailItem : undefined)
-                  }
-                  variant="outlined"
-                  sx={{
-                    height: 32,
-                    borderRadius: 999,
-                    fontWeight: 600,
-                    borderColor: alpha(this.props.themeHex, 0.28),
-                    backgroundColor: this.isLineMode()
-                      ? "rgba(0,0,0,0.04)"
-                      : alpha(this.props.themeHex, 0.08),
-                    color: this.isLineMode() ? "text.secondary" : "inherit",
-                    "& .MuiChip-deleteIcon": { color: alpha(this.props.themeHex, 0.8) },
-                  }}
-                />
+<Chip
+  size="small"
+  label={
+    this.isLineMode()
+      ? "품번 선택 (라인 모드)"
+      : this.state.uiFilters.itemCode
+      ? `${this.state.uiFilters.itemCode} · ${this.state.uiFilters.itemName || ""}`
+      : "품번 선택"
+  }
+  onClick={this.isLineMode() ? undefined : this.openItemCodeModal}
+  onDelete={
+    this.isLineMode()
+      ? undefined
+      : this.state.uiFilters.itemCode
+      ? this.clearDetailItem
+      : undefined
+  }
+  variant="outlined"
+  sx={{
+    height: 32, borderRadius: 999, fontWeight: 600,
+    borderColor: alpha(this.props.themeHex, 0.28),
+    backgroundColor: this.isLineMode() ? "rgba(0,0,0,0.04)" : alpha(this.props.themeHex, 0.08),
+    color: this.isLineMode() ? "text.secondary" : "inherit",
+    "& .MuiChip-deleteIcon": { color: alpha(this.props.themeHex, 0.8) },
+  }}
+/>
+
+{/* NEW: 변경사항 있을 때만 노출되는 '검색 적용' 버튼 */}
+{this.isDirty() && (
+  <Button
+    size="small"
+    variant="contained"
+    onClick={this.handleSearch}   // 상단 '검색'과 동일
+    sx={{
+      ml: 1,
+      height: 32,
+      textTransform: "none",
+      backgroundColor: this.props.themeHex,
+      "&:hover": { backgroundColor: this.props.themeHex },
+    }}
+  >
+    검색
+  </Button>
+)}
+
+                
               </Paper>
             </Box>
           </Grid>
@@ -981,32 +1376,40 @@ class DowntimeChart extends Component {
           {/* 좌/우 섹션 */}
           <Grid item xs={12} md={5} sx={{ display: "flex", flexDirection: "column" }}>
             <DowntimeAggSection
+              chartItemCode={chartItemCode}
               mode={this.isLineMode() ? "LINE" : "ITEM"}
               title="비가동 목록"
               subtitle={
                 this.isLineMode()
                   ? `${this.state.uiFilters.line} 라인`
-                  : (this.state.uiFilters.itemCode
-                      ? `${this.state.uiFilters.itemCode} · ${this.state.uiFilters.itemName || ""}`
-                      : "품번 미선택")
+                  : this.state.uiFilters.itemCode
+                  ? `${this.state.uiFilters.itemCode} · ${this.state.uiFilters.itemName || ""}`
+                  : "품번 미선택"
               }
-              data={this.isLineMode() ? this.state.facilityLineDowntimeAgg : this.state.facilityItemDowntimeAgg}
+              data={
+                this.isLineMode()
+                  ? this.state.facilityLineDowntimeAgg
+                  : this.state.facilityItemDowntimeAgg
+              }
               loading={this.isLineMode() ? this.state.loading.FacilityLineDowntimeAgg : this.state.loading.facilityItemDowntimeAgg}
               error={this.isLineMode() ? this.state.error.FacilityLineDowntimeAgg : this.state.error.facilityItemDowntimeAgg}
               onRetry={this.isLineMode() ? this.fetchFacilityLineDowntimeAgg : this.fetchFacilityItemDowntimeAgg}
               onSelect={this.handleCauseSelect}
               themeHex={this.props.themeHex}
+              fmtDuration={this.fmtMinutes}   
             />
           </Grid>
 
           <Grid item xs={12} md={7} sx={{ display: "flex", flexDirection: "column" }}>
             <RightDetailSection
+              chartItemCode={chartItemCode}
               causeName={selectedCause}
-              data={rightDetail}
+              data={rightDetail}                         
               loading={this.state.loading.causeDetail}
               error={this.state.error.causeDetail}
               onRetry={() => this.fetchCauseDetail(selectedCause)}
               themeHex={this.props.themeHex}
+              fmtDuration={this.fmtMinutes}            
             />
           </Grid>
         </Grid>

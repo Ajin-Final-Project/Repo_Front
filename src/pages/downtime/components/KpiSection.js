@@ -208,7 +208,7 @@ export default function KpiSection({
           <StatCard
             icon={<AccessTimeIcon fontSize="small" />}
             title="총 비가동"
-            value={`${fmtMinutes(Number(kpiSummary?.total ??  0))}시`}
+            value={`${fmtMinutes(Number(kpiSummary?.total ??  0))}`}
           />
         </Grid>
 
@@ -226,7 +226,7 @@ export default function KpiSection({
           <StatCard
             icon={<TimerIcon fontSize="small" />}
             title="평균 비가동(건당)"
-            value={`${fmtMinutes(Number(kpiSummary?.avg ?? 0))}분`}
+            value={`${fmtMinutes(Number(kpiSummary?.avg ?? 0))}`}
           />
         </Grid>
 
