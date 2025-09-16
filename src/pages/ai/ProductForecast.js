@@ -76,9 +76,14 @@ const CustomTooltip = ({ active, payload = [], label }) => {
         .filter((e) => isNum(e.value) && e.name !== "time" && e.dataKey !== "time")
         .map((entry, i) => (
           <div key={i}>
-            {entry.name ?? entry.dataKey}: {entry.value.toFixed(2)}
+            {entry.name ?? entry.dataKey}: 
+            {String(entry.name ?? entry.dataKey).includes("%")
+              ? entry.value.toFixed(2)
+              : Math.round(entry.value)
+            }
           </div>
-        ))}
+      ))}
+
     </div>
   );
 };
@@ -421,11 +426,11 @@ export default function ProductForecast() {
       id: idx + 1,
       type: label,
       date: d.date,
-      predicted: d.pred != null ? Number(d.pred).toFixed(2) : "-",
+      predicted: d.pred != null ? Math.round(Number(d.pred)) : "-",
       actual: isFuture ? "-" : (d.actual != null ? Math.round(d.actual) : "-"),
-      diff: isFuture ? "-" : (d.error != null ? Number(d.error).toFixed(2) : "-"),
+      diff: isFuture ? "-" : (d.error != null ? Math.round(d.error) : "-"),
       acc: isFuture ? "-" : (d.pct_error != null ? `${(d.pct_error).toFixed(2)}%` : "-"),
-      uph: isFuture ? "-" : (d.hourly_avg != null ? Number(d.hourly_avg).toFixed(2) : "-"),
+      uph: isFuture ? "-" : (d.hourly_avg != null ? Math.round(Number(d.hourly_avg)) : "-"),
       isFuture,
     };
   });
@@ -471,13 +476,20 @@ export default function ProductForecast() {
 
   // ✅ KPI 지표
   const kpi = {
-    uph: selectedSlot?.uph?.toFixed(2) || "-",
+    uph: selectedSlot?.uph ? Math.round(selectedSlot.uph) : "-",
     actual: selectedSlot?.actual ? Math.round(selectedSlot.actual) : "-",
-    uphAchievement: selectedSlot?.uph_achievement_pct ? (selectedSlot.uph_achievement_pct * 100).toFixed(2) : "-",
+    uphAchievement: selectedSlot?.uph_achievement_pct
+      ? (selectedSlot.uph_achievement_pct * 100).toFixed(2)
+      : "-",
     target: selectedSlot?.daily_target || "-",
-    cumActual: selectedSlot?.cum_actual_today ? Math.round(selectedSlot.cum_actual_today) : "-",
-    achievement: selectedSlot?.current_achievement_pct ? (selectedSlot.current_achievement_pct * 100).toFixed(2) : "-",
+    cumActual: selectedSlot?.cum_actual_today
+      ? Math.round(selectedSlot.cum_actual_today)
+      : "-",
+    achievement: selectedSlot?.current_achievement_pct
+      ? (selectedSlot.current_achievement_pct * 100).toFixed(2)
+      : "-",
   };
+
 
   // ✅ 교대별 데이터 (동적 렌더링)
   const getShiftData = (timeRanges, isNight = false) => {
@@ -534,7 +546,6 @@ export default function ProductForecast() {
       };
     });
   };
-
 
 
   const dayShift = useMemo(() => getShiftData(dayShiftTimes), [hourlyData, selectedTimeSlot, currentTimeSlot]);
@@ -632,7 +643,6 @@ export default function ProductForecast() {
             />
           </Grid>
 
-
           
           <Grid item>
             <Typography sx={{ ml: 2 }}>시간대</Typography>
@@ -694,7 +704,19 @@ export default function ProductForecast() {
                         tick={{ fontSize: 12 }}
                         tickFormatter={(value) => Math.round(value)}   // ✅ 정수만 출력
                       />
-                      <Tooltip formatter={(value, name) => [Number(value).toFixed(2), name]} />
+
+                      <Tooltip
+                        formatter={(value, name) => {
+                          if (value == null) return ["-", name];
+                          // % 들어간 항목만 소수점 유지
+                          if (String(name).includes("%")) {
+                            return [Number(value).toFixed(2), name];
+                          }
+                          // 나머지는 정수 처리
+                          return [Math.round(Number(value)), name];
+                        }}
+                      />
+
                       <Legend verticalAlign="top" align="right" wrapperStyle={{ marginBottom: 10 }} />
 
                       {/* ✅ 실제: 막대 먼저 */}
@@ -742,7 +764,7 @@ export default function ProductForecast() {
                   }
                   sx={{
                     "& .future-row": {
-                      backgroundColor: `${themeHex}40`,   // ✅ 미래 강조
+                      backgroundColor: `${themeHex}40`,
                       fontWeight: "bold",
                       color: "black",
                     },
