@@ -24,93 +24,93 @@ import { DataGrid } from '@mui/x-data-grid';
 import config from '../../config';
 import { selectThemeHex, selectThemeKey } from '../../reducers/layout';
 
-// class ItemCodeModal extends Component {
-//   constructor(props) {
-//     super(props);
-//     this.state = {
-//       searchTerm: '',
-//       items: [],
-//       loading: false,
-//       error: null,
-//     };
-//   }
+class ItemCodeModal extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      searchTerm: '',
+      items: [],
+      loading: false,
+      error: null,
+    };
+  }
 
-//   componentDidUpdate(prevProps) {
-//     // 모달이 열릴 때마다 최초 로드/리로드
-//     if (this.props.open && this.props.open !== prevProps.open) {
-//       this.fetchItems();
-//     }
+  componentDidUpdate(prevProps) {
+    // 모달이 열릴 때마다 최초 로드/리로드
+    if (this.props.open && this.props.open !== prevProps.open) {
+      this.fetchItems();
+    }
     
-//     // 필터 값이 변경되었을 때도 데이터를 다시 로드
-//     if (this.props.open && (
-//       prevProps.plant !== this.props.plant ||
-//       prevProps.worker !== this.props.worker ||
-//       prevProps.line !== this.props.line
-//     )) {
-//       this.fetchItems();
-//     }
-//   }
+    // 필터 값이 변경되었을 때도 데이터를 다시 로드
+    if (this.props.open && (
+      prevProps.plant !== this.props.plant ||
+      prevProps.worker !== this.props.worker ||
+      prevProps.line !== this.props.line
+    )) {
+      this.fetchItems();
+    }
+  }
 
-//   fetchItems = async (search = '') => {
-//     const { plant, worker, line } = this.props;
+  fetchItems = async (search = '') => {
+    const { plant, worker, line } = this.props;
     
-//     this.setState({ loading: true, error: null });
-//     try {
-//       const res = await fetch(`${config.baseURLApi}/smartFactory/modal/item_list`, {
-//         method: 'POST',
-//         headers: { 'Content-Type': 'application/json' },
-//         body: JSON.stringify({ 
-//           item: search,
-//           plant: plant || '',
-//           worker: worker || '',
-//           line: line || ''
-//         }),
-//       });
+    this.setState({ loading: true, error: null });
+    try {
+      const res = await fetch(`${config.baseURLApi}/smartFactory/modal/item_list`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          item: search,
+          plant: plant || '',
+          worker: worker || '',
+          line: line || ''
+        }),
+      });
 
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-//       const json = await res.json();
-//       const data = Array.isArray(json?.data) ? json.data : [];
-//       const items = this.formatItems(data);
-//       this.setState({ items });
-//     } catch (err) {
-//       console.error('품목 데이터 로드 오류:', err);
-//       this.setState({ error: '품목 데이터를 불러오는 중 오류가 발생했습니다.' });
-//     } finally {
-//       this.setState({ loading: false });
-//     }
-//   };
+      const json = await res.json();
+      const data = Array.isArray(json?.data) ? json.data : [];
+      const items = this.formatItems(data);
+      this.setState({ items });
+    } catch (err) {
+      console.error('품목 데이터 로드 오류:', err);
+      this.setState({ error: '품목 데이터를 불러오는 중 오류가 발생했습니다.' });
+    } finally {
+      this.setState({ loading: false });
+    }
+  };
 
-//   // 백엔드(자재번호/자재명) -> 프론트(품목번호/품목명)로 매핑
-//   formatItems = (apiData) =>
-//     apiData.map((item, idx) => {
-//       const 품목번호 = item?.자재번호 ?? item?.itemCode ?? '';
-//       const 품목명 = item?.자재명 ?? item?.itemName ?? '';
-//       const 실적번호 = item.실적번호 ?? item?.productionCode ?? '';
-//       // id는 고유하게(가능하면 백엔드 id 사용 권장)
-//       return {
-//         id: `${품목번호}-${idx}`,
-//         No: `${idx + 1}` ,
-//         품목번호,
-//         품목명,
-//         실적번호, 
-//       };
-//     });
+  // 백엔드(자재번호/자재명) -> 프론트(품목번호/품목명)로 매핑
+  formatItems = (apiData) =>
+    apiData.map((item, idx) => {
+      const 품목번호 = item?.자재번호 ?? item?.itemCode ?? '';
+      const 품목명 = item?.자재명 ?? item?.itemName ?? '';
+      const 실적번호 = item.실적번호 ?? item?.productionCode ?? '';
+      // id는 고유하게(가능하면 백엔드 id 사용 권장)
+      return {
+        id: `${품목번호}-${idx}`,
+        No: `${idx + 1}` ,
+        품목번호,
+        품목명,
+        실적번호, 
+      };
+    });
 
-//   handleSearch = () => this.fetchItems(this.state.searchTerm);
+  handleSearch = () => this.fetchItems(this.state.searchTerm);
 
-//   clearSearch = () => {
-//     this.setState({ searchTerm: '' }, () => this.fetchItems(''));
-//   };
+  clearSearch = () => {
+    this.setState({ searchTerm: '' }, () => this.fetchItems(''));
+  };
 
-//   handleItemSelect = (row) => {
-//     // 부모에 품목번호만 넘길지, 둘 다 넘길지 필요에 맞게 조정
-//     const { onSelect, onClose } = this.props;
+  handleItemSelect = (row) => {
+    // 부모에 품목번호만 넘길지, 둘 다 넘길지 필요에 맞게 조정
+    const { onSelect, onClose } = this.props;
     
 
-//     onSelect?.({ 품목번호: row.품목번호, 품목명: row.품목명 });
-//     onClose?.();
-//   };
+    onSelect?.({ 품목번호: row.품목번호, 품목명: row.품목명 });
+    onClose?.();
+  };
 
   render() {
     const { open, onClose, selectedItemCode, plant, worker, line, themeHex, themeKey } = this.props;
@@ -229,52 +229,52 @@ import { selectThemeHex, selectThemeKey } from '../../reducers/layout';
               검색하여 원하는 품목을 선택하세요
             </Typography>
             
-//             {/* 현재 필터 정보 표시 */}
-//             {(plant || worker || line) && (
-//               <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-//                 {plant && (
-//                   <Chip 
-//                     label={`공장: ${plant}`} 
-//                     size="small" 
-//                     variant="outlined"
-//                     sx={{ 
-//                       backgroundColor: 'rgba(255,255,255,0.2)', 
-//                       borderColor: 'rgba(255,255,255,0.3)',
-//                       color: 'white',
-//                       fontSize: '0.75rem'
-//                     }}
-//                   />
-//                 )}
-//                 {worker && (
-//                   <Chip 
-//                     label={`작업자: ${worker}`} 
-//                     size="small" 
-//                     variant="outlined"
-//                     sx={{ 
-//                       backgroundColor: 'rgba(255,255,255,0.2)', 
-//                       borderColor: 'rgba(255,255,255,0.3)',
-//                       color: 'white',
-//                       fontSize: '0.75rem'
-//                     }}
-//                   />
-//                 )}
-//                 {line && (
-//                   <Chip 
-//                     label={`작업장: ${line}`} 
-//                     size="small" 
-//                     variant="outlined"
-//                     sx={{ 
-//                       backgroundColor: 'rgba(255,255,255,0.2)', 
-//                       borderColor: 'rgba(255,255,255,0.3)',
-//                       color: 'white',
-//                       fontSize: '0.75rem'
-//                     }}
-//                   />
-//                 )}
-//               </Box>
-//             )}
-//           </Box>
-//         </DialogTitle>
+            {/* 현재 필터 정보 표시 */}
+            {(plant || worker || line) && (
+              <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                {plant && (
+                  <Chip 
+                    label={`공장: ${plant}`} 
+                    size="small" 
+                    variant="outlined"
+                    sx={{ 
+                      backgroundColor: 'rgba(255,255,255,0.2)', 
+                      borderColor: 'rgba(255,255,255,0.3)',
+                      color: 'white',
+                      fontSize: '0.75rem'
+                    }}
+                  />
+                )}
+                {worker && (
+                  <Chip 
+                    label={`작업자: ${worker}`} 
+                    size="small" 
+                    variant="outlined"
+                    sx={{ 
+                      backgroundColor: 'rgba(255,255,255,0.2)', 
+                      borderColor: 'rgba(255,255,255,0.3)',
+                      color: 'white',
+                      fontSize: '0.75rem'
+                    }}
+                  />
+                )}
+                {line && (
+                  <Chip 
+                    label={`작업장: ${line}`} 
+                    size="small" 
+                    variant="outlined"
+                    sx={{ 
+                      backgroundColor: 'rgba(255,255,255,0.2)', 
+                      borderColor: 'rgba(255,255,255,0.3)',
+                      color: 'white',
+                      fontSize: '0.75rem'
+                    }}
+                  />
+                )}
+              </Box>
+            )}
+          </Box>
+        </DialogTitle>
 
         <DialogContent sx={{ p: 0, overflow: 'hidden' }}>
           {/* 검색 영역 */}
@@ -379,7 +379,7 @@ import { selectThemeHex, selectThemeKey } from '../../reducers/layout';
             </Paper>
           </Box>
 
-//           <Divider sx={{ mx: 3, opacity: 0.6 }} />
+          <Divider sx={{ mx: 3, opacity: 0.6 }} />
 
                      {/* 그리드 */}
            <Box sx={{ height: 'calc(100% - 140px)', width: '100%', px: 3, pb: 2 }}>
@@ -407,18 +407,18 @@ import { selectThemeHex, selectThemeKey } from '../../reducers/layout';
               </Box>
             )}
 
-//             {error && (
-//               <Alert 
-//                 severity="error" 
-//                 sx={{ 
-//                   mb: 2,
-//                   borderRadius: '8px',
-//                   '& .MuiAlert-icon': { color: '#d32f2f' }
-//                 }}
-//               >
-//                 {error}
-//               </Alert>
-//             )}
+            {error && (
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 2,
+                  borderRadius: '8px',
+                  '& .MuiAlert-icon': { color: '#d32f2f' }
+                }}
+              >
+                {error}
+              </Alert>
+            )}
 
             {!loading && !error && (
               <DataGrid
