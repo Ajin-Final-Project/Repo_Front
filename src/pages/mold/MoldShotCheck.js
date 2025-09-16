@@ -636,7 +636,7 @@ closeItemCodeModal = () => {
                   onClick={this.applyToday}
                   sx={{ textTransform: "none", fontWeight: 700, borderColor: "white", color: "white" }}
                 >
-                  금일
+                  오늘
                 </Button>
 
                 {/* 구분자 파이프(옵션) */}
