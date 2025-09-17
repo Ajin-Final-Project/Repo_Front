@@ -1446,7 +1446,7 @@ class MoldChart extends Component {
             gap: 1
           }}>
             <TrendingUpIcon />
-            금형 데이터 차트
+            금형 데이터 분석
           </Typography>
           
           <Typography variant="body1" color="text.secondary">

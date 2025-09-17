@@ -511,7 +511,7 @@ closeItemCodeModal = () => {
             gap: 1
           }}>
             <FilterIcon />
-            금형세척/점검 데이터 그리드
+            금형 세척/점검 데이터 내역
           </Typography>
           <Typography variant="body1" color="text.secondary">
             금형세척 점검 데이터(생산내역, 금형세척주기, 금형타발수관리) 통합 조회.

@@ -1075,7 +1075,7 @@ class ProductionChart extends Component {
         {/* 헤더 섹션 */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="h4" gutterBottom sx={{ color: themeHex, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TrendingUpIcon /> 생산 데이터 차트
+            <TrendingUpIcon /> 생산 데이터 분석
           </Typography>
           <Typography variant="body1" color="text.secondary">생산 현황을 차트로 한눈에 파악할 수 있습니다.</Typography>
         </Box>
