@@ -2064,7 +2064,7 @@ class Sidebar extends React.Component {
       { key: "mold", label: "금형관리 시스템", link: "/app/mold/chart", iconKey: "mold" },
       { key: "inspection", label: "초/중/종품 검사 시스템", link: "/app/inspection/chart", iconKey: "inspection" },
       { key: "defect", label: "불량공정 시스템", link: "/app/defect/chart", iconKey: "defect" },
-      { key: "admin", label: "관리자 시스템", link: "/admin/users", iconKey: "admin" },
+      { key: "admin", label: "관리자 시스템", link: "/app/admin/users", iconKey: "admin" },
       
       // { key: "email", label: "Email", link: "/app/email", iconKey: "email", badge: 9 },
       // { key: "documentation", label: "Documentation", link: "/documentation", iconKey: "documentation", target: "_blank" },
@@ -2237,7 +2237,7 @@ class Sidebar extends React.Component {
             <img src={this.themeIcons("inspection")} alt="inspection" width="24" height="24" />
           </LinksGroup>
 
-             <LinksGroup
+          <LinksGroup
             onActiveSidebarItemChange={(activeItem) => this.props.dispatch(changeActiveSidebarItem(activeItem))}
             activeItem={this.props.activeItem}
             header="불량 관리 시스템"
