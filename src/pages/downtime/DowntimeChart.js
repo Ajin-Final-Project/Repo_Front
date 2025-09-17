@@ -1034,7 +1034,7 @@ isDirty = () => {
                     onClick={this.applyToday}
                     sx={{ textTransform: "none", fontWeight: 700, borderColor: "white", color: "white" }}
                   >
-                    오늘
+                    금일
                   </Button>
 
                   <Typography sx={{ color: "white", opacity: 0.8, mx: 0.5 }}>|</Typography>
