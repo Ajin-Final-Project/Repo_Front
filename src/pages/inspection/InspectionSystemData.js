@@ -4214,9 +4214,10 @@ import {
 
 import InspectionItemModal from '../common/InspectionItemModal';
 import s from './InspectionSystemData.module.scss';
+import { connect } from 'react-redux';
+import { selectThemeHex, selectThemeKey } from '../../reducers/layout';
 
 /** ---------- 공통 상수 ---------- */
-const MAIN_COLOR = '#ff8f00';
 const FILTER_STORAGE_KEY = 'inspectionFilters';
 
 /** ---------- helpers ---------- */
@@ -4373,7 +4374,7 @@ function calcColumnWidth(field, headerName, rows, maxRows = 5000) {
   return Math.min(MAX, Math.max(MIN, Math.ceil(maxW + PADDING)));
 }
 
-export default class InspectionGrid extends Component {
+class InspectionGrid extends Component {
   state = {
     // 필터
     filters: getDefaultFilters(),
@@ -4729,6 +4730,7 @@ export default class InspectionGrid extends Component {
 
   /** ---------- 필터 바 (차트와 동일한 구조/스타일) ---------- */
   renderFilterBar = () => {
+    const { themeHex } = this.props;
     const { filters, itemCodeModalOpen } = this.state;
 
     const now = today0();
@@ -4870,7 +4872,7 @@ export default class InspectionGrid extends Component {
               </IconButton>
             </Box>
           }
-          sx={{ backgroundColor: MAIN_COLOR, color: 'white', borderRadius: 1, mb: 2 }}
+          sx={{ backgroundColor: themeHex, color: 'white', borderRadius: 1, mb: 2 }}
         />
 
         {/* === 1행: 공장/공정/설비/품번/품명 === */}
@@ -4988,7 +4990,7 @@ export default class InspectionGrid extends Component {
             variant="contained"
             startIcon={<SearchIcon />}
             size="large"
-            sx={{ backgroundColor: MAIN_COLOR, '&:hover': { backgroundColor: '#f57c00' } }}
+            sx={{ backgroundColor: themeHex, '&:hover': { backgroundColor: '#f57c00' } }}
             onClick={() => {
               this.loadOptions();
               this.loadList();
@@ -5015,6 +5017,7 @@ export default class InspectionGrid extends Component {
   };
 
   render() {
+    const { themeHex } = this.props;
     const { error, loading, rows, columns } = this.state;
 
     return (
@@ -5025,14 +5028,14 @@ export default class InspectionGrid extends Component {
             variant="h4"
             gutterBottom
             sx={{
-              color: MAIN_COLOR,
+              color: themeHex,
               fontWeight: 'bold',
               display: 'flex',
               alignItems: 'center',
               gap: 1,
             }}
           >
-            <FilterIcon /> 검사 데이터 그리드
+            <FilterIcon /> 검사 데이터 내역
           </Typography>
           <Typography variant="body1" color="text.secondary">
             검사 결과를 차트와 표로 한눈에 파악할 수 있습니다.
@@ -5049,7 +5052,7 @@ export default class InspectionGrid extends Component {
             <Button
               variant="contained"
               onClick={this.loadList}
-              sx={{ backgroundColor: MAIN_COLOR, '&:hover': { backgroundColor: '#f57c00' } }}
+              sx={{ backgroundColor: themeHex, '&:hover': { backgroundColor: '#f57c00' } }}
             >
               다시 시도
             </Button>
@@ -5061,7 +5064,7 @@ export default class InspectionGrid extends Component {
           <Box sx={{ height: '100%,', width: '100%' }}>
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '220px' }}>
-                <CircularProgress size={60} sx={{ color: MAIN_COLOR }} />
+                <CircularProgress size={60} sx={{ color: themeHex }} />
               </Box>
             ) : (
               <DataGrid
@@ -5081,7 +5084,7 @@ export default class InspectionGrid extends Component {
                 slots={{ toolbar: GridToolbar }}
                 slotProps={{ toolbar: { showQuickFilter: true, quickFilterProps: { debounceMs: 500 } } }}
                 sx={{
-                  '& .super-app-theme--header': { backgroundColor: MAIN_COLOR, color: 'white', fontWeight: 'bold' },
+                  '& .super-app-theme--header': { backgroundColor: themeHex, color: 'white', fontWeight: 'bold' },
                   '& .MuiDataGrid-cell': { borderBottom: '1px solid #e0e0e0', whiteSpace: 'nowrap' },
                   '& .MuiDataGrid-root': { border: 'none' },
                   '& .MuiDataGrid-virtualScroller': { backgroundColor: '#fafafa' },
@@ -5095,3 +5098,12 @@ export default class InspectionGrid extends Component {
     );
   }
 }
+
+function mapStateToProps(state) {
+  return {
+    themeHex: selectThemeHex(state),
+    themeKey: selectThemeKey(state)
+  };
+}
+
+export default connect(mapStateToProps)(InspectionGrid);
