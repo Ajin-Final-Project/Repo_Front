@@ -568,7 +568,11 @@ class MoldBreakdownGrid extends Component {
             gutterBottom
             sx={{ color: themeHex, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}
           >
+<<<<<<< HEAD
             <FilterIcon /> 금형 고장 데이터 내역
+=======
+            <FilterIcon /> 금형고장내역 데이터 내역
+>>>>>>> 322068c62c142bde324c07c7ca4e1da2f73de71e
           </Typography>
           <Typography variant="subtitle1" sx={{ color: 'text.secondary', fontSize: { xs: 15, sm: 15, md: 16 } }}>
             금형고장 현황을 상세하게 조회하고 관리할 수 있습니다.
@@ -673,7 +677,7 @@ class MoldBreakdownGrid extends Component {
                   onClick={this.applyToday}
                   sx={{ textTransform: 'none', fontWeight: 700, borderColor: 'white', color: 'white' }}
                 >
-                  오늘
+                  금일
                 </Button>
 
                 {/* 구분자 & 기간선택 직접 입력 */}

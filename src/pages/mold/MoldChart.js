@@ -1446,7 +1446,7 @@ class MoldChart extends Component {
             gap: 1
           }}>
             <TrendingUpIcon />
-            금형 데이터 차트
+            금형 데이터 분석
           </Typography>
           
           <Typography variant="body1" color="text.secondary">
@@ -1572,7 +1572,7 @@ class MoldChart extends Component {
                   onClick={this.applyToday}
                   sx={{ textTransform: "none", fontWeight: 700, borderColor: "white", color: "white" }}
                 >
-                  오늘
+                  금일
                 </Button>
 
                 {/* 구분자 파이프(옵션) */}

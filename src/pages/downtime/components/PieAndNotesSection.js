@@ -138,7 +138,7 @@ export default function PieAndNotesSection({
         anchor: "right",        // 👉 오른쪽 배치
         direction: "column",    // 👉 세로 나열
         translateX: 80,         // 👉 차트와 범례 간격
-        itemWidth: 100,
+        itemWidth: 70,
         itemHeight: 20,
         symbolSize: 14,
         symbolShape: "circle",
@@ -171,7 +171,7 @@ export default function PieAndNotesSection({
           }}
         >
           <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
-            {chartItemCode || "-"} · 가장 많이 등장한 비고
+            {chartItemCode || "-"} · 가장 많이 등장한 조치
           </Typography>
 
           {topNotes?.length ? (
@@ -224,7 +224,7 @@ export default function PieAndNotesSection({
                 color: "text.secondary",
               }}
             >
-              반복적으로 등장한 비고가 없습니다.
+              반복적으로 등장한 조치가 없습니다.
             </Box>
           )}
         </Paper>

@@ -715,7 +715,7 @@ class ProductionGrid extends Component {
             gap: 1                           // 아이콘과 텍스트 사이 간격
           }}>
             <FilterIcon />                   {/* 필터 아이콘 */}
-            생산 데이터 그리드               {/* 제목 텍스트 */}
+            생산 데이터 내역               {/* 제목 텍스트 */}
           </Typography>
           
           {/* 부제목/설명 */}

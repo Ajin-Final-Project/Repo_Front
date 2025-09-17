@@ -89,7 +89,6 @@ const CustomTooltip = ({ active, payload = [], label }) => {
 };
 
 
-
 export default function ProductForecast() {
   // ✅ Redux에서 themeHex 가져오기
   const themeHex = useSelector(selectThemeHex);
@@ -363,6 +362,7 @@ export default function ProductForecast() {
       });
       const isLast = start === "07:00" && end === "07:50";
       const isSelected = `${start}~${end}` === selectedTimeSlot;
+
       const currentStartMinutes = timeToMinutes(start, isNight);
       const selectedStartMinutes = timeToMinutes(selectedTimeSlot.split("~")[0], isSelectedNightShift);
 
@@ -375,20 +375,25 @@ export default function ProductForecast() {
         isAtOrAfterSelected = currentStartMinutes >= selectedStartMinutes;
       }
 
-      const actualValue = isLast || isAtOrAfterSelected
-        ? null
-        : (found && found.actual != null ? found.actual : null);
+      // ✅ 선택 이후는 "데이터 없음" 처리
+      const actualValue =
+        isLast || isAtOrAfterSelected
+          ? null
+          : found?.actual != null
+          ? found.actual
+          : null;
 
-      console.log(
-        `Time Slot: ${start}~${end}, isNight: ${isNight}, isSelectedDayShift: ${isSelectedDayShift}, ` +
-        `currentStartMinutes: ${currentStartMinutes}, selectedStartMinutes: ${selectedStartMinutes}, ` +
-        `isAtOrAfterSelected: ${isAtOrAfterSelected}, isSelected: ${isSelected}, actual: ${actualValue}, predicted: ${found?.prediction}`
-      );
+      const predictedValue =
+        isLast || isAtOrAfterSelected
+          ? null
+          : found?.prediction != null
+          ? found.prediction
+          : null;
 
       return {
         time: `${start}~${end}`,
         actual: actualValue,
-        predicted: found && found.prediction != null ? found.prediction : null,
+        predicted: predictedValue,
         isSelected,
       };
     }).filter((item) => item.time && item.time !== "null~null");
@@ -529,21 +534,24 @@ export default function ProductForecast() {
 
       const isSelected = `${start}~${end}` === selectedTimeSlot;
       const actualValue = isLastNight || isAtOrAfterSelected
-        ? "-"
-        : (found && found.actual != null ? Math.round(found.actual) : "-");
+        ? "데이터 없음"
+        : (found?.actual != null ? Math.round(found.actual) : "데이터 없음");
 
-      console.log(
-        `Shift: ${start}~${end}, isNight: ${isNight}, isSelectedDayShift: ${isSelectedDayShift}, ` +
-        `currentStartMinutes: ${currentStartMinutesForSlot}, selectedStartMinutes: ${selectedStartMinutes}, ` +
-        `isAtOrAfterSelected: ${isAtOrAfterSelected}, isSelected: ${isSelected}, actual: ${actualValue}`
-      );
+      const accuracyValue = isLastNight || isAtOrAfterSelected
+        ? "데이터 없음"
+        : (found?.pred_match_pct != null 
+            ? `${(found.pred_match_pct).toFixed(2)}%`
+            : "데이터 없음");
 
       return {
         start,
         end,
         actual: actualValue,
+        predicted: found?.prediction != null ? Math.round(found.prediction) : "-",
+        accuracy: accuracyValue,
         isSelected,
       };
+
     });
   };
 
@@ -1006,27 +1014,41 @@ export default function ProductForecast() {
               <Table sx={{ tableLayout: "fixed", width: "100%" }}>
                 <TableHead>
                   <TableRow>
-                    <TableCell align="center" colSpan={2} sx={{ backgroundColor: "#f5f5f520", fontWeight: "bold", borderRight: `2px solid ${themeHex}` }}>
+                    <TableCell align="center" colSpan={4} sx={{ backgroundColor: "#f5f5f520", fontWeight: "bold", borderRight: `2px solid ${themeHex}` }}>
                       🌞 주간 근무
                     </TableCell>
-                    <TableCell align="center" colSpan={2} sx={{ backgroundColor: "#f5f5f520", fontWeight: "bold" }}>
+                    <TableCell align="center" colSpan={4} sx={{ backgroundColor: "#f5f5f520", fontWeight: "bold" }}>
                       🌙 야간 근무
                     </TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell sx={{ width: "25%" }}>시간</TableCell>
-                    <TableCell sx={{ width: "25%", borderRight: `2px solid ${themeHex}` }}>실적</TableCell>
-                    <TableCell sx={{ width: "25%" }}>시간</TableCell>
-                    <TableCell sx={{ width: "25%" }}>실적</TableCell>
+                    <TableCell>시간</TableCell>
+                    <TableCell>예측</TableCell>
+                    <TableCell>실적</TableCell>
+                    <TableCell sx={{ borderRight: `2px solid ${themeHex}` }}>예측 정확도</TableCell>
+                    <TableCell>시간</TableCell>
+                    <TableCell>예측</TableCell>
+                    <TableCell>실적</TableCell>
+                    <TableCell>예측 정확도</TableCell>
                   </TableRow>
                 </TableHead>
+
+
                 <TableBody>
                   {dayShift.map((d, idx) => (
                     <TableRow key={idx}>
+                      {/* 🌞 주간 근무 */}
+                      <TableCell>{d.start} – {d.end}</TableCell>
+                      <TableCell>{d.predicted !== "-" ? d.predicted : "데이터 없음"}</TableCell>
                       <TableCell
-                        sx={d.isSelected ? { backgroundColor: `${themeHex}40`, fontWeight: "bold", color: "black", border: `2px solid ${themeHex}` } : {}}
+                        sx={d.isSelected ? {
+                          backgroundColor: `${themeHex}40`,
+                          fontWeight: "bold",
+                          color: "black",
+                          border: `2px solid ${themeHex}`
+                        } : {}}
                       >
-                        {d.start} – {d.end}
+                        {d.actual !== "-" ? d.actual : "데이터 없음"}
                       </TableCell>
                       <TableCell
                         sx={{
@@ -1035,25 +1057,40 @@ export default function ProductForecast() {
                             backgroundColor: `${themeHex}40`,
                             fontWeight: "bold",
                             color: "black",
-                            border: `2px solid ${themeHex}`,
+                            border: `2px solid ${themeHex}`
                           }),
                         }}
                       >
-                        {d.actual !== "-" ? d.actual : "데이터 없음"}
+                        {d.accuracy}
                       </TableCell>
+
+                      {/* 🌙 야간 근무 */}
+                      <TableCell>{nightShift[idx]?.start} – {nightShift[idx]?.end}</TableCell>
+                      <TableCell>{nightShift[idx]?.predicted !== "-" ? nightShift[idx].predicted : "데이터 없음"}</TableCell>
                       <TableCell
-                        sx={nightShift[idx]?.isSelected ? { backgroundColor: `${themeHex}40`, fontWeight: "bold", color: "black", border: `2px solid ${themeHex}` } : {}}
-                      >
-                        {nightShift[idx]?.start} – {nightShift[idx]?.end}
-                      </TableCell>
-                      <TableCell
-                        sx={nightShift[idx]?.isSelected ? { backgroundColor: `${themeHex}40`, fontWeight: "bold", color: "black", border: `2px solid ${themeHex}` } : {}}
+                        sx={nightShift[idx]?.isSelected ? {
+                          backgroundColor: `${themeHex}40`,
+                          fontWeight: "bold",
+                          color: "black",
+                          border: `2px solid ${themeHex}`
+                        } : {}}
                       >
                         {nightShift[idx]?.actual !== "-" ? nightShift[idx].actual : "데이터 없음"}
+                      </TableCell>
+                      <TableCell
+                        sx={nightShift[idx]?.isSelected ? {
+                          backgroundColor: `${themeHex}40`,
+                          fontWeight: "bold",
+                          color: "black",
+                          border: `2px solid ${themeHex}`
+                        } : {}}
+                      >
+                        {nightShift[idx]?.accuracy}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
+
               </Table>
             </TableContainer>
           </Box>
