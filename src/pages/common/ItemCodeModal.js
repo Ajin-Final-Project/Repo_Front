@@ -343,15 +343,27 @@ class ItemCodeModal extends Component {
                      background: `linear-gradient(135deg, ${themeHex} 0%, ${themeHex}dd 100%)`,
                      borderRadius: '8px',
                      px: 3,
-                     py: 1,
+                     py: 1.5,
                      textTransform: 'none',
-                     fontWeight: 600,
-                     boxShadow: `0 4px 12px ${themeHex}50`,
-                     '&:hover': { 
-                       background: `linear-gradient(135deg, ${themeHex}dd 0%, ${themeHex}bb 100%)`,
-                       boxShadow: `0 6px 16px ${themeHex}60`
-                     }
-                   }}
+                     fontWeight: 400,
+                      boxShadow: `0 4px 12px ${themeHex}50`,
+                      '&:hover': {
+                        background: `linear-gradient(135deg, ${themeHex}dd 0%, ${themeHex}bb 100%)`,
+                        boxShadow: `0 6px 16px ${themeHex}60`,
+                      },
+
+                      /* ▼ 핵심: 가로쓰기 + 줄바꿈 금지 + 단어 쪼개지지 않게 */
+                      writingMode: 'horizontal-tb',
+                      whiteSpace: 'nowrap',
+                      wordBreak: 'keep-all',
+
+                      /* 버튼이 너무 좁아 줄바꿈되는 경우 대비 */
+                      minWidth: 80,        // 필요 시 더 키워도 됨
+                      lineHeight: 1.2,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                                    }}
                  >
                   검색
                 </Button>
