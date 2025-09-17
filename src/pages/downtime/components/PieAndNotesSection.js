@@ -138,7 +138,7 @@ export default function PieAndNotesSection({
         anchor: "right",        // 👉 오른쪽 배치
         direction: "column",    // 👉 세로 나열
         translateX: 80,         // 👉 차트와 범례 간격
-        itemWidth: 100,
+        itemWidth: 70,
         itemHeight: 20,
         symbolSize: 14,
         symbolShape: "circle",

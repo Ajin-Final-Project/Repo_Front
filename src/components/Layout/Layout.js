@@ -708,6 +708,51 @@ class Layout extends React.Component {
     this.setState({ isChatbotOpen: false });
   };
 
+  contentRef = React.createRef();
+
+ resetScrollHard = () => {
+   // 1) 후보 엘리먼트 수집
+   const cand = [
+     this.contentRef?.current,
+     document.querySelector('.' + (s?.content || '')),
+     document.querySelector('.' + (s?.wrap || '')),
+     document.scrollingElement,
+     document.documentElement,
+     document.body,
+   ].filter(Boolean);
+
+   // 2) 스크롤 가능한 애들만 골라서 전부 0으로
+   cand.forEach(el => {
+     const st = getComputedStyle(el);
+     const canScroll = el.scrollHeight > el.clientHeight && st.overflowY !== 'visible';
+     if (canScroll) {
+       if (typeof el.scrollTo === 'function') el.scrollTo(0, 0);
+       el.scrollTop = 0;
+       el.scrollLeft = 0;
+     }
+   });
+   // 안전망
+   window.scrollTo(0, 0);
+ };
+
+ componentDidMount() {
+   // 해시 변경에도 리셋 (HashRouter 환경)
+   window.addEventListener('hashchange', this.resetScrollHard);
+ }
+ componentWillUnmount() {
+   window.removeEventListener('hashchange', this.resetScrollHard);
+ }
+  componentDidUpdate(prevProps) {
+    const prev = prevProps.location.pathname + prevProps.location.search;
+    const curr = this.props.location.pathname + this.props.location.search;
+    if (prev !== curr) {
+     // 트랜지션 이전·이후 두 번 때려서 타이밍 이슈 제거
+     this.resetScrollHard();
+     setTimeout(this.resetScrollHard, 0);
+     setTimeout(this.resetScrollHard, 220); // CSSTransition timeout(200ms) 이후 한 번 더
+    }
+  }
+
   render() {
     // (선택) CSS 변수로 사이드바 폭을 넘기고 싶다면 유지
     const sidebarWidthVar = this.props.sidebarOpened
@@ -746,13 +791,19 @@ class Layout extends React.Component {
           <Helper />
 
           {/* 클릭으로만 열고 닫도록 Hammer/onSwipe 제거 */}
-          <main className={s.content}>
+          <main 
+            className={s.content} 
+            ref={this.contentRef}
+            key={this.props.location.pathname}
+          >
             {/* <BreadcrumbHistory url={this.props.location.pathname} /> */}
             <TransitionGroup>
               <CSSTransition
                 key={this.props.location.key}
                 classNames="fade"
                 timeout={200}
+                
+                onEntered={this.resetScrollHard}   // 트랜지션 끝난 뒤에도 한 번 더 안전하게
               >
                 <Switch>
                   <Route
@@ -952,6 +1003,14 @@ class Layout extends React.Component {
         )}
       </div>
     );
+  }
+  componentDidUpdate(prevProps) {
+    if (prevProps.location.pathname !== this.props.location.pathname) {
+      const el = this.contentRef.current;
+      if (el) {
+        el.scrollTop = 0;
+      }
+    }
   }
 }
 
