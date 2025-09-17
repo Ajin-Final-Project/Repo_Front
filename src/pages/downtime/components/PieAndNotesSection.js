@@ -171,7 +171,7 @@ export default function PieAndNotesSection({
           }}
         >
           <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
-            {chartItemCode || "-"} · 가장 많이 등장한 비고
+            {chartItemCode || "-"} · 가장 많이 등장한 조치
           </Typography>
 
           {topNotes?.length ? (
@@ -224,7 +224,7 @@ export default function PieAndNotesSection({
                 color: "text.secondary",
               }}
             >
-              반복적으로 등장한 비고가 없습니다.
+              반복적으로 등장한 조치가 없습니다.
             </Box>
           )}
         </Paper>
