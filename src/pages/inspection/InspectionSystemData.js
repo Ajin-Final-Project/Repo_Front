@@ -2,10 +2,6 @@
 import config from '../../config';
 import React, { Component } from 'react';
 
-
-import { connect } from "react-redux";
-import { selectThemeHex, selectThemeKey } from "../../reducers/layout";
-
 import {
   Box,
   Paper,
