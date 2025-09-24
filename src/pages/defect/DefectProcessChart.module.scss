@@ -1,3 +1,158 @@
+// .root {
+//   background: #f5f7fb;
+//   min-height: 100vh;
+//   padding: 24px;
+// }
+
+// /* Top Bar */
+// .topbar {
+//   display: flex;
+//   align-items: flex-end;
+//   justify-content: space-between;
+//   margin-bottom: 16px;
+// }
+
+// .titleWrap {
+//   display: flex;
+//   flex-direction: column;
+//   gap: 6px;
+// }
+
+// .breadcrumb {
+//   background: #fff3e0;
+//   color: #ff7043;
+//   padding: 4px 10px;
+//   border-radius: 12px;
+//   width: fit-content;
+//   font-weight: 600;
+//   letter-spacing: 0.2px;
+// }
+
+// .pageTitle {
+//   color: #2f3640;
+//   font-weight: 900;
+// }
+
+// .pageDesc {
+//   color: #6b7076;
+// }
+
+// .tools {
+//   display: flex;
+//   gap: 10px;
+//   align-items: center;
+// }
+
+// /* KPI */
+// .kpiCard {
+//   border: 1px solid #eceff1;
+//   border-radius: 12px;
+//   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+//   transition: transform .15s ease;
+//   height: 100%;
+//   display: flex;
+// }
+// .kpiCard:hover { transform: translateY(-2px); }
+
+// .kpiBody {
+//   padding: 16px;
+//   text-align: left;
+//   display: flex;
+//   flex-direction: column;
+//   justify-content: space-between;
+//   height: 100%;
+//   flex: 1;
+// }
+
+// .kpiTitle { font-size: 12px; font-weight: 800; opacity: 0.9; }
+// .kpiValue { font-size: 22px; font-weight: 900; margin-top: 4px; }
+
+// .kpiFoot {
+//   display: flex;
+//   justify-content: space-between;
+//   align-items: center;
+//   margin-top: 6px;
+// }
+// .kpiSub { font-size: 12px; color: #8694a5; }
+
+// .deltaUp, .deltaDown {
+//   display: inline-flex;
+//   gap: 4px;
+//   align-items: center;
+//   font-size: 12px;
+//   font-weight: 700;
+//   padding: 2px 8px;
+//   border-radius: 999px;
+// }
+// .deltaUp   { color: #2e7d32; background: #e8f5e9; }
+// .deltaDown { color: #c62828; background: #ffebee; }
+
+// /* Sections */
+// .section {
+//   background: #fff;
+//   border: 1px solid #eceff1;
+//   border-radius: 12px;
+//   padding: 16px;
+//   box-shadow: 0 2px 10px rgba(0,0,0,.03);
+//   display: flex;
+//   flex-direction: column;
+//   height: 100%;
+// }
+
+// .sectionHeader {
+//   display: flex;
+//   align-items: center;
+//   justify-content: space-between;
+//   margin-bottom: 8px;
+// }
+
+// .sectionTitle {
+//   display: flex;
+//   align-items: center;
+//   gap: 8px;
+//   font-weight: 900;
+//   letter-spacing: .2px;
+// }
+
+// /* 차트 영역이 남은 세로 공간을 채우도록 */
+// .sectionBody,
+// .chartFill {
+//   flex: 1;
+//   min-height: 280px;
+// }
+
+// /* Donut legend */
+// .legendRow {
+//   display: flex;
+//   gap: 16px;
+//   flex-wrap: wrap;
+//   justify-content: center;
+//   margin-top: 8px;
+//   color: #677483;
+//   font-size: 13px;
+// }
+
+// .legendItem {
+//   display: inline-flex;
+//   align-items: center;
+//   gap: 6px;
+// }
+
+// .legendDot {
+//   width: 10px;
+//   height: 10px;
+//   border-radius: 999px;
+// }
+
+// /* Responsive */
+// @media (max-width: 960px) {
+//   .tools {
+//     flex-wrap: wrap;
+//     justify-content: flex-end;
+//   }
+// }
+
+
 .root {
   background: #f5f7fb;
   min-height: 100vh;

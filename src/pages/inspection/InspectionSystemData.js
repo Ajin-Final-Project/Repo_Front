@@ -36,8 +36,6 @@ import {
 
 import InspectionItemModal from '../common/InspectionItemModal';
 import s from './InspectionSystemData.module.scss';
-import { connect } from 'react-redux';
-import { selectThemeHex, selectThemeKey } from '../../reducers/layout';
 
 
 function mapStateToProps(state) {
@@ -702,11 +700,7 @@ class InspectionGrid extends Component {
               </IconButton>
             </Box>
           }
-<<<<<<< HEAD
           sx={{ backgroundColor: this.props.themeHex, color: 'white', borderRadius: 1, mb: 2 }}
-=======
-          sx={{ backgroundColor: themeHex, color: 'white', borderRadius: 1, mb: 2 }}
->>>>>>> 322068c62c142bde324c07c7ca4e1da2f73de71e
         />
 
         {/* === 1행: 공장/공정/설비/품번/품명 === */}
@@ -824,11 +818,7 @@ class InspectionGrid extends Component {
             variant="contained"
             startIcon={<SearchIcon />}
             size="large"
-<<<<<<< HEAD
             sx={{ backgroundColor: this.props.themeHex, '&:hover': { backgroundColor: '#f57c00' } }}
-=======
-            sx={{ backgroundColor: themeHex, '&:hover': { backgroundColor: '#f57c00' } }}
->>>>>>> 322068c62c142bde324c07c7ca4e1da2f73de71e
             onClick={() => {
               this.loadOptions();
               this.loadList();
@@ -866,11 +856,7 @@ class InspectionGrid extends Component {
             variant="h4"
             gutterBottom
             sx={{
-<<<<<<< HEAD
               color: this.props.themeHex,
-=======
-              color: themeHex,
->>>>>>> 322068c62c142bde324c07c7ca4e1da2f73de71e
               fontWeight: 'bold',
               display: 'flex',
               alignItems: 'center',
@@ -894,11 +880,7 @@ class InspectionGrid extends Component {
             <Button
               variant="contained"
               onClick={this.loadList}
-<<<<<<< HEAD
               sx={{ backgroundColor: this.props.themeHex, '&:hover': { backgroundColor: '#f57c00' } }}
-=======
-              sx={{ backgroundColor: themeHex, '&:hover': { backgroundColor: '#f57c00' } }}
->>>>>>> 322068c62c142bde324c07c7ca4e1da2f73de71e
             >
               다시 시도
             </Button>
@@ -910,11 +892,7 @@ class InspectionGrid extends Component {
           <Box sx={{ height: '100%,', width: '100%' }}>
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '220px' }}>
-<<<<<<< HEAD
                 <CircularProgress size={60} sx={{ color: this.props.themeHex }} />
-=======
-                <CircularProgress size={60} sx={{ color: themeHex }} />
->>>>>>> 322068c62c142bde324c07c7ca4e1da2f73de71e
               </Box>
             ) : (
               <DataGrid
@@ -934,11 +912,7 @@ class InspectionGrid extends Component {
                 slots={{ toolbar: GridToolbar }}
                 slotProps={{ toolbar: { showQuickFilter: true, quickFilterProps: { debounceMs: 500 } } }}
                 sx={{
-<<<<<<< HEAD
                   '& .super-app-theme--header': { backgroundColor: this.props.themeHex, color: 'white', fontWeight: 'bold' },
-=======
-                  '& .super-app-theme--header': { backgroundColor: themeHex, color: 'white', fontWeight: 'bold' },
->>>>>>> 322068c62c142bde324c07c7ca4e1da2f73de71e
                   '& .MuiDataGrid-cell': { borderBottom: '1px solid #e0e0e0', whiteSpace: 'nowrap' },
                   '& .MuiDataGrid-root': { border: 'none' },
                   '& .MuiDataGrid-virtualScroller': { backgroundColor: '#fafafa' },
@@ -953,16 +927,5 @@ class InspectionGrid extends Component {
   }
 }
 
-<<<<<<< HEAD
 
 export default connect(mapStateToProps)(InspectionGrid);
-=======
-function mapStateToProps(state) {
-  return {
-    themeHex: selectThemeHex(state),
-    themeKey: selectThemeKey(state)
-  };
-}
-
-export default connect(mapStateToProps)(InspectionGrid);
->>>>>>> 322068c62c142bde324c07c7ca4e1da2f73de71e
